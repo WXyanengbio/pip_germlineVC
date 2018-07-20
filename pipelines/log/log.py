@@ -115,3 +115,29 @@ def store_annotation_logs(log_dir):
                                         log_dir + '/annotation_errors.log',
                                         formatter_annotation_errors)
     return logger_annotation_dir_process, logger_annotation_dir_errors
+
+
+def store_static_logs(log_dir):
+    formatter_pipeline_process = logging.Formatter("%(asctime)s;%(message)s")
+    formatter_pipeline_errors = logging.Formatter(
+        "%(asctime)s;%(levelname)s;                                             %(message)s")
+    logger_static_process = setup_logger('Running Messages of static',
+                                       log_dir + '/static_process.log',
+                                       formatter_pipeline_process)
+    logger_static_errors = setup_logger('Errors & Warnings of pipeline',
+                                      log_dir + '/static_errors.log',
+                                      formatter_pipeline_errors)
+    return logger_static_process, logger_static_errors
+
+
+def store_benchmark_logs(log_dir):
+    formatter_pipeline_process = logging.Formatter("%(asctime)s;%(message)s")
+    formatter_pipeline_errors = logging.Formatter(
+        "%(asctime)s;%(levelname)s;                                             %(message)s")
+    logger_benchmark_process = setup_logger('Running Messages of static',
+                                       log_dir + '/benchmark_process.log',
+                                       formatter_pipeline_process)
+    logger_benchmark_errors = setup_logger('Errors & Warnings of pipeline',
+                                      log_dir + '/benchmark__errors.log',
+                                      formatter_pipeline_errors)
+    return logger_benchmark_process, logger_benchmark_errors

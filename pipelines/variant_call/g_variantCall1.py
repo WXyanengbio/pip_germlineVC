@@ -16,6 +16,17 @@ import itertools
 
 time_start = time.time()
 
+def check_variant_exit(tmpvcf):
+    f1 = open(tmpvcf,'r')
+    headlines = 0
+    for line in f1.readlines():
+        if line.startswith('#'):
+            headlines = headlines +1
+    if headlines == len(f1.readlines()):
+        return 0
+    else:
+        return 1
+
 def sam_to_bem(gatk_dir, samtools_dir,
                vready_sam, sample,
                output, memorySize,
@@ -128,7 +139,7 @@ def germline_variant_calling(gatk_dir, marked_BQSR_bam,
     if ERC == 'no':
         logger_g_variantCalling_process.info('Runs HaplotypeCaller in default mode on a single input BAM file containing sequence data!')
         vcf =  output + '/' + sample + '.raw_variants.vcf'
-        command_count = command_count + ' ' + vcf
+        command_count = command_count + ' -O ' + vcf
     else:
         if ERC == 'GVCF':
             logger_g_variantCalling_process.info('Runs HaplotypeCaller in GVCF mode!')
@@ -150,7 +161,7 @@ def germline_variant_calling(gatk_dir, marked_BQSR_bam,
     #-Joint-Call Cohort
     if ERC == 'GVCF':
         command_count1 ='{0} --java-options "{1}" GenotypeGVCFs -R {2} --variant {3} -O {4}'.format(
-        gatk_dir, memorySize, ref_fa_file, vcf,vcf1)
+        gatk_dir, memorySize, ref_fa_file, vcf, vcf1)
         time_start1 = time.time()
         os.system(command_count1)
         logger_g_variantCalling_process.info('Compeleted GenotypeGVCFs by GATK.')
@@ -163,12 +174,21 @@ def germline_variant_calling(gatk_dir, marked_BQSR_bam,
     logger_g_variantCalling_process.info('Compeleted SelectVariants SNP by GATK.')
     logger_g_variantCalling_process.info('Time cost at SelectVariants SNP == ' + str((time.time() - time_start1) / 60) + 'min')
     #filter variant in SNP
-    filter_snp_vcfs = output + '/' + sample + '.filter_SNP.vcf'
-    command_count2fs ='{0} --java-options "{1}" VariantFiltration -R {2} --variant {3} -O {4} --filter-expression "{5}" --filter-name "my_snp_filter"'.format(
-        gatk_dir, memorySize, ref_fa_file, snp_vcf,filter_snp_vcfs, snp_filter)
-    os.system(command_count2fs)
-    logger_g_variantCalling_process.info('Compeleted filter SNP by GATK.')
-    logger_g_variantCalling_process.info('Time cost at filter SNP == ' + str((time.time() - time_start1) / 60) + 'min')
+    filter_snp_vcfs_tmp = output + '/' + sample + '.filter_SNP_tmp.vcf'
+    command_count2fstmp ='{0} --java-options "{1}" VariantFiltration -R {2} --variant {3} -O {4} --filter-expression "{5}" --filter-name "my_snp_filter"'.format(
+        gatk_dir, memorySize, ref_fa_file, snp_vcf,filter_snp_vcfs_tmp, snp_filter)
+    os.system(command_count2fstmp)
+    #--check the raw SNPs number in tmp vcf
+    if check_variant_exit(filter_snp_vcfs_tmp) == 0:
+        print('There is no SNPs in {0}'.format(sample))
+        logger_g_variantCalling_process.info('There is no SNPs in {0}'.format(sample))
+    elif check_variant_exit(filter_snp_vcfs_tmp) == 1:
+        filter_snp_vcfs = output + '/' + sample + '.filter_SNP.vcf'
+        command_count2fs ='{0} --java-options "{1}" SelectVariants --variant {2} -O {3} --exclude-filtered true'.format(
+           gatk_dir, memorySize, filter_snp_vcfs_tmp,filter_snp_vcfs)
+        os.system(command_count2fs)
+        logger_g_variantCalling_process.info('Compeleted filter SNP by GATK.')
+        logger_g_variantCalling_process.info('Time cost at filter SNP == ' + str((time.time() - time_start1) / 60) + 'min')
     #indel
     indel_vcf = output + '/' + sample + '.raw_variants_indel.vcf'
     command_count3 ='{0} --java-options "{1}" SelectVariants -R {2} --variant {3} -O {4} --select-type-to-include INDEL'.format(
@@ -177,9 +197,18 @@ def germline_variant_calling(gatk_dir, marked_BQSR_bam,
     logger_g_variantCalling_process.info('Compeleted SelectVariants indel by GATK.')
     logger_g_variantCalling_process.info('Time cost at SelectVariants indel == ' + str((time.time() - time_start1) / 60) + 'min')
     #filter variant in indel
-    filter_indel_vcfi = output + '/' + sample + '.filter_indel.vcf'
-    command_count2fi ='{0} --java-options "{1}" VariantFiltration -R {2} --variant {3} -O {4} --filter-expression "{5}" --filter-name "my_indel_filter"'.format(
-        gatk_dir, memorySize, ref_fa_file, indel_vcf, filter_indel_vcfi, indel_filter)
-    os.system(command_count2fi)
-    logger_g_variantCalling_process.info('Compeleted filter SNP by GATK.')
-    logger_g_variantCalling_process.info('Time cost at filter SNP == ' + str((time.time() - time_start1) / 60) + 'min')
+    filter_indel_vcfi_tmp = output + '/' + sample + '.filter_indel_tmp.vcf'
+    command_count2fitmp ='{0} --java-options "{1}" VariantFiltration -R {2} --variant {3} -O {4} --filter-expression "{5}" --filter-name "my_indel_filter"'.format(
+        gatk_dir, memorySize, ref_fa_file, indel_vcf, filter_indel_vcfi_tmp, indel_filter)
+    os.system(command_count2fitmp)
+    #--check the raw indel number in tmp vcf
+    if check_variant_exit(filter_indel_vcfi_tmp) == 0:
+        print('There is no SNPs in {0}'.format(sample))
+        logger_g_variantCalling_process.info('There is no indel in {0}'.format(sample))
+    elif check_variant_exit(filter_indel_vcfi_tmp) == 1:
+        filter_indel_vcfi = output + '/' + sample + '.filter_indel.vcf'
+        command_count2fi ='{0} --java-options "{1}" SelectVariants --variant {2} -O {3} --exclude-filtered true'.format(
+            gatk_dir, memorySize,filter_indel_vcfi_tmp, filter_indel_vcfi)
+        os.system(command_count2fi)
+        logger_g_variantCalling_process.info('Compeleted filter SNP by GATK.')
+        logger_g_variantCalling_process.info('Time cost at filter SNP == ' + str((time.time() - time_start1) / 60) + 'min')

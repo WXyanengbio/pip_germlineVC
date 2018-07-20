@@ -52,6 +52,7 @@ __all__  =  ['cosmic', 'clinvar', 'g1000' ,
 __version__  =  '1.0'
 __author__  =  'Yang XueKai'
 
+import os
 import sys
 import time
 import pandas as pd
@@ -307,10 +308,13 @@ def annotationmain(cosmic, clinvar, g1000,
         non_cos = output + '/' + sample + '.filter_indel_non_cos.csv'
         stats_file = output + '/' + sample + '.filter_indel_annotate_stats.txt'
     #-read the annotation database
-    dict_cos, dict_clin, dict_g1000 = read_database(cosmic,clinvar,g1000)
-    #--annotation
-    annotation(dict_cos, dict_clin, dict_g1000, vcf, annotated_csv, stats_file, logger_annotation_process)
-    #--add the annotation
-    fill_table(annotated_csv, annotated_csv_add, non_rs, non_cos, ref_ens)
-    
+    if not os.path.isfile(vcf):
+        logger_static_errors.error("%s does not exist!\n", vcf)
+        print(vcf + ' does not exist!')
+    else:
+        dict_cos, dict_clin, dict_g1000 = read_database(cosmic,clinvar,g1000)
+        #--annotation
+        annotation(dict_cos, dict_clin, dict_g1000, vcf, annotated_csv, stats_file, logger_annotation_process)
+        #--add the annotation
+        fill_table(annotated_csv, annotated_csv_add, non_rs, non_cos, ref_ens)
 

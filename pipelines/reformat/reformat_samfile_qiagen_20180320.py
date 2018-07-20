@@ -30,8 +30,8 @@ hg19_chr_length = {
     'chr21': 48129895,
     'chr22': 51304566,
     'chrX': 155270560,
-    'chrY': 59034049,
-    'chrM': 16569,
+    'chrY': 59373566,
+    'chrM': 16571,
 }
 
 def setup_logger(name, log_file, formatter, level=logging.DEBUG):
