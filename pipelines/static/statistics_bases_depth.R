@@ -1,23 +1,3 @@
-# See whether these packages exist on comp. If not, install.
-#package_list <- c("optparse","reshape2","ggplot2","ggpubr")
-
-#for(p in package_list){
-#  if(!suppressWarnings(suppressMessages(require(p, character.only = TRUE, quietly = TRUE, warn.conflicts = FALSE)))){
-#    install.packages(p, repos="http://cran.r-project.org")
-#    suppressWarnings(suppressMessages(library(p, character.only = TRUE, quietly = TRUE, warn.conflicts = FALSE)))
-#  }
-#}
-# 另两种常见R包安装方法
-#if (FALSE){
-  # Bioconductor安装
-#  source("https://bioconductor.org/biocLite.R")
-#  biocLite(c("reshape2"))
-  # Github安装
-#  install.packages("devtools", repo="http://cran.us.r-project.org")
-#  library(devtools)
-#  install_github("kassambara/ggpubr")
-#}
-
 # 清理工作环境 clean enviroment object
 rm(list=ls()) 
 
@@ -25,7 +5,6 @@ rm(list=ls())
 library(optparse)
 library(reshape2)
 library(ggplot2)
-library(easyGgplot2)
 library(splines)
 
 option_list <- list(
@@ -87,13 +66,6 @@ if (TRUE){
 
 # 5. 保存图表
 if (TRUE){
-  # 保存一个制表符，解决存在行名时，列名无法对齐的问题
-  #write.table("\t", file=paste(opts$output,".txt",sep=""),append = F, quote = F, eol = "", row.names = F, col.names = F)
-  # 保存统计结果，有waring正常
-  #write.table(dat, file=paste(opts$output,".txt",sep=""), append = T, quote = F, sep="\t", eol = "\n", na = "NA", dec = ".", row.names = T, col.names = T)
- # print(paste("The output table is ", opts$output, ".txt",  sep = ""))
-  #----
-  # 保存图片至文件，pdf方便AI修改成出版级图片
   ggsave(file=paste(opts$output,".pdf",sep=""), plot=p, width = 5, height = 5)
   ggsave(file=paste(opts$output,".tiff",sep=""), plot=p, width = 5, height = 5)
   print(paste("The output figure is ", opts$output, ".pdf",  sep = ""))

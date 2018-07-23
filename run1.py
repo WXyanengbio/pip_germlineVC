@@ -6,15 +6,12 @@ import os
 import re
 import sys
 import time
-import gzip
-import itertools
-from difflib import SequenceMatcher
 import argparse
 
 #sys.path.append(os.path.split(os.path.realpath(__file__))[0])
 #import the logging functions
 from pipelines.log.log import store_pipeline_logs , store_trim_logs, store_filter_logs, store_align_logs , store_cluster_logs , \
-                              store_reformat_logs, store_germline_VC_logs, store_annotation_logs, store_static_logs, store_benchmark_logs
+                              store_reformat_logs, store_germline_VC_logs, store_annotation_logs, store_statistics_logs, store_benchmark_logs
 #import the trim function
 from pipelines.trim.trim_reads import trim_read_pairs
 #import the align function
@@ -29,8 +26,8 @@ from pipelines.reformat.reformat_sam import reformat_sam
 from pipelines.variant_call.g_variantCall1 import sam_to_bem , germline_variant_calling
 #import the annotation variant funcitons
 from pipelines.variant_call.annotation_gatk_HC import annotationmain
-#import the static functions
-from pipelines.static.prestatic_module import qc_raw_reads, static_depth_coverage, static_sam_bam, static_time, merge_static_sam_bam, split_N_bases
+#import the statistics functions
+from pipelines.statistics.prestatistics_module import qc_raw_reads, statistics_depth_coverage, statistics_sam_bam, statistics_time, merge_statistics_sam_bam, split_N_bases
 #import the benchmaking funciton
 from pipelines.benchmark.hap_benchmark import hap_py
 def script_information():
@@ -166,8 +163,9 @@ parser.add_argument("--known_sites",
                    )
                     
 parser.add_argument("--exome_target_bed",
-                    help = "the bed file of exome intervals", 
-                    type = str) 
+                    type = str,
+                    default = 
+                    help = "the bed file of exome intervals") 
 parser.add_argument("--ERC", 
                     type = str, 
                     default = 'no',
@@ -307,24 +305,24 @@ def main():
     read1 = source + '/' + sample + '_R1_001.fastq.gz'
     read2 = source + '/' + sample  + '_R2_001.fastq.gz'
     #---
-    logger_static_process, logger_static_errors = store_static_logs(log_dir)
+    logger_statistics_process, logger_statistics_errors = store_statistics_logs(log_dir)
     qc_result1, qc_result2 = qc_raw_reads(fastQC_dir, qc_dir, 
                  sample, module, 
                  read1, read2,
-                 logger_static_process, logger_static_errors)
+                 logger_statistics_process, logger_statistics_errors)
     #--check the quality of the raw reads
     if float(qc_result1[6].strip('%')) > 80 and  float(qc_result2[6].strip('%')) > 80:
         print("The ratio of read1 and read2 with Q30 quality are both higher than 80%.")
     else:
         exit("The ratio of read1 and read2 with Q30 quality are both lower than 80%!!!!!!!")
-    #--static the N base in raw reads and set the cutoff of the min read length
+    #--statistics the N base in raw reads and set the cutoff of the min read length
     if max(int(split_N_bases(qc_result1[7])), int(split_N_bases(qc_result2[7]))) < min_read_len:
         print("The cutoff of the min read length is the default: {0}".format(min_read_len))
     else:
         min_read_len = max(int(split_N_bases(qc_result1[7])), int(split_N_bases(qc_result2[7])))
         print("The cutoff of the min read length is based on the N base in the reads: {0}".format(min_read_len))
 
-    logger_static_process.info("QC of reads is completed after %.2f min.", (time.time()-time_start)/60)
+    logger_statistics_process.info("QC of reads is completed after %.2f min.", (time.time()-time_start)/60)
     logger_pipeline_process.info("QC of reads is completed after %.2f min.", (time.time()-time_start)/60)
     
     if test_level >= 0:
@@ -572,48 +570,48 @@ def main():
     else:
         exit()
     ##########################################################################################
-    #---Static of the variant calling pipeline
+    #---statistics of the variant calling pipeline
     ##########################################################################################
     #time cost
     time_start = time.time()
-    #static dir
-    static_dir = out_dir + '/'+ 'static'
-    if not os.path.exists(static_dir):
-        os.makedirs(static_dir)
-    #-static the clean reads
-    #static trim dir
-    static_trim_dir = static_dir + '/'+ 'trim_QC'
-    if not os.path.exists(static_trim_dir):
-        os.makedirs(static_trim_dir)
+    #statistics dir
+    statistics_dir = out_dir + '/'+ 'statistics'
+    if not os.path.exists(statistics_dir):
+        os.makedirs(statistics_dir)
+    #-statistics the clean reads
+    #statistics trim dir
+    statistics_trim_dir = statistics_dir + '/'+ 'trim_QC'
+    if not os.path.exists(statistics_trim_dir):
+        os.makedirs(statistics_trim_dir)
     module = "Trim"
-    trim_result1, trim_result2 = qc_raw_reads(fastQC_dir, static_trim_dir, 
+    trim_result1, trim_result2 = qc_raw_reads(fastQC_dir, statistics_trim_dir, 
                  sample, module, 
                  trimmed1, trimmed2,
-                 logger_static_process, logger_static_errors)
-    #--static the align
+                 logger_statistics_process, logger_statistics_errors)
+    #--statistics the align
     module1 = "Align"
-    align_sorted_bam = static_depth_coverage(samtools_dir, out_file, static_dir, sample, module1, logger_static_process, logger_static_errors)
-    align_static = static_sam_bam(samtools_dir, sorted_bam, static_dir,sample, module1, logger_static_process, logger_static_errors)
-    #--static the filter
+    align_sorted_bam = statistics_depth_coverage(samtools_dir, out_file, statistics_dir, sample, module1, logger_statistics_process, logger_statistics_errors)
+    align_statistics = statistics_sam_bam(samtools_dir, sorted_bam, statistics_dir,sample, module1, logger_statistics_process, logger_statistics_errors)
+    #--statistics the filter
     #----cluster module would build the filter sorted bam, but it has been changed UMIs-tools
     module2 = "Fliter"
-    filtered_sorted_bam = static_depth_coverage(samtools_dir, filtered_sam, static_dir, sample, module2, logger_static_process, logger_static_errors)
-    fliter_static = static_sam_bam(samtools_dir, filtered_sorted_bam, static_dir, sample, module2, logger_static_process, logger_static_errors)
-    # static the umi-tools
+    filtered_sorted_bam = statistics_depth_coverage(samtools_dir, filtered_sam, statistics_dir, sample, module2, logger_statistics_process, logger_statistics_errors)
+    fliter_statistics = statistics_sam_bam(samtools_dir, filtered_sorted_bam, statistics_dir, sample, module2, logger_statistics_process, logger_statistics_errors)
+    # statistics the umi-tools
     module3 = "Cluster_reformat"
-    cr_sorted_bam = static_depth_coverage(samtools_dir, vready_sam, static_dir, sample, module3, logger_static_process, logger_static_errors)
-    cr_static = static_sam_bam(samtools_dir, cr_sorted_bam, static_dir, sample, module3, logger_static_process, logger_static_errors)
+    cr_sorted_bam = statistics_depth_coverage(samtools_dir, vready_sam, statistics_dir, sample, module3, logger_statistics_process, logger_statistics_errors)
+    cr_statistics = statistics_sam_bam(samtools_dir, cr_sorted_bam, statistics_dir, sample, module3, logger_statistics_process, logger_statistics_errors)
     #-merge the sorted bam
-    merge_static_sam_bam(logger_static_process, logger_static_errors, static_dir, sample, ','.join([module1,module2,module3]),align_static,fliter_static,cr_static)
+    merge_statistics_sam_bam(logger_statistics_process, logger_statistics_errors, statistics_dir, sample, ','.join([module1,module2,module3]),align_statistics,fliter_statistics,cr_statistics)
     
-    logger_static_process.info('static is completed after %.2f min.',(time.time() - time_start)/60)
-    logger_pipeline_process.info('Static is completed after %.2f min.',(time.time() - time_start)/60)
+    logger_statistics_process.info('Statistics is completed after %.2f min.',(time.time() - time_start)/60)
+    logger_pipeline_process.info('Statistics is completed after %.2f min.',(time.time() - time_start)/60)
     logger_pipeline_process.info('Pipeline : {0} is completed after {1} min.'.format(sample, ('%.2f' % ((time.time() - time_start1)/60))))
-    #--static the time cost
+    #--statistics the time cost
     process_log = out_dir + '/'+ 'log' + '/' + 'process.log'
-    static_time(static_dir, sample, process_log, logger_static_process, logger_static_errors)
+    statistics_time(statistics_dir, sample, process_log, logger_statistics_process, logger_statistics_errors)
     #---
     if test_level == 9:
-        print("Test Static module!")
+        print("Test statistics module!")
 if __name__ == '__main__':
     main()
