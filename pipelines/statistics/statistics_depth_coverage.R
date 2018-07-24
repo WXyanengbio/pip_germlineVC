@@ -1,23 +1,3 @@
-# See whether these packages exist on comp. If not, install.
-#package_list <- c("optparse","reshape2","ggplot2","ggpubr")
-
-#for(p in package_list){
-#  if(!suppressWarnings(suppressMessages(require(p, character.only = TRUE, quietly = TRUE, warn.conflicts = FALSE)))){
-#    install.packages(p, repos="http://cran.r-project.org")
-#    suppressWarnings(suppressMessages(library(p, character.only = TRUE, quietly = TRUE, warn.conflicts = FALSE)))
-#  }
-#}
-# 另两种常见R包安装方法
-#if (FALSE){
-  # Bioconductor安装
-#  source("https://bioconductor.org/biocLite.R")
-#  biocLite(c("reshape2"))
-  # Github安装
-#  install.packages("devtools", repo="http://cran.us.r-project.org")
-#  library(devtools)
-#  install_github("kassambara/ggpubr")
-#}
-
 # 清理工作环境 clean enviroment object
 rm(list=ls()) 
 
@@ -77,8 +57,8 @@ if (TRUE){
   dat <-cbind(pre_dat,coverage_depth)
   print(head(dat))
   colnames(dat)<-c("targe region","targe length","mapped reads","non-mapped reads","coverage position length","sum of depth")
-  dat$coverage_ratio<- dat[,5]/dat[,2]
-  dat$mean_depth<-dat[,6]/dat[,2]
+  dat$coverage_ratio<- round(dat[,5]/dat[,2],4)
+  dat$mean_depth<-round(dat[,6]/dat[,2],4)
   #--merge the targe regions
   if(nchar(as.character(pre_dat[1,1]))>3){
     print("Merge the targe regions!!!")
@@ -98,18 +78,47 @@ if (TRUE){
     print(head(merge_dat))
     print(class(merge_dat))
     merge_dat<-as.data.frame(merge_dat)
-    merge_dat$coverage_ratio<- merge_dat[,4]/merge_dat[,1]
-    merge_dat$mean_depth<-merge_dat[,5]/merge_dat[,1]
+    merge_dat$coverage_ratio<- round(merge_dat[,4]/merge_dat[,1],4)
+    merge_dat$mean_depth<-round(merge_dat[,5]/merge_dat[,1],4)
     #--
     rownames(merge_dat)<-c(unique_chom[-length(unique_chom)],"other_regions")
+    merge_dat<-merge_dat[-nrow(merge_dat),]
+    merge_dat_sub = data.frame(CHOM = c("chr1","chr2","chr3","chr4","chr5","chr6",
+                                        "chr7","chr8","chr9","chr10","chr11","chr12",
+                                        "chr13","chr14","chr15","chr16","chr17","chr18",
+                                        "chr19","chr20","chr22","chrX","chrY"),
+                              target=merge_dat[c("chr1","chr2","chr3","chr4","chr5","chr6",
+                                        "chr7","chr8","chr9","chr10","chr11","chr12",
+                                        "chr13","chr14","chr15","chr16","chr17","chr18",
+                                        "chr19","chr20","chr22","chrX","chrY"),6],
+                              mean_depth=merge_dat[c("chr1","chr2","chr3","chr4","chr5","chr6",
+                                        "chr7","chr8","chr9","chr10","chr11","chr12",
+                                        "chr13","chr14","chr15","chr16","chr17","chr18",
+                                        "chr19","chr20","chr22","chrX","chrY"),7])
+    merge_dat_sub = na.omit(merge_dat_sub)
+    print(head(merge_dat_sub))
+    merge_dat_sub1 = merge_dat_sub[which(merge_dat_sub$mean_depth>40),]
+    merge_dat_sub1$CHOM = factor(as.character(merge_dat_sub1$CHOM),levels =as.character(merge_dat_sub1$CHOM))
+    p <- ggplot(data=merge_dat_sub1, aes(x=CHOM, y= target)) +
+    geom_bar(colour="black", fill="#DD8888", width=.8, stat="identity") + 
+    geom_text(aes(label=mean_depth),vjust=0)+
+    guides(fill=FALSE) +
+    xlab("chromosome") +
+    ylab("Target ratio") + # Set axis labels
+    ggtitle("Target ratio and mean depth of target regions") +
+    theme_bw()+
+    theme(axis.text.x = element_text(angle=0, hjust=1, vjust=1))
+    #---plot the target ratio
+    
+    
   }
   rownames(dat)<-dat[,1]
   dat<-dat[,-1]
   #---plot the depth and the coverage
-  if (nrow(dat)>24){
-  dat<- dat[order(dat[,5],decreasing=T),]
-  dat_sub<-dat[which(dat[,5]>=40),]
-  }
+  #if (nrow(dat)>24){
+  #dat<- dat[order(dat[,5],decreasing=T),]
+ # dat_sub<-dat[which(dat[,5]>=40),]
+  #}
 }
 
 # 5. 保存图表
@@ -125,9 +134,10 @@ if (TRUE){
   # 保存统计结果，有waring正常
   write.table(merge_dat, file=paste(opts$output,".mergeCHOM.txt",sep=""), append = T, quote = F, sep="\t", eol = "\n", na = "NA", dec = ".", row.names = T, col.names = T)
   print(paste("The output table is ", opts$output, ".mergeCHOM.txt",  sep = ""))
-  }
+  
   # 保存图片至文件，pdf方便AI修改成出版级图片
- # ggsave(file=paste(opts$output,".pdf",sep=""), plot=p, width = 6.5, height = 5)
- # ggsave(file=paste(opts$output,".jpg",sep=""), plot=p, width = 6.5, height = 5)
- # print(paste("The output figure is ", opts$output, ".pdf",  sep = ""))
+  ggsave(file=paste(opts$output,".mergeCHOM.pdf",sep=""), plot=p, width = 5, height = 5)
+  ggsave(file=paste(opts$output,".mergeCHOM.jpg",sep=""), plot=p, width = 5, height = 5)
+  print(paste("The output figure is ", opts$output, ".pdf",  sep = ""))
+ }
 }

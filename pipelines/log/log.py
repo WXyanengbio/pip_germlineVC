@@ -94,16 +94,16 @@ def store_reformat_logs(log_dir):
     return logger_reformat_process, logger_reformat_errors
 
 
-def store_germline_VC_logs(log_dir):
-    formatter_germline_VC_process = logging.Formatter("%(asctime)s;%(message)s")
-    formatter_germline_VC_errors = logging.Formatter("%(asctime)s;%(levelname)s; %(message)s")
-    logger_germline_VC_process = setup_logger('Germline variant calling Messages',
-                                         log_dir + '/germline_VC_process.log',
-                                         formatter_germline_VC_process)
-    logger_germline_VC_errors = setup_logger('Errors & Warnings of Germline variant calling',
-                                        log_dir + '/germline_VC_errors.log',
-                                        formatter_germline_VC_errors)
-    return logger_germline_VC_process, logger_germline_VC_errors
+def store_germline_vc_logs(log_dir):
+    formatter_germline_vc_process = logging.Formatter("%(asctime)s;%(message)s")
+    formatter_germline_vc_errors = logging.Formatter("%(asctime)s;%(levelname)s; %(message)s")
+    logger_germline_vc_process = setup_logger('Germline variant calling Messages',
+                                         log_dir + '/germline_vc_process.log',
+                                         formatter_germline_vc_process)
+    logger_germline_vc_errors = setup_logger('Errors & Warnings of Germline variant calling',
+                                        log_dir + '/germline_vc_errors.log',
+                                        formatter_germline_vc_errors)
+    return logger_germline_vc_process, logger_germline_vc_errors
 
 def store_annotation_logs(log_dir):
     formatter_annotation_process = logging.Formatter("%(asctime)s;%(message)s")
@@ -117,24 +117,24 @@ def store_annotation_logs(log_dir):
     return logger_annotation_dir_process, logger_annotation_dir_errors
 
 
-def store_static_logs(log_dir):
+def store_statistics_logs(log_dir):
     formatter_pipeline_process = logging.Formatter("%(asctime)s;%(message)s")
     formatter_pipeline_errors = logging.Formatter(
         "%(asctime)s;%(levelname)s;                                             %(message)s")
-    logger_static_process = setup_logger('Running Messages of static',
-                                       log_dir + '/static_process.log',
+    logger_statistics_process = setup_logger('Running Messages of statistics',
+                                       log_dir + '/statistics_process.log',
                                        formatter_pipeline_process)
-    logger_static_errors = setup_logger('Errors & Warnings of pipeline',
-                                      log_dir + '/static_errors.log',
+    logger_statistics_errors = setup_logger('Errors & Warnings of pipeline',
+                                      log_dir + '/statistics_errors.log',
                                       formatter_pipeline_errors)
-    return logger_static_process, logger_static_errors
+    return logger_statistics_process, logger_statistics_errors
 
 
 def store_benchmark_logs(log_dir):
     formatter_pipeline_process = logging.Formatter("%(asctime)s;%(message)s")
     formatter_pipeline_errors = logging.Formatter(
         "%(asctime)s;%(levelname)s;                                             %(message)s")
-    logger_benchmark_process = setup_logger('Running Messages of static',
+    logger_benchmark_process = setup_logger('Running Messages of Benchmarking',
                                        log_dir + '/benchmark_process.log',
                                        formatter_pipeline_process)
     logger_benchmark_errors = setup_logger('Errors & Warnings of pipeline',

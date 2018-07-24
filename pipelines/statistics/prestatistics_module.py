@@ -6,45 +6,46 @@ import os
 import re
 import sys
 import time
-import gzip
 import itertools
 from itertools import groupby
-import argparse
 
 # get the range of the positions of the N bases in the reads 
-def split_n_bases(Nbases):
-    bases = Nbases.split(",")
-    print(bases)
-    bases_posi =[]
-    for posi in range(0,len(bases)):
-        posi = bases[posi]
-        print(posi)
-        if "-" in str(posi):
-            for i in range(int(posi.split("-")[0]), int(posi.split("-")[1])+1):
-                bases_posi.append(i)
-        else:
-            bases_posi.append(int(posi))
-    print(bases_posi)
-    l = bases_posi
-    a = list()
-    b = []
-    result = []
-    function = lambda x: x[1] - x[0]
-    for k, g in groupby(enumerate(l), function):
-        g = list(g)
-        b.append(k)
-        a.append(g)
-    for c in range(len(b)):
-        if [v for i, v in a[c]][0] != [v for i, v in a[c]][-1]:
-            result.append("%d-%d" % ([v for i, v in a[c]][0], [v for i, v in a[c]][-1]))
-        if [v for i, v in a[c]][0] == [v for i, v in a[c]][-1]:
-            result.append([v for i, v in a[c]][0])
-    print(result)
-    if "-" not in str(result[len(result)-1]):
-        result_last = result[len(result)-1]
+def split_n_bases(nbases):
+    if nbases == 'NULL':
+        return ["NULL" ,"NULL"]
     else:
-        result_last = result[len(result)-1].split('-')[1]
-    return result_last
+        bases = nbases.split(",")
+       # print(bases)
+        bases_posi =[]
+        for posi in range(0,len(bases)):
+            posi = bases[posi]
+            #print(posi)
+            if "-" in str(posi):
+                for i in range(int(posi.split("-")[0]), int(posi.split("-")[1])+1):
+                    bases_posi.append(i)
+            else:
+                bases_posi.append(int(posi))
+    #print(bases_posi)
+        l = bases_posi
+        a = list()
+        b = []
+        result = []
+        function = lambda x: x[1] - x[0]
+        for k, g in groupby(enumerate(l), function):
+            g = list(g)
+            b.append(k)
+            a.append(g)
+        for c in range(len(b)):
+            if [v for i, v in a[c]][0] != [v for i, v in a[c]][-1]:
+                result.append("%d-%d" % ([v for i, v in a[c]][0], [v for i, v in a[c]][-1]))
+            if [v for i, v in a[c]][0] == [v for i, v in a[c]][-1]:
+                result.append([v for i, v in a[c]][0])
+    #print(result)
+        if "-" not in str(result[len(result)-1]):
+            result_last = result[len(result)-1]
+        else:
+            result_last = result[len(result)-1].split('-')[1]
+        return ["[" + result[0] + "]" , result_last]
 
 # get informations from the qc result of the reads
 def getinfo(fastqc):
@@ -112,8 +113,9 @@ def getinfo(fastqc):
     if len(nbases) == 0:
         nbases.append('NULL')
     #---
-    #print([raw_reads[0], seq_length[0], GC[0], str(round(Perbasesequencequalit_mean,3)), ','.join(lowqualitBases), str('%.3f%%' % (Q20 * 100)), str('%.3f%%' % (Q30 * 100)), ','.join(Nbases)]
-    return [raw_reads[0], seq_length[0], gc[0], str(round(perbasesequencequalit_mean,3)), ','.join(lowqualit_bases), str('%.3f%%' % (q20 * 100)), str('%.3f%%' % (q30 * 100)), ','.join(nbases)]
+    #print([raw_reads[0], seq_length[0], GC[0], str(round(Perbasesequencequalit_mean,3)), ','.join(lowqualitBases), str('%.3f%%' % (Q20 * 100)), str('%.3f%%' % (Q30 * 100)), ','.join(nbases)]
+    return [raw_reads[0], "[" + seq_length[0] + "]", gc[0], str(round(perbasesequencequalit_mean,3)), 
+            split_n_bases(','.join(lowqualit_bases))[0], str('%.3f%%' % (q20 * 100)), str('%.3f%%' % (q30 * 100)), split_n_bases(','.join(nbases))[0], split_n_bases(','.join(nbases))[1]] 
 
 #--QC reads by fastQC
 def qc_raw_reads(fastQC_dir, out_dir, sample, module, read1, read2,logger_statistics_process, logger_statistics_errors):
@@ -125,8 +127,8 @@ def qc_raw_reads(fastQC_dir, out_dir, sample, module, read1, read2,logger_statis
     qc_result2 =getinfo(out_dir + '/' + os.path.basename(read2))
     fout = open(qc_statistics, 'w')
     fout.write('\t'.join(['SampleID','Sequence direction','raw reads', 'seq length', 'GC content', 'mean of Per base qualit', 'lowqualitBases', 'Q20', 'Q30', 'N_bases']) + '\n')
-    fout.write('\t'.join([sample, read1.lstrip(sample + '_').rstrip(".fastq.gz"), '\t'.join(qc_result1)]) + '\n')
-    fout.write('\t'.join([sample, read2.lstrip(sample + '_').rstrip(".fastq.gz"), '\t'.join(qc_result2)]) + '\n')
+    fout.write('\t'.join([sample, read1.lstrip(sample + '_').rstrip(".fastq.gz"), '\t'.join(qc_result1[0:8])]) + '\n')
+    fout.write('\t'.join([sample, read2.lstrip(sample + '_').rstrip(".fastq.gz"), '\t'.join(qc_result2[0:8])]) + '\n')
     fout.close()
     return qc_result1, qc_result2
 
@@ -154,7 +156,7 @@ def statistics_depth_coverage(samtools_dir, sam_bam, out_dir,sample, module, log
         commond3 = samtools_dir + ' index ' + sorted_bam
         os.system(commond3)
     #-numbers of reads in target region
-    coverage_in_target_region = out_dir + '/' + sample +'_'+ module + '_numbersReadsInTargetRegion.txt'
+    num_reads_in_target_region = out_dir + '/' + sample +'_'+ module + '_numbersReadsInTargetRegion.txt'
     commond4 = samtools_dir + ' idxstats ' + sorted_bam + ' > ' + num_reads_in_target_region
     os.system(commond4)
     #-coverage of reads in target region
@@ -165,7 +167,7 @@ def statistics_depth_coverage(samtools_dir, sam_bam, out_dir,sample, module, log
     #-statistics and plot of  the depth and coverage in target region
     statistics_plot = out_dir + '/' + sample +'_'+ module + '_depth_coverageInTargetRegion'
     scriptdir = os.path.dirname(os.path.abspath(__file__))
-    commond6 = 'Rscript ' + scriptdir + '/statistics_depth_coverage.R' + ' -p ' + coverage_in_target_region + ' -s ' + coverage_in_target_region + ' -o ' + statistics_plot
+    commond6 = 'Rscript ' + scriptdir + '/statistics_depth_coverage.R' + ' -p ' + num_reads_in_target_region + ' -s ' + coverage_in_target_region + ' -o ' + statistics_plot
     os.system(commond6)
     #depth of the bases in target region
     bases_depth_in_target_region = out_dir + '/' + sample +'_'+ module + '_basesDepthInTargetRegion.txt'

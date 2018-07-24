@@ -39,30 +39,43 @@ if (TRUE){
  # suf_dat = read.table(opts$suffix_file, sep="\t")
   #group_name= unlist(strsplit(opts$group_name,","))
 }
-#print(pre_dat)
-# 弹出窗口选择文件
-if (FALSE){
-  dat = read.table(file.choose(), header=T, row.names = NULL, sep="\t")
-}
+print(head(dat))
 
 # 4. 统计与绘图
-if (FALSE){
-  #print(dat[,2])
-  type <- apply(dat,1,function(x){unlist(strsplit(unlist(strsplit(as.character(x),";"))[2]," "))[1]})
-  cost <- apply(dat,1,function(x){unlist(strsplit(unlist(strsplit(as.character(x),"after "))[2]," "))[1]})
-  dat1=data.frame(type,cost=as.numeric(cost))
-  dat1$type = factor(dat1$type,levels=as.character(dat1$type))
-  dat1$ratio = paste(round(100*dat1$cost/dat1[nrow(dat1),2],2),"%",sep="")
-  #colnames(dat)<-c("depth","bases","totalbases","ratio")
-  p<- ggplot(data=dat1, aes(x=type, y= cost)) +
-    geom_bar(colour="black", fill="#DD8888", width=.8, stat="identity") + 
-    geom_text(aes(label=ratio),vjust=0)+
-    guides(fill=FALSE) +
-    xlab("Subprocess of pipeline") + ylab("Time cost (min)") + # Set axis labels
-    ggtitle("Time cost of the pipeline of germline variant calling") +
-    theme_bw()
-    #scale_x_log10(breaks=c(0.05, 10, 50, 100, 200, 300, 500, 1000, 2000)) 
-    
+if (TRUE){
+  description <- c("总序列条数",
+"过滤条数",
+"剩余序列条数",
+"是否过滤",
+"read1序列条数",
+"read2序列条数",
+"比对上基因组的 read 数目",
+"paired reads中两条都比对到参考序列上的reads数目",
+"没有比对上基因组的 read 数目",
+"正确配对的reads数目",
+"配对的reads数目",
+"PCR or optical duplicate",
+"MQ0 的read数目",
+"QC失败的read数目",
+"非主要比对",
+"总碱基数",
+"比对上的碱基数",
+"cigar比对上的碱基数",
+"trimmed的碱基数",
+"重复的碱基数",
+"错配的碱基数",
+"错配率",
+"序列平均长度",
+"最大长度",
+"序列平均质量",
+"插入片段平均长度",
+"插入片段标准差",
+"两端读取相向的成对reads数目",
+"两端读取相反的成对reads数目",
+"两端读取为其他方向的成对reads数目",
+"paired reads中两条分别比对到两条不同的参考序列的reads数目"
+)
+dat <- data.frame(description, dat)
 }
 
 # 5. 保存图表

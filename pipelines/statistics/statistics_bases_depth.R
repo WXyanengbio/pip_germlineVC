@@ -42,24 +42,36 @@ if (FALSE){
 # 4. 统计与绘图
 if (TRUE){
   #print(dat[,2])
+  # remove the zero-X depth bases
+  #dat = dat [-1,]
+  #dat[1,1] = 0.001
+  # get the 
   dat[,3]= cumsum(dat[,2])
   dat[,4]= 1-dat[,3]/sum(dat[,2])
   colnames(dat)<-c("depth","bases","totalbases","ratio")
+  #--
+  limits<-data.frame(x=c(50,100,200),colour=c("50X","100X","200X"),y=c(0.9,0.9,0.9))
   p<- ggplot(data=dat, aes(x=depth, y= ratio)) +
-    #geom_smooth(colour="red", se=F,
+    #geom_smooth(colour="grey70", se=F,
     #            method="glm",
     #            formula=y~ns(x,8),
     #            family=gaussian(link="log"),
-    #            show_guide = FALSE,lwd=0.7) +
-    geom_line(colour="red")+
+    #            show.legend = FALSE,lwd=0.7) +
+    #scale_x_log10(breaks = c(0.001,10,50,100,200,1000,round(max(dat[,1])/1000,0)*1000),label= c(0,10, 50,100,200,1000,round(max(dat[,1])/1000,0)*1000))+ 
+    ylim(0,1)+
+    xlim(0,500)+
+    geom_line(colour="black")+
     #geom_point(size= 0.3,alpha=0.3)+
     #geom_vline(xintercept=10)+
-    geom_vline(xintercept=50)+
-    geom_vline(xintercept=100)+
-    geom_vline(xintercept=200)+
+    geom_vline(data=limits,aes(xintercept=x,colour=colour),show.legend = FALSE, size = 0.75)+
+    geom_text(data=limits,aes(x=x,y=y,label=colour, colour=colour),show.legend = FALSE, size = 4)+
+    #geom_vline(xintercept=100)+
+    #geom_vline(xintercept=200)+
     xlab("Depth of Bases") + ylab("Ratio of total Bases") + # Set axis labels
     ggtitle("Cumulative frequency plot of sequencing depths") +
+    #scale_colour_hue("Depth",breaks=c("50X","100X","200X"))+
     theme_bw()
+    #theme(legend.key.size=unit(1,'cm'))
     #scale_x_log10(breaks=c(0.05, 10, 50, 100, 200, 300, 500, 1000, 2000)) 
     
 }

@@ -7,6 +7,8 @@ import re
 import sys
 import time
 import argparse
+import multiprocessing
+import psutil
 
 #sys.path.append(os.path.split(os.path.realpath(__file__))[0])
 #import the logging functions
@@ -32,22 +34,28 @@ from pipelines.statistics.prestatistics_module import qc_raw_reads, statistics_d
 from pipelines.benchmark.hap_benchmark import hap_py
 
 def script_information():
-    print ("\nApplication: pipelines of QIAseq Targeted DNA Panel\n")
+    print ("\nApplication: multiprocessing of pipelines of QIAseq Targeted DNA Panel\n")
     print ("=====================================================================")
     print ("Required environment: python \ JAVA\ R \ bwa \ samtools \ GATK \ UMI-tools \ hay.py ")
 
-parser = argparse.ArgumentParser(usage = "\n\npython3.6 %(prog)s --source --sample_name")
+parser = argparse.ArgumentParser(usage = "\n\npython3.6 %(prog)s --file_list --threads --output")
 
-parser.add_argument("--source", 
-                    help = "Path to input reads in FASTA format", 
+parser.add_argument("--file_list", 
+                    help = "Path to file contian tow colown: one is the path of raw reads, two is the sampleID of raw reads", 
                     type = str)
-parser.add_argument("--sample_name", 
-                    help = "the sample name of raw reads", 
-                    type = str)
-parser.add_argument("--tailname", 
-                    type =str,
-                    default = 'null',
-                    help = "the tailname of sample raw read")
+parser.add_argument("--threads", 
+                    help = "the threads of multiprocessing ", 
+                    type = int)
+#parser.add_argument("--source", 
+#                    help = "Path to input reads in FASTA format", 
+#                    type = str)
+#parser.add_argument("--sample_name", 
+#                    help = "the sample name of raw reads", 
+#                    type = str)
+#parser.add_argument("--tailname", 
+#                    type =str,
+#                    default = 'null',
+#                    help = "the tailname of sample raw read")
 parser.add_argument("--datasets_dir", 
                     type =str,
                     default = '/home/dell/Works/Projects/Datasets',
@@ -150,7 +158,7 @@ parser.add_argument("--max_dist",
                     )
 parser.add_argument("--primers_file",
                     type = str,
-                    default = 'DHS-001Z_primers_target.csv',
+                    default = 'DHS-001Z_primers_target_BRCA.csv',
                     help = "Load all primer sequences in the panel")
 parser.add_argument("--edit_dist",
                     type = int, 
@@ -234,73 +242,54 @@ if len(sys.argv) == 1:
     parser.print_help()
     exit()
 
-def main():
-    #time cost
-    time_start1 = time.time()
-    #---input
-    source = args.source
-    sample = args.sample_name
-    tailname = args.tailname
-    if tailname != 'null':
+def main_run_germline_variant_calling(path_sampleID_sub):
+    source = path_sampleID_sub[0].split('\t')[0]
+    sample = path_sampleID_sub[0].split('\t')[1]
+    if len(path_sampleID_sub[0].split('\t')) > 2:
+        tailname = path_sampleID_sub[0].split('\t')[2]
         sample = sample + '_' + tailname
-
-    #---check the outputdir
-    out_dir = args.output
-    if args.output is 'null':
-        out_dir = sample
+    #---
+    output = path_sampleID_sub[1]
+    fastqc_dir = path_sampleID_sub[2]
+    primers_file = source + '/' + path_sampleID_sub[3]
+    exome_target_bed = path_sampleID_sub[4]
+    min_read_len = path_sampleID_sub[5]
+    common_seq1 = path_sampleID_sub[6]
+    common_seq2 = path_sampleID_sub[7]
+    num_threads = path_sampleID_sub[8]
+    edit_dist = path_sampleID_sub[9]
+    min_mapq = path_sampleID_sub[10]
+    max_soft_clip = path_sampleID_sub[11]
+    max_dist = path_sampleID_sub[12]
+    memory_size = path_sampleID_sub[13]
+    snp_filter = path_sampleID_sub[14]
+    indel_filter = path_sampleID_sub[15]
+    ref_ens = path_sampleID_sub[16]
+    bwa_dir = path_sampleID_sub[17]
+    samtools_dir = path_sampleID_sub[18]
+    umitools_dir = path_sampleID_sub[19]
+    gatk_dir = path_sampleID_sub[20]
+    benchmark_dir = path_sampleID_sub[21]
+    ref_index_name = path_sampleID_sub[22]
+    ref_fa_file = path_sampleID_sub[23]
+    total_ref_fa_file = path_sampleID_sub[24]
+    total_ref_fa_dict = path_sampleID_sub[25]
+    known_sites = path_sampleID_sub[26]
+    erc = path_sampleID_sub[27]
+    db_cosmic = path_sampleID_sub[28]
+    db_clinvar = path_sampleID_sub[29]
+    db_g1000 = path_sampleID_sub[30]
+    truth_vcf = path_sampleID_sub[31]
+    confident_region_bed = path_sampleID_sub[32]
+    test_level = path_sampleID_sub[33]
+    #---check the output
+    out_dir = output  + '/' + sample
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
     #----pipeline log file
     log_dir = out_dir + '/' + 'log/'
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
-
-    logger_pipeline_process, logger_pipeline_errors = store_pipeline_logs(log_dir)
-    #QC
-    fastqc_dir = args.fastqc_dir
-    #trim
-    min_read_len = args.min_read_len
-    common_seq1 = args.common_seq1
-    common_seq2 = args.common_seq2
-    #bwa---align
-    num_threads = args.num_threads
-    bwa_dir = args.bwa_dir
-    ref_fa_file = args.datasets_dir + '/' + args.ref_fa_file
-    ref_index_name = args.datasets_dir + '/' +args.ref_index_name
-    #post-align
-    samtools_dir = args.samtools_dir
-    min_mapq = args.min_mapq
-    max_soft_clip = args.max_soft_clip
-    max_dist = args.max_dist
-    primers_file = source + '/' + args.primers_file
-    #--clustering
-    umitools_dir = args.umitools_dir
-    edit_dist = args.edit_dist
-    #--variant calling
-    memory_size = args.memory_size
-    memory_size = '-Xmx' + memory_size + ' ' + '-Djava.io.tmpdir=./'
-    gatk_dir = args.gatk_dir
-    samtools_dir = args.samtools_dir
-    total_ref_fa_dict = args.datasets_dir + '/' + args.total_ref_fa_dict
-    total_ref_fa_file = args.datasets_dir + '/' + args.total_ref_fa_file
-    known_sites = args.known_sites
-    #read_length = args.read_length
-    exome_target_bed = args.datasets_dir + '/' + args.exome_target_bed
-    erc = args.erc
-    read_filter = args.read_filter
-    snp_filter = args.snp_filter
-    indel_filter = args.indel_filter
-    #--annotation
-    ref_ens = args.datasets_dir + '/' + args.anno_geneID
-    db_cosmic = args.datasets_dir + '/' + args.db_cosmic
-    db_clinvar = args.datasets_dir + '/' + args.db_clinvar
-    db_g1000 =  args.datasets_dir + '/' + args.db_g1000
-    #--benchmark
-    benchmark_dir = args.benchmark_dir
-    confident_region_bed = args.datasets_dir + '/' + args.confident_region_bed
-    truth_vcf = args.datasets_dir + '/' + args.truth_vcf
-    #---
-    test_level = args.test
     ##########################################################################################
     #---QC
     ##########################################################################################
@@ -336,7 +325,7 @@ def main():
     logger_pipeline_process.info("QC of reads is completed after %.2f min.", (time.time()-time_start)/60)
     
     if test_level >= 0:
-        print("Test QC module!")
+        print("Test QC module!\n\n\n")
     else:
         exit()
     ##########################################################################################
@@ -362,7 +351,7 @@ def main():
     logger_pipeline_process.info("Trim of reads is completed after %.2f min.", (time.time()-time_start)/60)
     
     if test_level >= 1:
-        print("Test trim module!")
+        print("Test trim module!\n\n\n")
     else:
         exit()
     ##########################################################################################
@@ -388,7 +377,7 @@ def main():
     logger_pipeline_process.info("Align of reads is completed after %.2f min.", (time.time()-time_start)/60)
     
     if test_level >= 2:
-        print("Test align module!")
+        print("Test align module!\n\n\n")
     else:
         exit()
 
@@ -424,7 +413,7 @@ def main():
     logger_pipeline_process.info("Post_align of reads is completed after %.2f min.", (time.time()-time_start)/60)
     
     if test_level >= 3:
-        print("Test psot align module!")
+        print("Test psot align module!\n\n\n")
     else:
         exit()
     ##########################################################################################
@@ -450,7 +439,7 @@ def main():
     logger_pipeline_process.info("Cluster of reads is completed after %.2f min.", (time.time()-time_start)/60)
     
     if test_level >= 4:
-        print("Test barcode clustering module!")
+        print("Test barcode clustering module!\n\n\n")
     else:
         exit()
     ##########################################################################################
@@ -473,7 +462,7 @@ def main():
     logger_pipeline_process.info('Reformat alignment SAM file is completed after %.2f min.',(time.time() - time_start)/60)
     
     if test_level >= 5:
-        print("Test reformat sam module!")
+        print("Test reformat sam module!\n\n\n")
     else:
         exit()
     ##########################################################################################
@@ -513,7 +502,7 @@ def main():
     logger_pipeline_process.info('variant_calling is completed after %.2f min.',(time.time() - time_start)/60)
 
     if test_level >= 6:
-        print("Test variant calling module!")
+        print("Test variant calling module!\n\n\n")
     else:
         exit()
     
@@ -554,7 +543,7 @@ def main():
     logger_pipeline_process.info('Annotation variant is completed after %.2f min.',(time.time() - time_start)/60)
 
     if test_level >= 7:
-        print("Test annotation variant module!")
+        print("Test annotation variant module!\n\n\n")
     else:
         exit()
     ##########################################################################################
@@ -622,6 +611,101 @@ def main():
     statistics_time(statistics_dir, sample, process_log, logger_statistics_process, logger_statistics_errors)
     #---
     if test_level == 9:
-        print("Test statistics module!")
+        print("Test statistics module!\n\n\n")
+    return '{0} is complete'.format(sample)
+
+#--
+cores = multiprocessing.cpu_count()
+data = psutil.virtual_memory()
+total = data.total #总内存,单位为byte
+free = data.available #可以内存
+
 if __name__ == '__main__':
-    main()
+    #---check the cpus and memery
+    threads = args.threads
+    num_thread_of_process = int(cores/threads)
+    if num_thread_of_process*threads > 0.75*cores:
+        num_thread_of_process = num_thread_of_process -1
+    memory_size_of_process = int(free*0.75/(1024*1024*1024*num_thread_of_process))
+    #---check the outputdir
+    out_dir = args.output
+    if args.output is 'null':
+        out_dir = "output"
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+    #----pipeline log file
+    log_dir = out_dir + '/' + 'log/'
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+
+    logger_pipeline_process, logger_pipeline_errors = store_pipeline_logs(log_dir)
+    #QC
+    fastqc_dir = args.fastqc_dir
+    #trim
+    min_read_len = args.min_read_len
+    common_seq1 = args.common_seq1
+    common_seq2 = args.common_seq2
+    #bwa---align
+    num_threads = num_thread_of_process
+    bwa_dir = args.bwa_dir
+    ref_fa_file = args.datasets_dir + '/' + args.ref_fa_file
+    ref_index_name = args.datasets_dir + '/' +args.ref_index_name
+    #post-align
+    samtools_dir = args.samtools_dir
+    min_mapq = args.min_mapq
+    max_soft_clip = args.max_soft_clip
+    max_dist = args.max_dist
+    primers_file = args.primers_file
+    #--clustering
+    umitools_dir = args.umitools_dir
+    edit_dist = args.edit_dist
+    #--variant calling
+    memory_size = memory_size_of_process
+    if memory_size > 4:
+        memory_size = 4
+        memory_size = '-Xmx' + str(memory_size) + 'G ' + '-Djava.io.tmpdir=./'
+    print(memory_size)
+    gatk_dir = args.gatk_dir
+    samtools_dir = args.samtools_dir
+    total_ref_fa_dict = args.datasets_dir + '/' + args.total_ref_fa_dict
+    total_ref_fa_file = args.datasets_dir + '/' + args.total_ref_fa_file
+    known_sites = args.known_sites
+    #read_length = args.read_length
+    exome_target_bed = args.datasets_dir + '/' + args.exome_target_bed
+    erc = args.erc
+    read_filter = args.read_filter
+    snp_filter = args.snp_filter
+    indel_filter = args.indel_filter
+    #--annotation
+    ref_ens = args.datasets_dir + '/' + args.anno_geneID
+    db_cosmic = args.datasets_dir + '/' + args.db_cosmic
+    db_clinvar = args.datasets_dir + '/' + args.db_clinvar
+    db_g1000 =  args.datasets_dir + '/' + args.db_g1000
+    #--benchmark
+    benchmark_dir = args.benchmark_dir
+    confident_region_bed = args.datasets_dir + '/' + args.confident_region_bed
+    truth_vcf = args.datasets_dir + '/' + args.truth_vcf
+    #---
+    test_level = args.test
+    #-----
+    #--read the sample list 
+    file_list = open(args.file_list,'r')
+    path_sampleID = []
+    for line in file_list.readlines():
+        path_sampleID.append([line.strip(), out_dir, fastqc_dir, primers_file, exome_target_bed,
+                                      min_read_len, common_seq1, common_seq2, num_threads, edit_dist, min_mapq,
+                                      max_soft_clip, max_dist, memory_size, snp_filter, indel_filter, ref_ens,
+                                      bwa_dir, samtools_dir, umitools_dir, gatk_dir, benchmark_dir, ref_index_name,
+                                      ref_fa_file, total_ref_fa_file, total_ref_fa_dict, known_sites, erc,db_cosmic, 
+                                      db_clinvar, db_g1000, truth_vcf, confident_region_bed, test_level])
+    
+    pool = multiprocessing.Pool(processes=threads)
+    results = pool.map(main_run_germline_variant_calling, path_sampleID)
+    print("--" * 20)
+    pool.close()   # 关闭pool, 则不会有新的进程添加进去
+    pool.join()    # 必须在join之前close, 然后join等待pool中所有的线程执行完毕
+    print("All process done.")
+
+    print("Return results: ")
+    for i in results:
+        print(i)   # 获得进程的执行结果
