@@ -184,12 +184,12 @@ parser.add_argument("--read_filter",
                     )
 parser.add_argument("--snp_filter", 
                     type = str, 
-                    default = 'QD < 9.0 || FS > 60.0 || MQ < 40.0 || SOR > 3.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0',
+                    default = 'QD < 5.0 || FS > 60.0 || MQ < 50.0 || SOR > 3.0 || MQRankSum < -2.5 || ReadPosRankSum < -3.0',
                     help = "add parameters for filtering SNPs"
                     )
 parser.add_argument("--indel_filter",
                     type = str, 
-                    default = 'QD < 9.0 || FS > 200 || ReadPosRankSum < -20.0 || SOR > 10.0',
+                    default = 'QD < 5.0 || FS > 200 || ReadPosRankSum < -3.0 || SOR > 10.0',
                     help = "add parameters for filtering Indels"
                     )
 parser.add_argument("--db_cosmic", 
