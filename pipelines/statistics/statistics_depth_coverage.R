@@ -13,8 +13,8 @@ option_list <- list(
               help="Input table file to read"),
   make_option(c("-s", "--suffix_file"), type="character",
               help="Input table file to read"),
-  #make_option(c("-g", "--group_name"), type="character",
-  #            help="set the group of the two input files,such as :before, after"),
+  make_option(c("-r", "--region"), type="character",default="null",
+             help="the target region [default %default] "),
   make_option(c("-o", "--output"), type="character", default="output",
               help="output directory or prefix [default %default]")
 )
@@ -33,7 +33,12 @@ print(paste("The output file prefix is ", opts$output, sep = ""))
 if (TRUE){
   pre_dat = read.table(opts$prefix_file, sep="\t")
   suf_dat = read.table(opts$suffix_file, sep="\t")
-  #group_name= unlist(strsplit(opts$group_name,","))
+  #if(opts$region != 'null')
+  region = read.table(opts$region, sep="\t")
+  region = region[-1,]
+  region$region= apply(region,1,function(x){as.numeric(as.character(x[3]))-as.numeric(as.character(x[2]))})
+  #print(head(region))
+ 
 }
 #print(pre_dat)
 # 弹出窗口选择文件
@@ -55,11 +60,12 @@ if (TRUE){
       }
     }
   dat <-cbind(pre_dat,coverage_depth)
-  print(head(dat))
+  print(dat)
   colnames(dat)<-c("targe region","targe length","mapped reads","non-mapped reads","coverage position length","sum of depth")
   dat$coverage_ratio<- round(dat[,5]/dat[,2],4)
   dat$mean_depth<-round(dat[,6]/dat[,2],4)
-  #--merge the targe regions
+  #--
+  #--merge the targe regions for 
   if(nchar(as.character(pre_dat[1,1]))>3){
     print("Merge the targe regions!!!")
     chom<-apply(dat,1,function(x){unlist(strsplit(as.character(x[1]),"_"))[1]})
@@ -73,28 +79,53 @@ if (TRUE){
         row =grep(paste('\\',i,sep=""),chom,perl = TRUE)
       }
       merge_dat<-rbind(merge_dat,colSums(dat[row,c(2,3,4,5,6)]))
-      
     }
-    print(head(merge_dat))
-    print(class(merge_dat))
+    #print(merge_dat)
+    #print(class(merge_dat))
     merge_dat<-as.data.frame(merge_dat)
-    merge_dat$coverage_ratio<- round(merge_dat[,4]/merge_dat[,1],4)
-    merge_dat$mean_depth<-round(merge_dat[,5]/merge_dat[,1],4)
-    #--
     rownames(merge_dat)<-c(unique_chom[-length(unique_chom)],"other_regions")
     merge_dat<-merge_dat[-nrow(merge_dat),]
-    merge_dat_sub = data.frame(CHOM = c("chr1","chr2","chr3","chr4","chr5","chr6",
-                                        "chr7","chr8","chr9","chr10","chr11","chr12",
-                                        "chr13","chr14","chr15","chr16","chr17","chr18",
-                                        "chr19","chr20","chr22","chrX","chrY"),
-                              target=merge_dat[c("chr1","chr2","chr3","chr4","chr5","chr6",
-                                        "chr7","chr8","chr9","chr10","chr11","chr12",
-                                        "chr13","chr14","chr15","chr16","chr17","chr18",
-                                        "chr19","chr20","chr22","chrX","chrY"),6],
-                              mean_depth=merge_dat[c("chr1","chr2","chr3","chr4","chr5","chr6",
-                                        "chr7","chr8","chr9","chr10","chr11","chr12",
-                                        "chr13","chr14","chr15","chr16","chr17","chr18",
-                                        "chr19","chr20","chr22","chrX","chrY"),7])
+    }
+    if(nchar(as.character(pre_dat[1,1]))==4){
+    chom<-as.character(region[,1])
+    unique_chom<-unique(chom)
+    merge_region<-c()
+    for(i in unique_chom){
+       if(i != "*"){
+         row =grep(paste("^",i,"$",sep=""),chom,perl = TRUE)
+       }
+      else{
+        row =grep(paste('\\',i,sep=""),chom,perl = TRUE)
+      }
+      merge_region<-c(merge_region,sum(region[row,4]))
+    }
+    merge_region<-as.data.frame(merge_region)
+    rownames(merge_region)<- unique_chom
+    #print(merge_region)
+    merge_dat[,1]<- merge_region[rownames(merge_dat),1]
+    #print(merge_dat[,1])
+    }
+    #print(merge_dat)
+    merge_dat = na.omit(merge_dat)
+    #print(merge_dat)
+    merge_dat$coverage_ratio<- round(merge_dat[,4]/merge_dat[,1],4)
+    merge_dat$mean_depth<-round(merge_dat[,5]/merge_dat[,1],4)
+    #print(merge_dat)
+     
+    #--
+    merge_dat_sub = data.frame(CHOM = rownames(merge_dat),target=merge_dat[,6],mean_depth=merge_dat[,7])
+    #merge_dat_sub = data.frame(CHOM = c("chr1","chr2","chr3","chr4","chr5","chr6",
+    #                                    "chr7","chr8","chr9","chr10","chr11","chr12",
+    #                                    "chr13","chr14","chr15","chr16","chr17","chr18",
+    #                                    "chr19","chr20","chr22","chrX","chrY"),
+    #                          target=merge_dat[c("chr1","chr2","chr3","chr4","chr5","chr6",
+    #                                    "chr7","chr8","chr9","chr10","chr11","chr12",
+    #                                    "chr13","chr14","chr15","chr16","chr17","chr18",
+    #                                    "chr19","chr20","chr22","chrX","chrY"),6],
+    #                          mean_depth=merge_dat[c("chr1","chr2","chr3","chr4","chr5","chr6",
+    #                                    "chr7","chr8","chr9","chr10","chr11","chr12",
+    #                                    "chr13","chr14","chr15","chr16","chr17","chr18",
+    #                                    "chr19","chr20","chr22","chrX","chrY"),7])
     merge_dat_sub = na.omit(merge_dat_sub)
     print(head(merge_dat_sub))
     merge_dat_sub1 = merge_dat_sub[which(merge_dat_sub$mean_depth>40),]
@@ -109,11 +140,8 @@ if (TRUE){
     theme_bw()+
     theme(axis.text.x = element_text(angle=0, hjust=1, vjust=1))
     #---plot the target ratio
-    
-    
-  }
-  rownames(dat)<-dat[,1]
-  dat<-dat[,-1]
+    rownames(dat)<-dat[,1]
+    dat<-dat[,-1]
   #---plot the depth and the coverage
   #if (nrow(dat)>24){
   #dat<- dat[order(dat[,5],decreasing=T),]
