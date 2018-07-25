@@ -95,7 +95,7 @@ parser.add_argument("--benchmark_dir",
                     )
 parser.add_argument("--ref_index_name", 
                     type = str,
-                    default= 'genome/target_breast/target_breast',
+                    default= 'genome/target_breast/target_breast_BRCA',
                     help = "the path of ref index--if there isn't a ref index, it will make a index in the path of ref fasta by bwa"
                     )
 parser.add_argument("--ref_fa_file",
@@ -150,7 +150,7 @@ parser.add_argument("--max_dist",
                     )
 parser.add_argument("--primers_file",
                     type = str,
-                    default = 'DHS-001Z_primers_target.csv',
+                    default = 'DHS-001Z_primers_target_BRCA.csv',
                     help = "Load all primer sequences in the panel")
 parser.add_argument("--edit_dist",
                     type = int, 
@@ -159,7 +159,7 @@ parser.add_argument("--edit_dist",
                     )
 parser.add_argument("--memory_size", 
                     type = str, 
-                    default = '4G',
+                    default = '4',
                     help = "the cutoff of Java memory"
                     )
 parser.add_argument("--known_sites", 
@@ -278,7 +278,7 @@ def main():
     edit_dist = args.edit_dist
     #--variant calling
     memory_size = args.memory_size
-    memory_size = '-Xmx' + memory_size + ' ' + '-Djava.io.tmpdir=./'
+    memory_size = '-Xmx' + memory_size + 'G ' + '-Djava.io.tmpdir=./'
     gatk_dir = args.gatk_dir
     samtools_dir = args.samtools_dir
     total_ref_fa_dict = args.datasets_dir + '/' + args.total_ref_fa_dict
@@ -381,7 +381,7 @@ def main():
 
     logger_bwa_process, logger_bwa_errors = store_align_logs(log_dir)
     
-    returncode = align_reads_bwa(bwa_dir, ref_fa_file, ref_index_name, trim_read1, trim_read2, 
+    returncode = align_reads_bwa(bwa_dir, ref_fa_file, ref_index_name,exome_target_bed, trim_read1, trim_read2, 
                                                 out_file, num_threads, logger_bwa_process, logger_bwa_errors)
     
     logger_bwa_process.info("Alignment of reads is completed after %.2f min.", (time.time()-time_start)/60)
@@ -569,8 +569,8 @@ def main():
 
     logger_benchmark_process, logger_benchmark_errors = store_benchmark_logs(log_dir)
     
-    hap_py(benchmark_dir,truth_vcf, filter_snp, confident_region_bed, benchmarking_dir, total_ref_fa_file, exon_interval, logger_benchmark_process, logger_benchmark_errors)
-    hap_py(benchmark_dir,truth_vcf, filter_indel, confident_region_bed, benchmarking_dir, total_ref_fa_file, exon_interval, logger_benchmark_process, logger_benchmark_errors)
+    hap_py(benchmark_dir,truth_vcf, filter_snp, confident_region_bed, benchmarking_dir, total_ref_fa_file, exon_interval, num_threads, logger_benchmark_process, logger_benchmark_errors)
+    hap_py(benchmark_dir,truth_vcf, filter_indel, confident_region_bed, benchmarking_dir, total_ref_fa_file, exon_interval, num_threads, logger_benchmark_process, logger_benchmark_errors)
     
     logger_benchmark_process.info('benchmarking is completed after %.2f min.',(time.time() - time_start)/60)
     logger_pipeline_process.info('Benchmark is completed after %.2f min.',(time.time() - time_start)/60)
