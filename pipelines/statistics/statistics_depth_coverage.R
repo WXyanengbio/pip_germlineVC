@@ -34,7 +34,7 @@ if (TRUE){
   pre_dat = read.table(opts$prefix_file, sep="\t")
   suf_dat = read.table(opts$suffix_file, sep="\t")
   #if(opts$region != 'null')
-  region = read.table(opts$region, sep="\t")
+  region = read.table(opts$region)
   region = region[-1,]
   region$region= apply(region,1,function(x){as.numeric(as.character(x[3]))-as.numeric(as.character(x[2]))})
   #print(head(region))

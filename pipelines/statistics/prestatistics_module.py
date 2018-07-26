@@ -133,7 +133,7 @@ def qc_raw_reads(fastQC_dir, out_dir, sample, module, read1, read2,logger_statis
     return qc_result1, qc_result2
 
 #-get the depth and coverage of the mapping result
-def statistics_depth_coverage(samtools_dir, sam_bam, out_dir,sample, module, logger_statistics_process, logger_statistics_errors):
+def statistics_depth_coverage(samtools_dir, sam_bam, out_dir,sample, module,exome_target_bed, logger_statistics_process, logger_statistics_errors):
     if not os.path.isfile(sam_bam):
         logger_statistics_errors.error("%s does not exist!\n", sam_bam)
         print(sam_bam + ' does not exist!')
@@ -167,7 +167,7 @@ def statistics_depth_coverage(samtools_dir, sam_bam, out_dir,sample, module, log
     #-statistics and plot of  the depth and coverage in target region
     statistics_plot = out_dir + '/' + sample +'_'+ module + '_depth_coverageInTargetRegion'
     scriptdir = os.path.dirname(os.path.abspath(__file__))
-    commond6 = 'Rscript ' + scriptdir + '/statistics_depth_coverage.R' + ' -p ' + num_reads_in_target_region + ' -s ' + coverage_in_target_region + ' -o ' + statistics_plot
+    commond6 = 'Rscript ' + scriptdir + '/statistics_depth_coverage.R' + ' -p ' + num_reads_in_target_region + ' -s ' + coverage_in_target_region + ' -r '+ exome_target_bed + ' -o ' + statistics_plot
     os.system(commond6)
     #depth of the bases in target region
     bases_depth_in_target_region = out_dir + '/' + sample +'_'+ module + '_basesDepthInTargetRegion.txt'

@@ -600,16 +600,16 @@ def main():
                  logger_statistics_process, logger_statistics_errors)
     #--statistics the align
     module1 = "Align"
-    align_sorted_bam = statistics_depth_coverage(samtools_dir, out_file, statistics_dir, sample, module1, logger_statistics_process, logger_statistics_errors)
+    align_sorted_bam = statistics_depth_coverage(samtools_dir, out_file, statistics_dir, sample, module1, exome_target_bed,logger_statistics_process, logger_statistics_errors)
     align_statistics = statistics_sam_bam(samtools_dir, sorted_bam, statistics_dir,sample, module1, logger_statistics_process, logger_statistics_errors)
     #--statistics the filter
     #----cluster module would build the filter sorted bam, but it has been changed UMIs-tools
     module2 = "Fliter"
-    filtered_sorted_bam = statistics_depth_coverage(samtools_dir, filtered_sam, statistics_dir, sample, module2, logger_statistics_process, logger_statistics_errors)
+    filtered_sorted_bam = statistics_depth_coverage(samtools_dir, filtered_sam, statistics_dir, sample, module2,exome_target_bed, logger_statistics_process, logger_statistics_errors)
     fliter_statistics = statistics_sam_bam(samtools_dir, filtered_sorted_bam, statistics_dir, sample, module2, logger_statistics_process, logger_statistics_errors)
     # statistics the umi-tools
     module3 = "Cluster_reformat"
-    cr_sorted_bam = statistics_depth_coverage(samtools_dir, vready_sam, statistics_dir, sample, module3, logger_statistics_process, logger_statistics_errors)
+    cr_sorted_bam = statistics_depth_coverage(samtools_dir, vready_sam, statistics_dir, sample, module3,exome_target_bed, logger_statistics_process, logger_statistics_errors)
     cr_statistics = statistics_sam_bam(samtools_dir, cr_sorted_bam, statistics_dir, sample, module3, logger_statistics_process, logger_statistics_errors)
     #-merge the sorted bam
     merge_statistics_sam_bam(logger_statistics_process, logger_statistics_errors, statistics_dir, sample, ','.join([module1,module2,module3]),align_statistics,fliter_statistics,cr_statistics)
