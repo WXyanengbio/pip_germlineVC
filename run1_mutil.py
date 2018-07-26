@@ -103,12 +103,12 @@ parser.add_argument("--benchmark_dir",
                     )
 parser.add_argument("--ref_index_name", 
                     type = str,
-                    default= 'genome/target_breast/target_breast',
+                    default= 'genome/target_breast/target_breast_BRCA',
                     help = "the path of ref index--if there isn't a ref index, it will make a index in the path of ref fasta by bwa"
                     )
 parser.add_argument("--ref_fa_file",
                     type = str,
-                    default= 'genome/target_breast/target_breast.refSeq.fa',
+                    default= 'genome/target_breast/target_breast_BRCA.refSeq.fa',
                     help = "the path of ref fasta"
                     )
 parser.add_argument("--total_ref_fa_file", 
@@ -158,7 +158,7 @@ parser.add_argument("--max_dist",
                     )
 parser.add_argument("--primers_file",
                     type = str,
-                    default = 'DHS-001Z_primers_target_BRCA.csv',
+                    default = 'DHS-001Z_primers_target.csv',
                     help = "Load all primer sequences in the panel")
 parser.add_argument("--edit_dist",
                     type = int, 
@@ -167,7 +167,7 @@ parser.add_argument("--edit_dist",
                     )
 parser.add_argument("--memory_size", 
                     type = str, 
-                    default = '4G',
+                    default = '4',
                     help = "the cutoff of Java memory"
                     )
 parser.add_argument("--known_sites", 
@@ -192,12 +192,12 @@ parser.add_argument("--read_filter",
                     )
 parser.add_argument("--snp_filter", 
                     type = str, 
-                    default = 'QD < 9.0 || FS > 60.0 || MQ < 40.0 || SOR > 3.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0',
+                    default = 'QD < 5.0 || FS > 60.0 || MQ < 50.0 || SOR > 3.0 || MQRankSum < -2.5 || ReadPosRankSum < -3.0',
                     help = "add parameters for filtering SNPs"
                     )
 parser.add_argument("--indel_filter",
                     type = str, 
-                    default = 'QD < 9.0 || FS > 200 || ReadPosRankSum < -20.0 || SOR > 10.0',
+                    default = 'QD < 5.0 || FS > 200 || ReadPosRankSum < -3.0 || SOR > 10.0',
                     help = "add parameters for filtering Indels"
                     )
 parser.add_argument("--db_cosmic", 
@@ -243,6 +243,7 @@ if len(sys.argv) == 1:
     exit()
 
 def main_run_germline_variant_calling(path_sampleID_sub):
+    time_start1 = time.time()
     source = path_sampleID_sub[0].split('\t')[0]
     sample = path_sampleID_sub[0].split('\t')[1]
     if len(path_sampleID_sub[0].split('\t')) > 2:
@@ -283,13 +284,14 @@ def main_run_germline_variant_calling(path_sampleID_sub):
     confident_region_bed = path_sampleID_sub[32]
     test_level = path_sampleID_sub[33]
     #---check the output
-    out_dir = output  + '/' + sample
-    if not os.path.exists(out_dir):
-        os.makedirs(out_dir)
+    out_dir1 = output  + '/' + sample
+    if not os.path.exists(out_dir1):
+        os.makedirs(out_dir1)
     #----pipeline log file
-    log_dir = out_dir + '/' + 'log/'
+    log_dir = out_dir1 + '/' + 'log/'
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
+    logger_pipeline_process, logger_pipeline_errors = store_pipeline_logs(log_dir)
     ##########################################################################################
     #---QC
     ##########################################################################################
@@ -297,7 +299,7 @@ def main_run_germline_variant_calling(path_sampleID_sub):
     time_start = time.time()
     #qc_dir
     module = "QC"
-    qc_dir = out_dir + '/'+ 'QC'
+    qc_dir = out_dir1 + '/'+ 'QC'
     if not os.path.exists(qc_dir):
         os.makedirs(qc_dir)
 
@@ -334,7 +336,7 @@ def main_run_germline_variant_calling(path_sampleID_sub):
     #time cost
     time_start = time.time()
     #undetermined_dir
-    undetermined_dir = out_dir + '/'+ 'undetermined'
+    undetermined_dir = out_dir1 + '/'+ 'undetermined'
     if not os.path.exists(undetermined_dir):
         os.makedirs(undetermined_dir)
 
@@ -360,7 +362,7 @@ def main_run_germline_variant_calling(path_sampleID_sub):
     #time cost
     time_start = time.time()
     #aligned_dir
-    aligned_dir = out_dir + '/'+ 'aligned'
+    aligned_dir = out_dir1 + '/'+ 'aligned'
     if not os.path.exists(aligned_dir):
         os.makedirs(aligned_dir)
 
@@ -370,7 +372,7 @@ def main_run_germline_variant_calling(path_sampleID_sub):
 
     logger_bwa_process, logger_bwa_errors = store_align_logs(log_dir)
     
-    returncode = align_reads_bwa(bwa_dir, ref_fa_file, ref_index_name, trim_read1, trim_read2, 
+    returncode = align_reads_bwa(bwa_dir, ref_fa_file, ref_index_name, exome_target_bed, trim_read1, trim_read2, 
                                                 out_file, num_threads, logger_bwa_process, logger_bwa_errors)
     
     logger_bwa_process.info("Alignment of reads is completed after %.2f min.", (time.time()-time_start)/60)
@@ -387,7 +389,7 @@ def main_run_germline_variant_calling(path_sampleID_sub):
     #time cost
     time_start = time.time()
     #post_aligned_dir
-    filtered_dir = out_dir + '/'+ 'filtered'
+    filtered_dir = out_dir1 + '/'+ 'filtered'
     if not os.path.exists(filtered_dir):
         os.makedirs(filtered_dir)
     
@@ -422,7 +424,7 @@ def main_run_germline_variant_calling(path_sampleID_sub):
     #time cost
     time_start = time.time()
     #clustering_dir
-    clustered_dir = out_dir + '/'+ 'clustered'
+    clustered_dir = out_dir1 + '/'+ 'clustered'
     if not os.path.exists(clustered_dir):
         os.makedirs(clustered_dir)
 
@@ -448,7 +450,7 @@ def main_run_germline_variant_calling(path_sampleID_sub):
     #time cost
     time_start = time.time()
     #reformated_dir
-    reformated_dir = out_dir + '/'+ 'reformated'
+    reformated_dir = out_dir1 + '/'+ 'reformated'
     if not os.path.exists(reformated_dir):
         os.makedirs(reformated_dir)
 
@@ -471,7 +473,7 @@ def main_run_germline_variant_calling(path_sampleID_sub):
     #time cost
     time_start = time.time()
     #germline_vc_dir
-    germline_vc_dir = out_dir + '/'+ 'germline_vc'
+    germline_vc_dir = out_dir1 + '/'+ 'germline_vc'
     if not os.path.exists(germline_vc_dir):
         os.makedirs(germline_vc_dir)
     
@@ -512,7 +514,7 @@ def main_run_germline_variant_calling(path_sampleID_sub):
     #time cost
     time_start = time.time()
     #Annotation dir
-    annotation_dir = out_dir + '/'+ 'annotation'
+    annotation_dir = out_dir1 + '/'+ 'annotation'
     if not os.path.exists(annotation_dir):
         os.makedirs(annotation_dir)
     
@@ -541,7 +543,6 @@ def main_run_germline_variant_calling(path_sampleID_sub):
                    annotation_dir, logger_annotation_process, logger_annotation_errors)
     logger_annotation_process.info('Finish annotation variant  is completed after %.2f min.',(time.time() - time_start)/60)
     logger_pipeline_process.info('Annotation variant is completed after %.2f min.',(time.time() - time_start)/60)
-
     if test_level >= 7:
         print("Test annotation variant module!\n\n\n")
     else:
@@ -552,14 +553,14 @@ def main_run_germline_variant_calling(path_sampleID_sub):
     #time cost
     time_start = time.time()
     #benchmarking_dir
-    benchmarking_dir = out_dir + '/'+ 'benchmarking'
+    benchmarking_dir = out_dir1 + '/'+ 'benchmarking'
     if not os.path.exists(benchmarking_dir):
         os.makedirs(benchmarking_dir)
 
     logger_benchmark_process, logger_benchmark_errors = store_benchmark_logs(log_dir)
     
-    hap_py(benchmark_dir,truth_vcf, filter_snp, confident_region_bed, benchmarking_dir, total_ref_fa_file, exon_interval, logger_benchmark_process, logger_benchmark_errors)
-    hap_py(benchmark_dir,truth_vcf, filter_indel, confident_region_bed, benchmarking_dir, total_ref_fa_file, exon_interval, logger_benchmark_process, logger_benchmark_errors)
+    hap_py(benchmark_dir,truth_vcf, filter_snp, confident_region_bed, benchmarking_dir, total_ref_fa_file, exon_interval, num_threads, logger_benchmark_process, logger_benchmark_errors)
+    hap_py(benchmark_dir,truth_vcf, filter_indel, confident_region_bed, benchmarking_dir, total_ref_fa_file, exon_interval,num_threads, logger_benchmark_process, logger_benchmark_errors)
     
     logger_benchmark_process.info('benchmarking is completed after %.2f min.',(time.time() - time_start)/60)
     logger_pipeline_process.info('Benchmark is completed after %.2f min.',(time.time() - time_start)/60)
@@ -574,7 +575,7 @@ def main_run_germline_variant_calling(path_sampleID_sub):
     #time cost
     time_start = time.time()
     #statistics dir
-    statistics_dir = out_dir + '/'+ 'statistics'
+    statistics_dir = out_dir1 + '/'+ 'statistics'
     if not os.path.exists(statistics_dir):
         os.makedirs(statistics_dir)
     #-statistics the clean reads
@@ -589,16 +590,16 @@ def main_run_germline_variant_calling(path_sampleID_sub):
                  logger_statistics_process, logger_statistics_errors)
     #--statistics the align
     module1 = "Align"
-    align_sorted_bam = statistics_depth_coverage(samtools_dir, out_file, statistics_dir, sample, module1, logger_statistics_process, logger_statistics_errors)
+    align_sorted_bam = statistics_depth_coverage(samtools_dir, out_file, statistics_dir, sample, module1,exome_target_bed, logger_statistics_process, logger_statistics_errors)
     align_statistics = statistics_sam_bam(samtools_dir, sorted_bam, statistics_dir,sample, module1, logger_statistics_process, logger_statistics_errors)
     #--statistics the filter
     #----cluster module would build the filter sorted bam, but it has been changed UMIs-tools
     module2 = "Fliter"
-    filtered_sorted_bam = statistics_depth_coverage(samtools_dir, filtered_sam, statistics_dir, sample, module2, logger_statistics_process, logger_statistics_errors)
+    filtered_sorted_bam = statistics_depth_coverage(samtools_dir, filtered_sam, statistics_dir, sample, module2,exome_target_bed, logger_statistics_process, logger_statistics_errors)
     fliter_statistics = statistics_sam_bam(samtools_dir, filtered_sorted_bam, statistics_dir, sample, module2, logger_statistics_process, logger_statistics_errors)
     # statistics the umi-tools
     module3 = "Cluster_reformat"
-    cr_sorted_bam = statistics_depth_coverage(samtools_dir, vready_sam, statistics_dir, sample, module3, logger_statistics_process, logger_statistics_errors)
+    cr_sorted_bam = statistics_depth_coverage(samtools_dir, vready_sam, statistics_dir, sample, module3, exome_target_bed,logger_statistics_process, logger_statistics_errors)
     cr_statistics = statistics_sam_bam(samtools_dir, cr_sorted_bam, statistics_dir, sample, module3, logger_statistics_process, logger_statistics_errors)
     #-merge the sorted bam
     merge_statistics_sam_bam(logger_statistics_process, logger_statistics_errors, statistics_dir, sample, ','.join([module1,module2,module3]),align_statistics,fliter_statistics,cr_statistics)
@@ -634,11 +635,11 @@ if __name__ == '__main__':
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
     #----pipeline log file
-    log_dir = out_dir + '/' + 'log/'
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
+    #log_dir = out_dir + '/' + 'log/'
+    #if not os.path.exists(log_dir):
+    #    os.makedirs(log_dir)
 
-    logger_pipeline_process, logger_pipeline_errors = store_pipeline_logs(log_dir)
+    #logger_pipeline_process, logger_pipeline_errors = store_pipeline_logs(log_dir)
     #QC
     fastqc_dir = args.fastqc_dir
     #trim
@@ -663,7 +664,7 @@ if __name__ == '__main__':
     memory_size = memory_size_of_process
     if memory_size > 4:
         memory_size = 4
-        memory_size = '-Xmx' + str(memory_size) + 'G ' + '-Djava.io.tmpdir=./'
+        memory_size = '-Xmx' + str(memory_size) + 'G '
     print(memory_size)
     gatk_dir = args.gatk_dir
     samtools_dir = args.samtools_dir
