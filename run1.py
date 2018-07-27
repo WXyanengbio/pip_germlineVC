@@ -529,11 +529,16 @@ def main():
     
     logger_annotation_process, logger_annotation_errors = store_annotation_logs(log_dir)
     
+    raw_vcf = germline_vc_dir + '/'  + sample + '.raw_variants.vcf'
     snp_vcf = germline_vc_dir + '/'  + sample + '.raw_variants_SNP.vcf'
     filter_snp = germline_vc_dir + '/'  + sample + '.filter_SNP.vcf'
     indel_vcf = germline_vc_dir + '/'  + sample + '.raw_variants_indel.vcf'
     filter_indel = germline_vc_dir + '/'  + sample + '.filter_indel.vcf'
     #annotation
+    annotationmain(db_cosmic, db_clinvar, db_g1000, 
+                   ref_ens,
+                   raw_vcf, sample,
+                   annotation_dir, logger_annotation_process, logger_annotation_errors)
     annotationmain(db_cosmic, db_clinvar, db_g1000, 
                    ref_ens,
                    snp_vcf, sample,
