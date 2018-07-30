@@ -45,7 +45,7 @@ def split_n_bases(nbases):
             result_last = result[len(result)-1]
         else:
             result_last = result[len(result)-1].split('-')[1]
-        return ["[" + result[0] + "]" , result_last]
+        return ["[" + str(result[0]) + "]" , str(result_last)]
 
 # get informations from the qc result of the reads
 def getinfo(fastqc):
@@ -73,8 +73,15 @@ def getinfo(fastqc):
         if 'Total Sequences' in line:
             raw_reads = re.findall('\d+',line)
         if 'Sequence length' in line:
-            mode = re.compile(r'\d+-\d+')
-            seq_length = mode.findall(line)
+            #mode = re.compile(r'\d+-\d+')
+            #seq_length = mode.findall(line)
+            seq_length = line.split('\t')[1]
+            if '-' in seq_length:
+                seq_length_min,seq_length_max = seq_length.split('-')
+            else:
+                seq_length_min = str(seq_length)
+                seq_length_max = str(seq_length)
+            print(seq_length)
         if '%GC' in line:
             gc = re.findall('\d+',line)
         if modules == 1 and value.match(line[0]):
@@ -113,8 +120,11 @@ def getinfo(fastqc):
     if len(nbases) == 0:
         nbases.append('NULL')
     #---
+    #print(raw_reads)
+    #print(seq_length)
+    #print(perbasesequencequalit_mean)
     #print([raw_reads[0], seq_length[0], GC[0], str(round(Perbasesequencequalit_mean,3)), ','.join(lowqualitBases), str('%.3f%%' % (Q20 * 100)), str('%.3f%%' % (Q30 * 100)), ','.join(nbases)]
-    return [raw_reads[0], "[" + seq_length[0] + "]", gc[0], str(round(perbasesequencequalit_mean,3)), 
+    return [raw_reads[0], seq_length_min, seq_length_max, gc[0], str(round(perbasesequencequalit_mean,3)), 
             split_n_bases(','.join(lowqualit_bases))[0], str('%.3f%%' % (q20 * 100)), str('%.3f%%' % (q30 * 100)), split_n_bases(','.join(nbases))[0], split_n_bases(','.join(nbases))[1]] 
 
 #--QC reads by fastQC
@@ -126,9 +136,9 @@ def qc_raw_reads(fastQC_dir, out_dir, sample, module, read1, read2,logger_statis
     qc_result1 =getinfo(out_dir + '/' + os.path.basename(read1))
     qc_result2 =getinfo(out_dir + '/' + os.path.basename(read2))
     fout = open(qc_statistics, 'w')
-    fout.write('\t'.join(['SampleID','Sequence direction','raw reads', 'seq length', 'GC content', 'mean of Per base qualit', 'lowqualitBases', 'Q20', 'Q30', 'N_bases']) + '\n')
-    fout.write('\t'.join([sample, read1.lstrip(sample + '_').rstrip(".fastq.gz"), '\t'.join(qc_result1[0:8])]) + '\n')
-    fout.write('\t'.join([sample, read2.lstrip(sample + '_').rstrip(".fastq.gz"), '\t'.join(qc_result2[0:8])]) + '\n')
+    fout.write('\t'.join(['SampleID','Sequence direction','raw reads', 'min length','max length', 'GC content', 'mean of Per base qualit', 'low qualit Bases position', 'Q20', 'Q30', 'N_bases position']) + '\n')
+    fout.write('\t'.join([sample, read1.lstrip(sample + '_').rstrip(".fastq.gz"), '\t'.join(qc_result1[0:9])]) + '\n')
+    fout.write('\t'.join([sample, read2.lstrip(sample + '_').rstrip(".fastq.gz"), '\t'.join(qc_result2[0:9])]) + '\n')
     fout.close()
     return qc_result1, qc_result2
 
