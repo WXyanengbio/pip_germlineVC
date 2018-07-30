@@ -15,17 +15,17 @@ import time
 def setup_logger(name, log_file, formatter, level=logging.DEBUG):
     handler = logging.FileHandler(log_file)
     handler.setFormatter(formatter)
-
+    
     logger = logging.getLogger(name)
     logger.setLevel(level)
     logger.addHandler(handler)
-
+    
     return logger
+
 
 def store_pipeline_logs(log_dir):
     formatter_pipeline_process = logging.Formatter("%(asctime)s;%(message)s")
-    formatter_pipeline_errors = logging.Formatter(
-        "%(asctime)s;%(levelname)s;                                             %(message)s")
+    formatter_pipeline_errors = logging.Formatter("%(asctime)s;%(levelname)s; %(message)s")
     logger_pipeline_process = setup_logger('Running Messages of pipeline',
                                        log_dir + '/process.log',
                                        formatter_pipeline_process)
@@ -60,7 +60,7 @@ def store_filter_logs(log_dir):
 
 def store_align_logs(log_dir):
     formatter_bwa_process = logging.Formatter("%(asctime)s;%(message)s")
-    formatter_bwa_errors = logging.Formatter("%(asctime)s;%(levelname)s;                                             %(message)s")
+    formatter_bwa_errors = logging.Formatter("%(asctime)s;%(levelname)s; %(message)s")
     logger_bwa_process = setup_logger('BWA Running Messages', 
                                       log_dir + '/bwa_process.log', 
                                       formatter_bwa_process)
@@ -72,7 +72,7 @@ def store_align_logs(log_dir):
 
 def store_cluster_logs(log_dir):
     formatter_process = logging.Formatter("%(asctime)s;%(message)s")
-    formatter_errors = logging.Formatter("%(asctime)s;%(levelname)s;                                         %(message)s")
+    formatter_errors = logging.Formatter("%(asctime)s;%(levelname)s; %(message)s")
     logger_umi_process = setup_logger('Running Barcode Clustering Messages', 
                                   log_dir + '/umi_tagging_process.log',
                                   formatter_process)
@@ -83,8 +83,7 @@ def store_cluster_logs(log_dir):
 
 def store_reformat_logs(log_dir):
     formatter_reformat_process = logging.Formatter("%(asctime)s;%(message)s")
-    formatter_reformat_errors = logging.Formatter(
-        "%(asctime)s;%(levelname)s;                                             %(message)s")
+    formatter_reformat_errors = logging.Formatter("%(asctime)s;%(levelname)s; %(message)s")
     logger_reformat_process = setup_logger('Running Messages of reformating sam file',
                                            log_dir + '/reformat_process.log',
                                            formatter_reformat_process)
@@ -119,8 +118,7 @@ def store_annotation_logs(log_dir):
 
 def store_statistics_logs(log_dir):
     formatter_pipeline_process = logging.Formatter("%(asctime)s;%(message)s")
-    formatter_pipeline_errors = logging.Formatter(
-        "%(asctime)s;%(levelname)s;                                             %(message)s")
+    formatter_pipeline_errors = logging.Formatter("%(asctime)s;%(levelname)s; %(message)s")
     logger_statistics_process = setup_logger('Running Messages of statistics',
                                        log_dir + '/statistics_process.log',
                                        formatter_pipeline_process)
@@ -133,7 +131,7 @@ def store_statistics_logs(log_dir):
 def store_benchmark_logs(log_dir):
     formatter_pipeline_process = logging.Formatter("%(asctime)s;%(message)s")
     formatter_pipeline_errors = logging.Formatter(
-        "%(asctime)s;%(levelname)s;                                             %(message)s")
+        "%(asctime)s;%(levelname)s; %(message)s")
     logger_benchmark_process = setup_logger('Running Messages of Benchmarking',
                                        log_dir + '/benchmark_process.log',
                                        formatter_pipeline_process)
