@@ -12,6 +12,7 @@
 #INFO=<ID=AC,Number=A,Type=Integer,Description="Allele count in genotypes, for each ALT allele, in the same order as listed">
 #INFO=<ID=AF,Number=A,Type=Float,Description="Allele Frequency, for each ALT allele, in the same order as listed">
 #INFO=<ID=AN,Number=1,Type=Integer,Description="Total number of alleles in called genotypes">
+#INFO= VF ,Description="Variant Frequency Allele bases/ (Allele bases + Ref Bases)">
 #INFO=<ID=BaseQRankSum,Number=1,Type=Float,Description="Z-score from Wilcoxon rank sum test of Alt Vs. Ref base qualities">
 #INFO=<ID=ClippingRankSum,Number=1,Type=Float,Description="Z-score From Wilcoxon rank sum test of Alt vs. Ref number of hard clipped bases">
 #INFO=<ID=DP,Number=1,Type=Integer,Description="Approximate read depth; some reads may have been filtered">
@@ -154,8 +155,13 @@ def annotation(dict_cos,dict_clin,dict_g1000,variant_vcf,annotated_csv,stats_fil
     num_unmatch = 0
     var = open(variant_vcf, 'r')
     output = open(annotated_csv, 'w')
+    #output.write(
+    #    'CHR,POS,REF,ALT,FILTER,AC,AF,AN,VF,BaseQRankSum,ClippingRankSum,DP,DS,END,ExcessHet,FS,InbreedingCoeff,MLEAC,MLEAF,MQ,MQRankSum,QD,RAW_MQ,ReadPosRankSum,SOR,Gene_ID,RS_ID,CLNDN,HGVS,CLNSIG,'
+    #    'COSMIC_ID,Mutation_Description,Feature_ID,Gene_Name,Gene_CDS_Length,Mutation_Zygosity,LOH,Mutation_Strand,'
+    #    'HGVS.c,HGVS.p,FATHMM_Prediction,FATHMM_Score,Mutation_Somatic_Status,Gene_Name1,RS_ID1,EAS_AF,EUR_AF,AMR_AF,'
+    #    'SAS_AF,AFR_AF\n')
     output.write(
-        'CHR,POS,REF,ALT,FILTER,AC,AF,AN,BaseQRankSum,ClippingRankSum,DP,DS,END,ExcessHet,FS,InbreedingCoeff,MLEAC,MLEAF,MQ,MQRankSum,QD,RAW_MQ,ReadPosRankSum,SOR,Gene_ID,RS_ID,CLNDN,HGVS,CLNSIG,'
+        'CHR,POS,REF,ALT,QUAL,FILTER,VF,GT,AD,DP,FS,MQ,MQRankSum,QD,ReadPosRankSum,SOR,Gene_ID,RS_ID,CLNDN,HGVS,CLNSIG,'
         'COSMIC_ID,Mutation_Description,Feature_ID,Gene_Name,Gene_CDS_Length,Mutation_Zygosity,LOH,Mutation_Strand,'
         'HGVS.c,HGVS.p,FATHMM_Prediction,FATHMM_Score,Mutation_Somatic_Status,Gene_Name1,RS_ID1,EAS_AF,EUR_AF,AMR_AF,'
         'SAS_AF,AFR_AF\n')
@@ -163,7 +169,18 @@ def annotation(dict_cos,dict_clin,dict_g1000,variant_vcf,annotated_csv,stats_fil
         if not line.startswith('#'):
             chrom, pos, id, ref, alt, qual, filter, info, format, detail = line.strip().split('\t')
             if filter != 'my_snp_filter' and filter != 'my_indel_filter':
-                ac, af, an, baseqranksum, clippingranksum, dp, ds, end, excesshet, fs, inbreedingcoeff, mleac, mleaf, mq, mqranksum, qd, rae_mq, readposranksum, sor = get_info(format)
+            # if filter != "":
+                ac, af, an, baseqranksum, clippingranksum, dp, ds, end, excesshet, fs, inbreedingcoeff, mleac, mleaf, mq, mqranksum, qd, rae_mq, readposranksum, sor = get_info(info)
+                print(detail.split(':'))
+                #gt, ad, dp, gq, pl = detail.split(':')
+                if len(detail.split(':'))>5:
+                    gt, ad, dp= detail.split(':')[0:3]
+                    pl = detail.split(':')[len(detail.split(':'))-1]
+                    gq = ':'.join(detail.split(':')[3:len(detail.split(':'))])
+                else:
+                    gt, ad, dp, gq, pl = detail.split(':')
+                vf = str(round(int(ad.split(',')[1])/int(dp),4))
+                ad = ad.replace(',' , '/')
                 chrom = chrom[3:]
                 if len(ref) == len(alt):
                     change = ref + '>' + alt
@@ -176,7 +193,7 @@ def annotation(dict_cos,dict_clin,dict_g1000,variant_vcf,annotated_csv,stats_fil
                     change = 'del' + ref + 'ins' + alt
                 key = chrom + ',' + pos + ',' + change
                 key1 = chrom + ',' + pos + ',' + change1
-                value = [chrom, pos, ref, alt, filter, ac, af, an, baseqranksum, clippingranksum, dp, ds, end, excesshet, fs, inbreedingcoeff, mleac, mleaf, mq, mqranksum, qd, rae_mq, readposranksum, sor]
+                value = [chrom,pos,ref,alt,qual,filter,vf,gt,ad,dp,fs,mq,mqranksum,qd,readposranksum,sor]
                 unmatch = 0
                 # drop duplicate variant
                 if key in key_list:
@@ -307,9 +324,15 @@ def annotationmain(cosmic, clinvar, g1000,
         non_rs = output + '/' + sample + '.filter_indel_non_rs.csv'
         non_cos = output + '/' + sample + '.filter_indel_non_cos.csv'
         stats_file = output + '/' + sample + '.filter_indel_annotate_stats.txt'
+    elif 'raw_variants.vcf' in vcf:
+        annotated_csv = output + '/' + sample + '.raw_variants.annotated.csv'
+        annotated_csv_add = output + '/' + sample + '.raw_variants.annotated_ensembl.csv'
+        non_rs = output + '/' + sample + '.raw_variants_non_rs.csv'
+        non_cos = output + '/' + sample + '.raw_variants_non_cos.csv'
+        stats_file = output + '/' + sample + '.raw_variants_annotate_stats.txt'
     #-read the annotation database
     if not os.path.isfile(vcf):
-        logger_static_errors.error("%s does not exist!\n", vcf)
+        logger_annotation_errors.error("%s does not exist!\n", vcf)
         print(vcf + ' does not exist!')
     else:
         dict_cos, dict_clin, dict_g1000 = read_database(cosmic,clinvar,g1000)
