@@ -8,11 +8,8 @@ __version__  =  '1.0'
 __author__  =  'Wang Xian'
 
 import os
-import re
 import sys
 import time
-import gzip
-import itertools
 
 time_start = time.time()
 
