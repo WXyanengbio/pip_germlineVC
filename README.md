@@ -126,73 +126,43 @@
    3.4 running
      python3.6 pip_germlineVC/run1.py --source  dir of raw reads --sample_name sampleID
    3.4.1 the optional arguments
-  -h, --help            show this help message and exit
-  --source SOURCE       Path to input reads in FASTA format
-  --sample_name SAMPLE_NAME
-                        the sample name of raw reads
-  --tailname TAILNAME   the tailname of sample raw read
-  --datasets_dir DATASETS_DIR
-                        the tailname of sample raw read
-  --common_seq1 COMMON_SEQ1
-                        the common seq1 of QIAseq Targeted DNA Panel
-  --common_seq2 COMMON_SEQ2
-                        the common seq2 of QIAseq Targeted DNA Panel
-  --output OUTPUT       Path of output file
-  --fastqc_dir FASTQC_DIR
-                        the install path of fastQC
-  --bwa_dir BWA_DIR     the install path of bwa
-  --samtools_dir SAMTOOLS_DIR
-                        the install path of samtools
-  --gatk_dir GATK_DIR   the install path of GATK4
-  --umitools_dir UMITOOLS_DIR
-                        the install path of umitools
-  --benchmark_dir BENCHMARK_DIR
-                        the install path of benchmark
-  --ref_index_name REF_INDEX_NAME
-                        the path of ref index--if there isn't a ref index, it
-                        will make a index in the path of ref fasta by bwa
-  --ref_fa_file REF_FA_FILE
-                        the path of ref fasta
-  --total_ref_fa_file TOTAL_REF_FA_FILE
-                        the path of ref total ref fa
-  --total_ref_fa_dict TOTAL_REF_FA_DICT
-                        the path of ref total ref fa dict
-  --truth_vcf TRUTH_VCF
-                        the path of truth VCF of variant for benchmarking
-  --confident_region_bed CONFIDENT_REGION_BED
-                        the path of confident region bed file of the truth VCF
-                        of variant for benchmarking
-  --min_read_len MIN_READ_LEN
-                        the cutoff of the min read length
-  --num_threads NUM_THREADS
-                        the number of threads to align
-  --min_mapq MIN_MAPQ   the parameter of filter alignment_sam
-  --max_soft_clip MAX_SOFT_CLIP
-                        the parameter of filter alignment_sam
-  --max_dist MAX_DIST   the parameter of filter alignment_sam
-  --primers_file PRIMERS_FILE
-                        Load all primer sequences in the panel
-  --edit_dist EDIT_DIST
-                        the parameter of edit distance between barcodes
-  --memory_size MEMORY_SIZE
-                        the cutoff of Java memory
-  --known_sites KNOWN_SITES
-                        the list of --known-sites , sep by: ,
-  --exome_target_bed EXOME_TARGET_BED
-                        the bed file of exome intervals
-  --erc ERC             switch to running HaplotypeCaller in GVCF mode
-  --read_filter READ_FILTER
-                        add a read filter that deals with some problems
-  --snp_filter SNP_FILTER
-                        add parameters for filtering SNPs
-  --indel_filter INDEL_FILTER
-                        add parameters for filtering Indels
-  --db_cosmic DB_COSMIC
-                        add cosmic databases of variants
-  --db_clinvar DB_CLINVAR
-                        add clinvar databases of variants
-  --db_g1000 DB_G1000   add g1000 databases of variants
-  --anno_geneID ANNO_GENEID
-                        add annotation gene ID of variants
-  -v, -version          show program's version number and exit
-  --test TEST           the subprocess of the script
+        -h, --help                         show this help message and exit
+       --source                            Path to input reads in FASTA format
+       --sample_name                       the sample name of raw reads
+       --tailname                          the tailname of sample raw read
+       --datasets_dir                      the tailname of sample raw read
+      --common_seq1                        the common seq1 of QIAseq Targeted DNA Panel
+      --common_seq2                        the common seq2 of QIAseq Targeted DNA Panel
+      --output                             Path of output file
+      --fastqc_dir                         the install path of fastQC
+      --bwa_dir                            the install path of bwa
+      --samtools_dir                       the install path of samtools
+      --gatk_dir                           the install path of GATK4
+      --umitools_dir                       the install path of umitools
+      --benchmark_dir                      the install path of benchmark
+      --ref_index_name                     the path of ref index--if there isn't a ref index, it will make a index in the path of ref fasta by bwa
+      --ref_fa_file                        the path of ref fasta
+      --total_ref_fa_file                  the path of ref total ref fa
+      --total_ref_fa_dict                  the path of ref total ref fa dict
+      --truth_vcf                          the path of truth VCF of variant for benchmarking
+      --confident_region_bed               the path of confident region bed file of the truth VCF of variant for benchmarking
+      --min_read_len                       the cutoff of the min read length
+      --num_threads                        the number of threads to align
+      --min_mapq                           the parameter of filter alignment_sam
+      --max_soft_clip                      the parameter of filter alignment_sam
+      --max_dist                           the parameter of filter alignment_sam
+      --primers_file                       Load all primer sequences in the panel
+      --edit_dist                          the parameter of edit distance between barcodes
+      --memory_size                        the cutoff of Java memory
+      --known_sites                        the list of --known-sites , sep by: ,
+      --exome_target_bed                   the bed file of exome intervals
+      --erc                                switch to running HaplotypeCaller in GVCF mode
+      --read_filter                        add a read filter that deals with some problems
+      --snp_filter                         add parameters for filtering SNPs
+      --indel_filter                       add parameters for filtering Indels
+      --db_cosmic                          add cosmic databases of variants
+      --db_clinvar                         add clinvar databases of variants
+      --db_g1000                           add g1000 databases of variants
+      --anno_geneID                        add annotation gene ID of variants
+      -v,                                  show program's version number and exit
+      --test                               the subprocess of the script
