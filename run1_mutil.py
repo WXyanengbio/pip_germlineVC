@@ -285,6 +285,7 @@ def main_run_germline_variant_calling(path_sampleID_sub):
     test_level = path_sampleID_sub[33]
     #---check the output
     out_dir1 = output  + '/' + sample
+    #out_dir1 = output
     if not os.path.exists(out_dir1):
         os.makedirs(out_dir1)
     #----pipeline log file
@@ -312,15 +313,15 @@ def main_run_germline_variant_calling(path_sampleID_sub):
                  read1, read2,
                  logger_statistics_process, logger_statistics_errors)
     #--check the quality of the raw reads
-    if float(qc_result1[6].strip('%')) > 70 and  float(qc_result2[6].strip('%')) > 70:
+    if float(qc_result1[7].strip('%')) > 70 and  float(qc_result2[7].strip('%')) > 70:
         print("The ratio of read1 and read2 with Q30 quality are both higher than 70%.")
     else:
         exit("The ratio of read1 and read2 with Q30 quality are both lower than 80%!!!!!!!")
     #--statistics the N base in raw reads and set the cutoff of the min read length
-    if max(int(qc_result1[8]), int(qc_result2[8])) < min_read_len:
+    if max(int(qc_result1[9]), int(qc_result2[9])) < min_read_len:
         print("The cutoff of the min read length is the default: {0}".format(min_read_len))
     else:
-        min_read_len = max(int(qc_result1[8]), int(qc_result2[8]))
+        min_read_len = max(int(qc_result1[9]), int(qc_result2[9]))
         print("The cutoff of the min read length is based on the N base in the reads: {0}".format(min_read_len))
 
     logger_statistics_process.info("QC of reads is completed after %.2f min.", (time.time()-time_start)/60)
@@ -607,13 +608,14 @@ def main_run_germline_variant_calling(path_sampleID_sub):
     logger_statistics_process.info('Statistics is completed after %.2f min.',(time.time() - time_start)/60)
     logger_pipeline_process.info('Statistics is completed after %.2f min.',(time.time() - time_start)/60)
     logger_pipeline_process.info('Pipeline : {0} is completed after {1} min.'.format(sample, ('%.2f' % ((time.time() - time_start1)/60))))
+    #logger_pipeline_process_run.info('Pipeline : {0} is completed after {1} min.'.format(sample, ('%.2f' % ((time.time() - time_start1)/60))))
     #--statistics the time cost
-    process_log = out_dir + '/'+ 'log' + '/' + 'process.log'
+    process_log = out_dir1 + '/'+ 'log' + '/' + 'process.log'
     statistics_time(statistics_dir, sample, process_log, logger_statistics_process, logger_statistics_errors)
     #---
     if test_level == 9:
         print("Test statistics module!\n\n\n")
-    return '{0} is complete'.format(sample)
+    return 'Pipeline : {0} is completed after {1} min.'.format(sample, ('%.2f' % ((time.time() - time_start1)/60)))
 
 #--
 cores = multiprocessing.cpu_count()
@@ -623,6 +625,7 @@ free = data.available #可以内存
 
 if __name__ == '__main__':
     #---check the cpus and memery
+    time_start_run = time.time()
     threads = args.threads
     num_thread_of_process = int(cores/threads)
     if num_thread_of_process*threads > 0.75*cores:
@@ -634,12 +637,7 @@ if __name__ == '__main__':
         out_dir = "output"
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
-    #----pipeline log file
-    #log_dir = out_dir + '/' + 'log/'
-    #if not os.path.exists(log_dir):
-    #    os.makedirs(log_dir)
 
-    #logger_pipeline_process, logger_pipeline_errors = store_pipeline_logs(log_dir)
     #QC
     fastqc_dir = args.fastqc_dir
     #trim
@@ -698,15 +696,27 @@ if __name__ == '__main__':
                                       max_soft_clip, max_dist, memory_size, snp_filter, indel_filter, ref_ens,
                                       bwa_dir, samtools_dir, umitools_dir, gatk_dir, benchmark_dir, ref_index_name,
                                       ref_fa_file, total_ref_fa_file, total_ref_fa_dict, known_sites, erc,db_cosmic, 
-                                      db_clinvar, db_g1000, truth_vcf, confident_region_bed, test_level])
+                                      db_clinvar, db_g1000, truth_vcf, confident_region_bed, test_level
+                                      ])
     
     pool = multiprocessing.Pool(processes=threads)
     results = pool.map(main_run_germline_variant_calling, path_sampleID)
+    #for func in path_sampleID:
+    #    print(func)
+    #    pool.apply_async(func)     #Pool执行函数，apply执行函数,当有一个进程执行完毕后，会添加一个新的进程到pool中
     print("--" * 20)
     pool.close()   # 关闭pool, 则不会有新的进程添加进去
     pool.join()    # 必须在join之前close, 然后join等待pool中所有的线程执行完毕
     print("All process done.")
-
     print("Return results: ")
+    #----pipeline log file
+    log_dir_run = out_dir + '/' + 'log/'
+    if not os.path.exists(log_dir_run):
+        os.makedirs(log_dir_run)
+
+    logger_pipeline_process_run, logger_pipeline_errors_run = store_pipeline_logs(log_dir_run)
     for i in results:
         print(i)   # 获得进程的执行结果
+        logger_pipeline_process_run.info(i)
+    logger_pipeline_process_run.info('All samples are completed after {0} min.'.format(('%.2f' % ((time.time() - time_start_run)/60))))
+    

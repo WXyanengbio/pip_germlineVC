@@ -321,15 +321,15 @@ def main():
                  read1, read2,
                  logger_statistics_process, logger_statistics_errors)
     #--check the quality of the raw reads
-    if float(qc_result1[6].strip('%')) > 70 and  float(qc_result2[6].strip('%')) > 70:
+    if float(qc_result1[7].strip('%')) > 70 and  float(qc_result2[7].strip('%')) > 70:
         print("The ratio of read1 and read2 with Q30 quality are both higher than 70%.")
     else:
         exit("The ratio of read1 and read2 with Q30 quality are both lower than 80%!!!!!!!")
     #--statistics the N base in raw reads and set the cutoff of the min read length
-    if max(int(qc_result1[8]), int(qc_result2[8])) < min_read_len:
+    if max(int(qc_result1[9]), int(qc_result2[9])) < min_read_len:
         print("The cutoff of the min read length is the default: {0}".format(min_read_len))
     else:
-        min_read_len = max(int(qc_result1[8]), int(qc_result2[8]))
+        min_read_len = max(int(qc_result1[9]), int(qc_result2[9]))
         print("The cutoff of the min read length is based on the N base in the reads: {0}".format(min_read_len))
 
     logger_statistics_process.info("QC of reads is completed after %.2f min.", (time.time()-time_start)/60)
