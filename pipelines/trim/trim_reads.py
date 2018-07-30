@@ -1,6 +1,6 @@
 from __future__ import barry_as_FLUFL
 
-__all__  =  ['read1' , 'read2' , 'trimmed1' , 'trimmed2' , 'min_read_len' , 'common_seq1' , 'common_seq2' , 'stats_file' , 'logger_trim_process' , 'logger_trim_errors']
+__all__  =  ['read1' , 'read2' , 'trimmed1' ,'un_trimmed1', 'trimmed2' ,'un_trimmed2', 'min_read_len' , 'common_seq1' , 'common_seq2' , 'stats_file' , 'logger_trim_process' , 'logger_trim_errors']
 __version__  =  '1.0'
 __author__  =  'Maggie Ruimin Sun'
 
@@ -106,3 +106,22 @@ def trim_read_pairs(read1, read2, trimmed1, trimmed2, min_read_len, common_seq1,
         min_read_len, num_short_reads))
     stats_out.write('Number of error reads == ' + str(num_error_reads) + '\n')
     stats_out.write('The time of trimming is %s minutes.' % str((time.time() - time_start) / 60))
+
+def trim_read_pairs_by_trimmomatic(trimmomatic_dir,
+                                   read1, read2, 
+                                   trimmed1, un_trimmed1,
+                                   trimmed2, un_trimmed2,
+                                   min_read_len,
+                                   stats_file, logger_trim_process,
+                                   logger_trim_errors):
+    if not os.path.isfile(read1):
+        logger_trim_errors.error('%s does not exist!', read1)
+        print("Error: cannot find NGS read file!")
+        exit()
+    if not os.path.isfile(trimmomatic_dir):
+        logger_trim_errors.error('%s does not exist!', trimmomatic_dir)
+        print("Error: cannot find trimmomatic.jar!")
+        exit()
+    commond = 'java -jar {0} PE -threads 1 -phred33 -summary {1} {2} {3} {4} {5} {6} {7} ILLUMINACLIP:{8}:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:{9}'.format(
+        trimmomatic_dir, stats_file, read1, read2, trimmed1, un_trimmed1, trimmed2, un_trimmed2, os.path.dirname(trimmomatic_dir) + '/adapters/TruSeq3-PE.fa', min_read_len)
+    os.system(commond)

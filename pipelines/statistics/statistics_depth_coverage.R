@@ -33,17 +33,13 @@ print(paste("The output file prefix is ", opts$output, sep = ""))
 if (TRUE){
   pre_dat = read.table(opts$prefix_file, sep="\t")
   suf_dat = read.table(opts$suffix_file, sep="\t")
-  #if(opts$region != 'null')
-  region = read.table(opts$region)
-  region = region[-1,]
+  if('.list'== substr(opts$region,nchar(opts$region)-5,nchar(opts$region))){
+    region = read.table(opts$region)
+    if(substr(region[1,1],1,3) != 'chr'){
+     region = region[-1,]
+  }
   region$region= apply(region,1,function(x){as.numeric(as.character(x[3]))-as.numeric(as.character(x[2]))})
-  #print(head(region))
- 
-}
-#print(pre_dat)
-# 弹出窗口选择文件
-if (FALSE){
-  dat = read.table(file.choose(), header=T, row.names = NULL, sep="\t")
+  }
 }
 
 # 4. 统计与绘图

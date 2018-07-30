@@ -143,7 +143,7 @@ def qc_raw_reads(fastQC_dir, out_dir, sample, module, read1, read2,logger_statis
     return qc_result1, qc_result2
 
 #-get the depth and coverage of the mapping result
-def statistics_depth_coverage(samtools_dir, sam_bam, out_dir,sample, module,exome_target_bed, logger_statistics_process, logger_statistics_errors):
+def statistics_depth_coverage(samtools_dir, sam_bam, out_dir,sample, module, exome_target_bed, logger_statistics_process, logger_statistics_errors):
     if not os.path.isfile(sam_bam):
         logger_statistics_errors.error("%s does not exist!\n", sam_bam)
         print(sam_bam + ' does not exist!')

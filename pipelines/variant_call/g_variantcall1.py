@@ -62,12 +62,13 @@ def sam_to_bem(gatk_dir, samtools_dir,
         logger_g_variantcalling_process.info('Samtools build the fai of genome----cost %.2f min.', (time.time()-time_start1)/60)
     
     #target bed to exon intervel list
-    exon_interval = output + '/' + 'target_interval.list'
-    command_count_r3 = '{0} --java-options "{1}" BedToIntervalList -I {2} -O {3} -SD {4}'.format(
-        gatk_dir, memory_size, exome_target_bed, exon_interval, ref_fa_dict)
-    time_start1 = time.time()
-    os.system(command_count_r3)
-    logger_g_variantcalling_process.info('GATK target bed to exon intervel list----cost %.2f min.', (time.time()-time_start1)/60)
+    if os.path.basename(exome_target_bed) != 'all':
+        exon_interval = output + '/' + 'target_interval.list'
+        command_count_r3 = '{0} --java-options "{1}" BedToIntervalList -I {2} -O {3} -SD {4}'.format(
+            gatk_dir, memory_size, exome_target_bed, exon_interval, ref_fa_dict)
+        time_start1 = time.time()
+        os.system(command_count_r3)
+        logger_g_variantcalling_process.info('GATK target bed to exon intervel list----cost %.2f min.', (time.time()-time_start1)/60)
     #--sam to bem
     bam = output + '/' + sample + '_sorted.bam'
     command_count_r4 = samtools_dir+' view -bS '+ sortedsam +' > '+ bam
@@ -75,12 +76,13 @@ def sam_to_bem(gatk_dir, samtools_dir,
     os.system(command_count_r4)
     logger_g_variantcalling_process.info('Samtools transform sam to bam----cost %.2f min.', (time.time()-time_start1)/60)
     #statistics of coverages
-    cov_file =  output + '/' + sample + '.cov.txt'
-    command_count_1 = '{0} CollectHsMetrics -BI {1} -TI {2} -I {3} -O {4}'.format(
-        gatk_dir, exon_interval, exon_interval, bam, cov_file)
-    time_start1 = time.time()
-    os.system(command_count_1)
-    logger_g_variantcalling_process.info('GATK count the coverage----cost %.2f min.', (time.time()-time_start1)/60)
+    if os.path.basename(exome_target_bed) != 'all':
+        cov_file =  output + '/' + sample + '.cov.txt'
+        command_count_1 = '{0} CollectHsMetrics -BI {1} -TI {2} -I {3} -O {4}'.format(
+            gatk_dir, exon_interval, exon_interval, bam, cov_file)
+        time_start1 = time.time()
+        os.system(command_count_1)
+        logger_g_variantcalling_process.info('GATK count the coverage----cost %.2f min.', (time.time()-time_start1)/60)
     #build index of bam By samtools
     command_count1 = '{0} index {1}'.format(samtools_dir, bam)
     time_start1 = time.time()
@@ -108,8 +110,12 @@ def sam_to_bem(gatk_dir, samtools_dir,
     #Base(Quality Score) Recalibration
     #BaseRecalibrator---Generate Base Quality Score Recalibration (BQSR) model
     recal_data_table =  output + '/' + sample + '.recal_data.table'
-    command_count5 ='{0} --java-options "{1}" BaseRecalibrator -R {2} -I {3} -L {4} --known-sites {5} -O {6}'.format(
-        gatk_dir, memory_size, ref_fa_file, mark_rg_bam, exon_interval, known_sites, recal_data_table)
+    if os.path.basename(exome_target_bed) != 'all':
+         command_count5 ='{0} --java-options "{1}" BaseRecalibrator -R {2} -I {3} -L {4} --known-sites {5} -O {6}'.format(
+            gatk_dir, memory_size, ref_fa_file, mark_rg_bam, exon_interval, known_sites, recal_data_table)
+    else:
+        command_count5 ='{0} --java-options "{1}" BaseRecalibrator -R {2} -I {3} --known-sites {4} -O {5}'.format(
+            gatk_dir, memory_size, ref_fa_file, mark_rg_bam, known_sites, recal_data_table)
     time_start1= time.time()
     os.system(command_count5)
     logger_g_variantcalling_process.info("GATK generate Base Quality Score Recalibration (BQSR) model----cost %.2f min.", (time.time()-time_start1)/60)
@@ -122,13 +128,18 @@ def sam_to_bem(gatk_dir, samtools_dir,
     logger_g_variantcalling_process.info("ATK generate report of Base Quality Score Recalibration (BQSR) model----cost %.2f min.", (time.time()-time_start1)/60)
     #ApplyBQSR--Apply Base Quality Score Recalibration (BQSR) model
     bgsr_bam =  output + '/' + sample + '_sorted.MarkDuplicates.BQSR.bam'
-    command_count7 ='{0} --java-options "{1}" ApplyBQSR -R {2} -I {3} -bqsr {4} -L {5} -O {6}'.format(
-        gatk_dir, memory_size, ref_fa_file, mark_rg_bam, recal_data_table, exon_interval, bgsr_bam)
+    if os.path.basename(exome_target_bed) != 'all':
+        command_count7 ='{0} --java-options "{1}" ApplyBQSR -R {2} -I {3} -bqsr {4} -L {5} -O {6}'.format(
+            gatk_dir, memory_size, ref_fa_file, mark_rg_bam, recal_data_table, exon_interval, bgsr_bam)
+    else:
+        command_count7 ='{0} --java-options "{1}" ApplyBQSR -R {2} -I {3} -bqsr {4} -O {5}'.format(
+            gatk_dir, memory_size, ref_fa_file, mark_rg_bam, recal_data_table, bgsr_bam)
     time_start1= time.time()
     os.system(command_count7)
     logger_g_variantcalling_process.info("GATK apply Base Quality Score Recalibration (BQSR) model----cost %.2f min.", (time.time()-time_start1)/60)
     #time used for translating the format of the sam by samtools and GATK
     logger_g_variantcalling_process.info('Compeleted translating the format of the sam by samtools and GATK.')
+
 
 def germline_variant_calling(gatk_dir, marked_BQSR_bam,
                             sample, output, 
@@ -137,8 +148,12 @@ def germline_variant_calling(gatk_dir, marked_BQSR_bam,
                             read_filter,
                             snp_filter,indel_filter,
                             logger_g_variantcalling_process, logger_g_variantcalling_errors):
-    command_count ='{0} --java-options "{1}" HaplotypeCaller -R {2} -I {3} -L {4}'.format(
-        gatk_dir, memory_size, ref_fa_file, marked_BQSR_bam, exon_interval)
+    if exon_interval != 'all':
+         command_count ='{0} --java-options "{1}" HaplotypeCaller -R {2} -I {3} -L {4}'.format(
+            gatk_dir, memory_size, ref_fa_file, marked_BQSR_bam, exon_interval)
+    else:
+         command_count ='{0} --java-options "{1}" HaplotypeCaller -R {2} -I {3}'.format(
+            gatk_dir, memory_size, ref_fa_file, marked_BQSR_bam)
     logger_g_variantcalling_process.info('Begin to confirm the options parameters of running HaplotypeCaller.')
     vcf1 =  output + '/' + sample + '.raw_variants.vcf'
     if erc == 'no':
