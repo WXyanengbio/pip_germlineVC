@@ -108,34 +108,50 @@ def sam_to_bem(gatk_dir, samtools_dir,
     logger_g_variantcalling_process.info("Samtools build the index of  marked bam----cost %.2f min.", (time.time()-time_start1)/60)
     #---------------------------------------
     #Base(Quality Score) Recalibration
-    #BaseRecalibrator---Generate Base Quality Score Recalibration (BQSR) model
-    recal_data_table =  output + '/' + sample + '.recal_data.table'
+    original_recal_data_table =  output + '/' + sample + '_original.recal_data.csv'
+    original_bgsr_bam =  output + '/' + sample + '_sorted.MarkDuplicates.originalBQSR.bam'
+    recal_data_table =  output + '/' + sample + '_bqsr.recal_data.csv'
+    bgsr_bam =  output + '/' + sample + '_sorted.MarkDuplicates.BQSR.bam'
     if os.path.basename(exome_target_bed) != 'all':
-         command_count5 ='{0} --java-options "{1}" BaseRecalibrator -R {2} -I {3} -L {4} --known-sites {5} -O {6}'.format(
+        #BaseRecalibrator---Generate Base Quality Score Recalibration (BQSR) model--first
+        command_count5_1 ='{0} --java-options "{1}" BaseRecalibrator -R {2} -I {3} -L {4} --known-sites {5} -O {6}'.format(
+            gatk_dir, memory_size, ref_fa_file, mark_rg_bam, exon_interval, known_sites, original_recal_data_table)
+        #ApplyBQSR--Apply Base Quality Score Recalibration (BQSR) model--first
+        command_count7_1 ='{0} --java-options "{1}" ApplyBQSR -R {2} -I {3} -bqsr {4} -L {5} -O {6}'.format(
+            gatk_dir, memory_size, ref_fa_file, mark_rg_bam, original_recal_data_table, exon_interval, original_bgsr_bam)
+        #BaseRecalibrator---Generate Base Quality Score Recalibration (BQSR) model--second
+        command_count5_2 ='{0} --java-options "{1}" BaseRecalibrator -R {2} -I {3} -L {4} --known-sites {5} -O {6}'.format(
             gatk_dir, memory_size, ref_fa_file, mark_rg_bam, exon_interval, known_sites, recal_data_table)
+        #ApplyBQSR--Apply Base Quality Score Recalibration (BQSR) model--second
+        command_count7_2 ='{0} --java-options "{1}" ApplyBQSR -R {2} -I {3} -bqsr {4} -L {5} -O {6}'.format(
+            gatk_dir, memory_size, ref_fa_file, mark_rg_bam, recal_data_table, exon_interval, bgsr_bam)
     else:
-        command_count5 ='{0} --java-options "{1}" BaseRecalibrator -R {2} -I {3} --known-sites {4} -O {5}'.format(
+        #BaseRecalibrator---Generate Base Quality Score Recalibration (BQSR) model
+        command_count5_1 ='{0} --java-options "{1}" BaseRecalibrator -R {2} -I {3} --known-sites {4} -O {5}'.format(
+            gatk_dir, memory_size, ref_fa_file, mark_rg_bam, known_sites, original_recal_data_table)
+        #ApplyBQSR--Apply Base Quality Score Recalibration (BQSR) model--first
+        command_count7_1 ='{0} --java-options "{1}" ApplyBQSR -R {2} -I {3} -bqsr {4} -O {5}'.format(
+            gatk_dir, memory_size, ref_fa_file, mark_rg_bam, original_recal_data_table, original_bgsr_bam)
+        #BaseRecalibrator---Generate Base Quality Score Recalibration (BQSR) model
+        command_count5_2 ='{0} --java-options "{1}" BaseRecalibrator -R {2} -I {3} --known-sites {4} -O {5}'.format(
             gatk_dir, memory_size, ref_fa_file, mark_rg_bam, known_sites, recal_data_table)
+        #ApplyBQSR--Apply Base Quality Score Recalibration (BQSR) model--second
+        command_count7_2 ='{0} --java-options "{1}" ApplyBQSR -R {2} -I {3} -bqsr {4} -O {5}'.format(
+            gatk_dir, memory_size, ref_fa_file, mark_rg_bam, recal_data_table, bgsr_bam)
     time_start1= time.time()
-    os.system(command_count5)
+    os.system(command_count5_1)
+    os.system(command_count5_2)
+    os.system(command_count7_1)
+    os.system(command_count7_2)
     logger_g_variantcalling_process.info("GATK generate Base Quality Score Recalibration (BQSR) model----cost %.2f min.", (time.time()-time_start1)/60)
-    #GatherBQSRReports--Generate report of Base Quality Score Recalibration (BQSR) model
-    base_reports = output + '/' + sample + '.BQSR.report'
-    command_count6 ='{0} --java-options "{1}" GatherBQSRReports -I {2} -O {3}'.format(
-        gatk_dir, memory_size,  recal_data_table, base_reports)
+    #AnalyzeCovariates--Generate report of Base Quality Score Recalibration (BQSR) model
+    base_reports = output + '/' + sample + '.BQSR.before_VS_after.pdf'
+    base_reports_csv = output + '/' + sample + '.BQSR.before_VS_after.csv'
+    command_count6 ='{0} --java-options "{1}" AnalyzeCovariates --before-report-file {2} --after-report-file {3} --plots-report-file {4} --intermediate-csv-file {5}'.format(
+        gatk_dir, memory_size, original_recal_data_table, recal_data_table, base_reports,base_reports_csv )
     time_start1= time.time()
     os.system(command_count6)
     logger_g_variantcalling_process.info("ATK generate report of Base Quality Score Recalibration (BQSR) model----cost %.2f min.", (time.time()-time_start1)/60)
-    #ApplyBQSR--Apply Base Quality Score Recalibration (BQSR) model
-    bgsr_bam =  output + '/' + sample + '_sorted.MarkDuplicates.BQSR.bam'
-    if os.path.basename(exome_target_bed) != 'all':
-        command_count7 ='{0} --java-options "{1}" ApplyBQSR -R {2} -I {3} -bqsr {4} -L {5} -O {6}'.format(
-            gatk_dir, memory_size, ref_fa_file, mark_rg_bam, recal_data_table, exon_interval, bgsr_bam)
-    else:
-        command_count7 ='{0} --java-options "{1}" ApplyBQSR -R {2} -I {3} -bqsr {4} -O {5}'.format(
-            gatk_dir, memory_size, ref_fa_file, mark_rg_bam, recal_data_table, bgsr_bam)
-    time_start1= time.time()
-    os.system(command_count7)
     logger_g_variantcalling_process.info("GATK apply Base Quality Score Recalibration (BQSR) model----cost %.2f min.", (time.time()-time_start1)/60)
     #time used for translating the format of the sam by samtools and GATK
     logger_g_variantcalling_process.info('Compeleted translating the format of the sam by samtools and GATK.')
