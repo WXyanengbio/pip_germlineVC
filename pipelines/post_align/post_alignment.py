@@ -89,8 +89,8 @@ def filter_alignment_samtools(samtools_dir, alignment_sam, min_mapq,
     stats_out.write('Percent of alignments passed SAMTools filtration == {0}%\n'.format(100 * final_count / total_count))
     stats_out.write('Time cost at samtools filtration == {0} min\n'.format((time.time() - time_start) / 60))
     stats_out.close()
-    os.system('rm ' + stats_file_tmp)
-    os.system('rm ' + out_file_tmp1 + ' ' + out_file_tmp2)
+    os.system('rm -rf ' + stats_file_tmp)
+    os.system('rm -rf ' + out_file_tmp1 + ' ' + out_file_tmp2)
 
 
 
