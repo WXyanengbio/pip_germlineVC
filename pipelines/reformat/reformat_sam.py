@@ -54,16 +54,25 @@ def reformat_sam(alignment_sam, output_sam, logger_reformat_process , logger_ref
             sam_out.write(row)
             continue
         qname, flag, rname, pos, mapq, cigar, rmate, pmate = row.strip().split()[0:8]
-        qname, umi = qname.split('_')
+        #print(rname)
         chrom, start = rname.split('_')[0:2]
         pos = str(int(pos) + int(start))
         pmate = str(int(pmate) + int(start))
-        if flag == '99' or flag == '163':
-            qname += ':' + chrom + '-0-' + pos + '-' + umi + ':' + umi
-        elif flag == '83' or flag == '147':
-            qname += ':' + chrom + '-1-' + pos + '-' + umi + ':' + umi
-        else:
-            continue  # error flags
+        if len(qname.split('_'))==2:
+            qname, umi = qname.split('_')
+            if flag == '99' or flag == '163':
+                qname += ':' + chrom + '-0-' + pos + '-' + umi + ':' + umi
+            elif flag == '83' or flag == '147':
+                qname += ':' + chrom + '-1-' + pos + '-' + umi + ':' + umi
+            else:
+                continue  # error flags
+        elif len(qname.split('_'))==1:
+            if flag == '99' or flag == '163':
+                qname += ':' + chrom + '-0-' + pos
+            elif flag == '83' or flag == '147':
+                qname += ':' + chrom + '-1-' + pos
+            else:
+                continue  # error flags
         sam_out.write('\t'.join([qname, flag, chrom, pos, mapq,
                                  cigar, rmate, pmate]) + '\t' + '\t'.join(row.split()[8:]) + '\n')
     sam.close()
