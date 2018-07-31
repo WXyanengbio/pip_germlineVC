@@ -1,6 +1,6 @@
 from __future__ import barry_as_FLUFL
 
-__all__  =  ['bwa_dir' , 'ref_fa_file' , 'ref_index_name','total_ref_fa_file' ,'exome_target_bed' ,'read1' , 'read2' , 'out_file' , 'num_threads' , 'logger_bwa_process' , 'logger_bwa_errors']
+__all__  =  ['bwa_dir' , 'samtools_dir' ,'ref_fa_file' , 'ref_index_name','total_ref_fa_file' ,'exome_target_bed' ,'read1' , 'read2' , 'out_file' , 'num_threads' , 'logger_bwa_process' , 'logger_bwa_errors']
 __version__  =  '1.0'
 __author__  =  'Wang Xian'
 
@@ -9,8 +9,21 @@ import os
 import logging
 import time
 import sys
+import multiprocessing
 
-def filter_ref_fa_by_bed(ref_fa_file,ref_index_name, exome_target_bed,logger_bwa_process, 
+# samtools faidx to get target reference fasta based on the bed
+def samtools_faidx(bed_dict):
+    samtools_dir = bed_dict[0]
+    total_ref_fa_file = bed_dict[1]
+    bed = bed_dict[2]
+    tmp_target_ref = bed_dict[3]
+    commod = '{0} faidx {1} {2} >> {3}'.format(samtools_dir, total_ref_fa_file, bed, tmp_target_ref)
+    os.system(commod)
+
+# use samtools faidx to get target reference fasta based on the bed file
+def filter_ref_fa_by_bed(samtools_dir, ref_fa_file, ref_index_name, 
+                         exome_target_bed,total_ref_fa_file, 
+                         logger_bwa_process, 
                     logger_bwa_errors):
     if not os.path.isfile(exome_target_bed):
         logger_bwa_errors.error('%s does not exist!', exome_target_bed)
@@ -21,38 +34,43 @@ def filter_ref_fa_by_bed(ref_fa_file,ref_index_name, exome_target_bed,logger_bwa
         print("Error: cannot find reference genome file!")
         exit()
     if not os.path.isfile(ref_index_name + '.refSeq.fa'):
-        fasta= open(ref_fa_file, 'U')
-        fasta_dict= {}
-        for line in fasta:
-            line= line.strip()
-            if line == '':
-                 continue
-            if line.startswith('>'):
-                 seqname= line.lstrip('>')
-                 #seqname= re.sub('\..*', '', seqname)
-                 fasta_dict[seqname]= ''
-            else:
-                 fasta_dict[seqname] += line
-        fasta.close()
-
+        tmp_ref_dir = os.path.dirname(ref_index_name) + '/' + 'tmp_target_ref.fa'
         bed= open(exome_target_bed, 'U')
-        fasta_bed_out = open(ref_index_name + '.refSeq.fa','w')
+        bed_dicts = []
         for line in bed:
             if line.startswith('chr'):
                 line= line.strip().split('\t')
-                outname= line[0] + '_' + line[1]+ '_' + line[2]
-                print('>' + outname)
-                fasta_bed_out.write('>' + outname + '\n')
-                if fasta_dict.get(outname, 0) == 0:
-                    print("{0} is not in {1}".format(outname,FASTA))
-                else:
-                    fasta_bed_out.write(fasta_dict[outname] + '\n')
+                outname= line[0] + ':' + line[1]+ '-' + line[2]
+                #print('>' + outname)
+                bed_dicts.append([samtools_dir, total_ref_fa_file, outname, tmp_ref_dir])
             else:
                 continue
         bed.close()
+        pool = multiprocessing.Pool(processes=1)
+        pool.map(samtools_faidx, bed_dicts)
+        print("--" * 20)
+        pool.close()   # 关闭pool, 则不会有新的进程添加进去
+        pool.join()    # 必须在join之前close, 然后join等待pool中所有的线程执行完毕
+        fasta= open(tmp_ref_dir, 'U')
+        ref_dir = open(ref_index_name + '.refSeq.fa','w')
+        for line in fasta:
+            line= line.strip()
+            if line == '':
+                continue
+            if line.startswith('>'):
+                seqname= line
+                seqname1= seqname.replace(':', '_')
+                seqname1= seqname1.replace('-', '_')
+                ref_dir.write(seqname1+'\n')
+            else:
+                ref_dir.write(line +'\n')
+        ref_dir.close()
+        fasta.close()
+        os.system('rm -rf {0}'.format(tmp_ref_dir))
     return ref_index_name + '.refSeq.fa'
 
-def align_reads_bwa(bwa_dir, ref_fa_file, ref_index_name, exome_target_bed,
+def align_reads_bwa(bwa_dir, samtools_dir,
+                    ref_fa_file, ref_index_name, exome_target_bed,total_ref_fa_file,
                     read1, read2, 
                     out_file, num_threads, logger_bwa_process, 
                     logger_bwa_errors): 
@@ -60,7 +78,7 @@ def align_reads_bwa(bwa_dir, ref_fa_file, ref_index_name, exome_target_bed,
         logger_bwa_errors.error('%s does not exist!', read1)
         print("Error: cannot find NGS read file!")
         return 1
-    ref_fa_file_bed = filter_ref_fa_by_bed(ref_fa_file, ref_index_name, exome_target_bed,logger_bwa_process, 
+    ref_fa_file_bed = filter_ref_fa_by_bed(samtools_dir, ref_fa_file, ref_index_name, exome_target_bed, total_ref_fa_file, logger_bwa_process, 
                                            logger_bwa_errors)
     index_file_extensions = ['.pac', '.amb','.ann','.bwt', '.sa']
     genome_indexed = True
