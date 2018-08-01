@@ -19,7 +19,7 @@ def umitool(samtools_dir, umitools_dir, filtered_sam ,filtered_bam , sorted_bam,
     cmd3 = samtools_dir + ' index ' + sorted_bam
     logger_umi_process.info('Samtools build index of bam.')
     os.system(cmd3)
-    cmd4 = 'python3.6 ' + umitools_dir + ' dedup -I ' + sorted_bam + ' --output-stats=' + umitool_stats + ' -S ' + filtered_bam + ' --edit-distance-threshold ' + str(edit_dist) + ' --paired'
+    cmd4 = 'python3.6 ' + umitools_dir + ' dedup -I ' + sorted_bam + ' --output-stats=' + umitool_stats + ' -S ' + filtered_bam + ' --edit-distance-threshold ' + str(edit_dist) + ' --paired True'
     logger_umi_process.info('UMIs-tools cluster bam.')
     os.system(cmd4)
     cmd5 = samtools_dir + ' view -h ' + filtered_bam + ' > ' + umis_sam

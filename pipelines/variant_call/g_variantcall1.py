@@ -114,26 +114,26 @@ def sam_to_bem(gatk_dir, samtools_dir,
     bgsr_bam =  output + '/' + sample + '_sorted.MarkDuplicates.BQSR.bam'
     if os.path.basename(exome_target_bed) != 'all':
         #BaseRecalibrator---Generate Base Quality Score Recalibration (BQSR) model--first
-        command_count5_1 ='{0} --java-options "{1}" BaseRecalibrator -R {2} -I {3} -L {4} --known-sites {5} -O {6}'.format(
+        command_count5_1 ='{0} --java-options "{1}" BaseRecalibrator -R {2} -I {3} -L {4} --known-sites {5} -O {6} --bqsr-baq-gap-open-penalty 30'.format(
             gatk_dir, memory_size, ref_fa_file, mark_rg_bam, exon_interval, known_sites, original_recal_data_table)
         #ApplyBQSR--Apply Base Quality Score Recalibration (BQSR) model--first
         command_count7_1 ='{0} --java-options "{1}" ApplyBQSR -R {2} -I {3} -bqsr {4} -L {5} -O {6}'.format(
             gatk_dir, memory_size, ref_fa_file, mark_rg_bam, original_recal_data_table, exon_interval, original_bgsr_bam)
         #BaseRecalibrator---Generate Base Quality Score Recalibration (BQSR) model--second
-        command_count5_2 ='{0} --java-options "{1}" BaseRecalibrator -R {2} -I {3} -L {4} --known-sites {5} -O {6}'.format(
+        command_count5_2 ='{0} --java-options "{1}" BaseRecalibrator -R {2} -I {3} -L {4} --known-sites {5} -O {6} --bqsr-baq-gap-open-penalty 30'.format(
             gatk_dir, memory_size, ref_fa_file, mark_rg_bam, exon_interval, known_sites, recal_data_table)
         #ApplyBQSR--Apply Base Quality Score Recalibration (BQSR) model--second
         command_count7_2 ='{0} --java-options "{1}" ApplyBQSR -R {2} -I {3} -bqsr {4} -L {5} -O {6}'.format(
             gatk_dir, memory_size, ref_fa_file, mark_rg_bam, recal_data_table, exon_interval, bgsr_bam)
     else:
         #BaseRecalibrator---Generate Base Quality Score Recalibration (BQSR) model
-        command_count5_1 ='{0} --java-options "{1}" BaseRecalibrator -R {2} -I {3} --known-sites {4} -O {5}'.format(
+        command_count5_1 ='{0} --java-options "{1}" BaseRecalibrator -R {2} -I {3} --known-sites {4} -O {5} --bqsr-baq-gap-open-penalty 40'.format(
             gatk_dir, memory_size, ref_fa_file, mark_rg_bam, known_sites, original_recal_data_table)
         #ApplyBQSR--Apply Base Quality Score Recalibration (BQSR) model--first
         command_count7_1 ='{0} --java-options "{1}" ApplyBQSR -R {2} -I {3} -bqsr {4} -O {5}'.format(
             gatk_dir, memory_size, ref_fa_file, mark_rg_bam, original_recal_data_table, original_bgsr_bam)
         #BaseRecalibrator---Generate Base Quality Score Recalibration (BQSR) model
-        command_count5_2 ='{0} --java-options "{1}" BaseRecalibrator -R {2} -I {3} --known-sites {4} -O {5}'.format(
+        command_count5_2 ='{0} --java-options "{1}" BaseRecalibrator -R {2} -I {3} --known-sites {4} -O {5} --bqsr-baq-gap-open-penalty 40'.format(
             gatk_dir, memory_size, ref_fa_file, mark_rg_bam, known_sites, recal_data_table)
         #ApplyBQSR--Apply Base Quality Score Recalibration (BQSR) model--second
         command_count7_2 ='{0} --java-options "{1}" ApplyBQSR -R {2} -I {3} -bqsr {4} -O {5}'.format(
@@ -165,10 +165,10 @@ def germline_variant_calling(gatk_dir, marked_BQSR_bam,
                             snp_filter,indel_filter,
                             logger_g_variantcalling_process, logger_g_variantcalling_errors):
     if exon_interval != 'all':
-         command_count ='{0} --java-options "{1}" HaplotypeCaller -R {2} -I {3} -L {4}'.format(
+         command_count ='{0} --java-options "{1}" HaplotypeCaller -R {2} -I {3} -L {4} --minimum-mapping-quality 20'.format(
             gatk_dir, memory_size, ref_fa_file, marked_BQSR_bam, exon_interval)
     else:
-         command_count ='{0} --java-options "{1}" HaplotypeCaller -R {2} -I {3}'.format(
+         command_count ='{0} --java-options "{1}" HaplotypeCaller -R {2} -I {3} --minimum-mapping-quality 20'.format(
             gatk_dir, memory_size, ref_fa_file, marked_BQSR_bam)
     logger_g_variantcalling_process.info('Begin to confirm the options parameters of running HaplotypeCaller.')
     vcf1 =  output + '/' + sample + '.raw_variants.vcf'
