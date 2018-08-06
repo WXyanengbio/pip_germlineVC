@@ -37,6 +37,96 @@ if (TRUE){
 }
 print(head(suf_dat))
 print(head(suf_dat[1,2]))
+#----
+fun_exon_statis<-function(posi,depth){
+  len=length(posi)
+  total_depth=sum(depth)
+  min_depth=min(depth)
+  max_depth=max(depth)
+  mean_depth=round(total_depth/len,2)
+  posi_min=posi[which(depth==min_depth)]
+  if(length(posi_min)==1){
+    posi_mins=posi_min
+     }else{
+    for(i in 1:length(posi_min)){
+      if(i<=length(posi_min)-1){
+        posi_mins=paste(posi_min[i],posi_min[i+1],sep=",")
+      }
+  }
+  }
+  
+  #print(posi[which(depth==min_depth)])
+  
+  x50_ratio=length(which(depth>=50))/len
+  x100_ratio=length(which(depth>=100))/len
+  x200_ratio=length(which(depth>=200))/len
+  x500_ratio=length(which(depth>=500))/len
+  x50=length(which(depth>=50))
+  x100=length(which(depth>=100))
+  x200=length(which(depth>=200))
+  x500=length(which(depth>=500))
+  x5_men=length(which(depth>=(0.05*mean_depth)))
+  x10_men=length(which(depth>=(0.1*mean_depth)))
+  x20_men=length(which(depth>=(0.2*mean_depth)))
+  x30_men=length(which(depth>=(0.3*mean_depth)))
+  x40_men=length(which(depth>=(0.4*mean_depth)))
+  x50_men=length(which(depth>=(0.5*mean_depth)))
+  x60_men=length(which(depth>=(0.6*mean_depth)))
+  x70_men=length(which(depth>=(0.7*mean_depth)))
+  x80_men=length(which(depth>=(0.8*mean_depth)))
+  x90_men=length(which(depth>=(0.9*mean_depth)))
+  x100_men=length(which(depth>=mean_depth))
+  #print(c(len,total_depth,mean_depth, min_depth, max_depth,posi_min,x50_ratio,x100_ratio,x200_ratio))
+  return(c(len,total_depth, mean_depth, min_depth, max_depth,posi_mins,x50_ratio,
+          x100_ratio,x200_ratio,x500_ratio,x50,x100,x200,x500,
+          x5_men,x10_men,x20_men,x30_men,x40_men,x50_men,
+          x60_men,x70_men,x80_men,x90_men,x100_men))
+  }
+#----
+fun_exon_statis1<-function(posi,depth,mean_depth){
+  len=length(posi)
+  total_depth=sum(depth)
+  min_depth=min(depth)
+  max_depth=max(depth)
+  mean_depth1=round(total_depth/len,2)
+  posi_min=posi[which(depth==min_depth)]
+  if(length(posi_min)==1){
+    posi_mins=posi_min
+     }else{
+    for(i in 1:length(posi_min)){
+      if(i<=length(posi_min)-1){
+        posi_mins=paste(posi_min[i],posi_min[i+1],sep=",")
+      }
+  }
+  }
+  
+  #print(posi[which(depth==min_depth)])
+  
+  x50_ratio=length(which(depth>=50))/len
+  x100_ratio=length(which(depth>=100))/len
+  x200_ratio=length(which(depth>=200))/len
+  x500_ratio=length(which(depth>=500))/len
+  x50=length(which(depth>=50))
+  x100=length(which(depth>=100))
+  x200=length(which(depth>=200))
+  x500=length(which(depth>=500))
+  x5_men=length(which(depth>=(0.05*mean_depth)))
+  x10_men=length(which(depth>=(0.1*mean_depth)))
+  x20_men=length(which(depth>=(0.2*mean_depth)))
+  x30_men=length(which(depth>=(0.3*mean_depth)))
+  x40_men=length(which(depth>=(0.4*mean_depth)))
+  x50_men=length(which(depth>=(0.5*mean_depth)))
+  x60_men=length(which(depth>=(0.6*mean_depth)))
+  x70_men=length(which(depth>=(0.7*mean_depth)))
+  x80_men=length(which(depth>=(0.8*mean_depth)))
+  x90_men=length(which(depth>=(0.9*mean_depth)))
+  x100_men=length(which(depth>=mean_depth))
+  #print(c(len,total_depth,mean_depth, min_depth, max_depth,posi_min,x50_ratio,x100_ratio,x200_ratio))
+  return(c(len,total_depth, mean_depth1, min_depth, max_depth,posi_mins,x50_ratio,
+          x100_ratio,x200_ratio,x500_ratio,x50,x100,x200,x500,
+          x5_men,x10_men,x20_men,x30_men,x40_men,x50_men,
+          x60_men,x70_men,x80_men,x90_men,x100_men))
+  }
 # 4. 统计与绘图
 if (TRUE){
   region = data.frame(region=unique(dat[,1]))
@@ -88,37 +178,7 @@ if (TRUE){
     }
   }
   #---
-  fun_exon_statis<-function(posi,depth){
-  len=length(posi)
-  total_depth=sum(depth)
-  min_depth=min(depth)
-  max_depth=max(depth)
-  mean_depth=round(total_depth/len,2)
-  posi_min=posi[which(depth==min_depth)]
-  if(length(posi_min)==1){
-    posi_mins=posi_min
-     }else{
-    for(i in 1:length(posi_min)){
-      if(i<=length(posi_min)-1){
-        posi_mins=paste(posi_min[i],posi_min[i+1],sep=",")
-      }
-  }
-  }
   
-  #print(posi[which(depth==min_depth)])
-  
-  x50_ratio=length(which(depth>=50))/len
-  x100_ratio=length(which(depth>=100))/len
-  x200_ratio=length(which(depth>=200))/len
-  x500_ratio=length(which(depth>=500))/len
-  x50=length(which(depth>=50))
-  x100=length(which(depth>=100))
-  x200=length(which(depth>=200))
-  x500=length(which(depth>=500))
-  #print(c(len,total_depth,mean_depth, min_depth, max_depth,posi_min,x50_ratio,x100_ratio,x200_ratio))
-  return(c(len,total_depth, mean_depth, min_depth, max_depth,posi_mins,x50_ratio,
-          x100_ratio,x200_ratio,x500_ratio,x50,x100,x200,x500))
-  }
   #---
   dat$y1=dat[,3]
   colnames(dat)<-c("chr","posi","depth","y1")
@@ -150,24 +210,57 @@ if (TRUE){
   brca_statis_x100_ratio=round(brca_statis_x100/brca_statis_len,4)
   brca_statis_x200_ratio=round(brca_statis_x200/brca_statis_len,4)
   brca_statis_x500_ratio=round(brca_statis_x500/brca_statis_len,4)
-  exon_statis<-rbind(c(brca_statis_len,brca_statis_total,
+  #---use the total mean
+   exon_statis_me<-c()
+  for(i in 1:nrow(exon)){
+  #for(i in 1:2){
+  #print(which(as.character(exon[i,3])==as.character(dat[,1])))
+  a= which(as.character(exon[i,3])==dat[,1])
+  a_s=dat[a,2]
+  #print(exon[i,1:2])
+  b=which(a_s>=as.numeric(exon[i,1]) & a_s<=as.numeric(exon[i,2]))
+  #print(dat$posi[a[b]])
+  #print(dat$depth[a[b]])
+  exon_statis_me<-rbind(exon_statis_me,fun_exon_statis1(dat$posi[a[b]],dat$depth[a[b]],brca_statis_mean_depth))
+  dat$y1[a[b]]<-0
+  }
+  #---
+  x5_men=round(sum(as.numeric(exon_statis_me[,15]))/brca_statis_len,4)
+  x10_men=round(sum(as.numeric(exon_statis_me[,16]))/brca_statis_len,4)
+  x20_men=round(sum(as.numeric(exon_statis_me[,17]))/brca_statis_len,4)
+  x30_men=round(sum(as.numeric(exon_statis_me[,18]))/brca_statis_len,4)
+  x40_men=round(sum(as.numeric(exon_statis_me[,19]))/brca_statis_len,4)
+  x50_men=round(sum(as.numeric(exon_statis_me[,20]))/brca_statis_len,4)
+  x60_men=round(sum(as.numeric(exon_statis_me[,21]))/brca_statis_len,4)
+  x70_men=round(sum(as.numeric(exon_statis_me[,22]))/brca_statis_len,4)
+  x80_men=round(sum(as.numeric(exon_statis_me[,23]))/brca_statis_len,4)
+  x90_men=round(sum(as.numeric(exon_statis_me[,24]))/brca_statis_len,4)
+  x100_men=round(sum(as.numeric(exon_statis_me[,25]))/brca_statis_len,4)
+  exon_statis_me<-rbind(c(brca_statis_len,brca_statis_total,
                        brca_statis_mean_depth,brca_statis_min_depth,
                       brca_statis_max_depth,brca_statis_posi_mins,
-                      brca_statis_x50_ratio,brca_statis_x50_ratio,
-                      brca_statis_x100_ratio,brca_statis_x200_ratio,
+                      brca_statis_x50_ratio,brca_statis_x100_ratio,
+                      brca_statis_x200_ratio,brca_statis_x500_ratio,
                       brca_statis_x50,brca_statis_x100,
-                      brca_statis_x200,brca_statis_x500),exon_statis)
-  rownames(exon_statis)<-c('BRCA',exon[,4])
-  colnames(exon_statis)<-c("exon_lenth","total_depth","mean_depth","min_depth",
+                      brca_statis_x200,brca_statis_x500,
+                      x5_men,x10_men,x20_men,x30_men,x40_men,x50_men,
+                      x60_men,x70_men,x80_men,x90_men,x100_men),exon_statis_me)
+  rownames(exon_statis_me)<-c('BRCA',exon[,4])
+  colnames(exon_statis_me)<-c("exon_lenth","total_depth","mean_depth","min_depth",
                            "max_depth","min_depth_posi_on_region","x50_ratio","x100_ratio","x200_ratio","x500_ratio",
-                           "x50","x100","x200","x500")
+                           "x50","x100","x200","x500","x5_men","x10_men","x20_men","x30_men","x40_men","x50_men",
+                           "x60_men","x70_men","x80_men","x90_men","x100_men")
   
   #----
   dat$y1<-dat[,3]-dat$y1
   data_exon<-data.frame(chr=exon[,3],exon=exon[,4],text_x=rowSums(cbind(as.numeric(exon[,1]),as.numeric(exon[,2])))/2,
-                        text_y=as.numeric(exon_statis[2:c(nrow(exon)+1),3]))
-  #--
-  p = ggplot(dat, aes(x = posi)) + 
+                        text_y=as.numeric(exon_statis_me[2:c(nrow(exon)+1),3]))
+}
+  dir.create(opts$output)
+# 5. 保存图表
+if (FALSE){
+
+    p = ggplot(dat, aes(x = posi)) + 
       geom_line(aes(y = depth), colour = 'green') +
       #geom_line(aes(y = exon), colour = 'red') +
       geom_area(aes(y = pmin(y1, depth)), fill = 'red',alpha=0.45)+
@@ -175,20 +268,15 @@ if (TRUE){
       facet_wrap(~chr,scale="free",ncol=4)+
     xlab("Position of Bases") + ylab("Depth of Bases")+
     theme_bw()
-    #theme(legend.key.size=unit(1,'cm'))
-    #scale_x_log10(breaks=c(0.05, 10, 50, 100, 200, 300, 500, 1000, 2000)) 
-    
-}
-
-# 5. 保存图表
-if (TRUE){
-  dir.create(opts$output)
   ggsave(file=paste(opts$output,"/",opts$output,".pdf",sep=""), plot=p, width = 30, height = 40,limitsize = FALSE)
   #ggsave(file=paste(opts$output,".tiff",sep=""), plot=p, width = 25, height = 50)
-  exon_statis=cbind(rownames(exon_statis),exon_statis)
-  write.table(exon_statis, file=paste(opts$output,"/",opts$output,".exon_statis.txt",sep=""),
-              append = T, quote = F, sep="\t", eol = "\n", na = "NA", dec = ".", row.names = F, col.names = T)
+  #exon_statis=cbind(rownames(exon_statis),exon_statis)
+  #write.table(exon_statis, file=paste(opts$output,"/",opts$output,".exon_statis.txt",sep=""),
+ #             append = T, quote = F, sep="\t", eol = "\n", na = "NA", dec = ".", row.names = F, col.names = T)
 }
+  exon_statis_me=cbind(rownames(exon_statis_me),exon_statis_me)
+  write.table(exon_statis_me, file=paste(opts$output,"/",opts$output,".exon_statis.txt",sep=""),
+              append = T, quote = F, sep="\t", eol = "\n", na = "NA", dec = ".", row.names = F, col.names = T)
 if (FALSE){
 for(i in 1:nrow(region)){
 dat1= subset(dat,chr ==as.character(region[,1])[i])
