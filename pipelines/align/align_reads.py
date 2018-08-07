@@ -10,15 +10,20 @@ import logging
 import time
 import sys
 import multiprocessing
+import shlex
+import subprocess
+
 
 # samtools faidx to get target reference fasta based on the bed
-def samtools_faidx(bed_dict):
+def samtools_faidx(bed_dict,logger_bwa_process, logger_bwa_errors):
     samtools_dir = bed_dict[0]
     total_ref_fa_file = bed_dict[1]
     bed = bed_dict[2]
     tmp_target_ref = bed_dict[3]
-    commod = '{0} faidx {1} {2} >> {3}'.format(samtools_dir, total_ref_fa_file, bed, tmp_target_ref)
-    os.system(commod)
+    command = '{0} faidx {1} {2} >> {3}'.format(samtools_dir, total_ref_fa_file, bed, tmp_target_ref)
+    stdout, stderr = stdout_err(command)
+    logger_bwa_process.info(stdout)
+    logger_bwa_errors.info(stderr)
 
 # use samtools faidx to get target reference fasta based on the bed file
 def filter_ref_fa_by_bed(samtools_dir, ref_fa_file, ref_index_name, 
@@ -40,7 +45,7 @@ def filter_ref_fa_by_bed(samtools_dir, ref_fa_file, ref_index_name,
         for line in bed:
             if line.startswith('chr'):
                 line= line.strip().split('\t')
-                outname= line[0] + ':' + line[1]+ '-' + line[2]
+                outname= line[0] + ':' + line[1]+ '-' + str(int(line[2])+1)
                 #print('>' + outname)
                 bed_dicts.append([samtools_dir, total_ref_fa_file, outname, tmp_ref_dir])
             else:
@@ -89,16 +94,19 @@ def align_reads_bwa(bwa_dir, samtools_dir,
     if not genome_indexed:
         bwa_index_command = '{0} index -p {1} {2}'.format(
             bwa_dir, ref_index_name, ref_fa_file_bed)
-        logger_bwa_process.info(bwa_index_command)
-        os.system(bwa_index_command)
+        (status, output) = subprocess.getstatusoutput(bwa_index_command)
+        logger_bwa_process.info(output)
         print('BWA genome index files have been built.')
     else:
         print('BWA genome index files exist.')
 
-    bwa_align_command = '{0} mem -t {1} {2} {3} {4} > {5}'.format(
-        bwa_dir, num_threads, ref_index_name, read1, read2, out_file)
-    print(bwa_align_command)
-    os.system(bwa_align_command)
+    bwa_align_command = '{0} mem {1} {2} {3} -t {4} > {5}'.format(bwa_dir, ref_index_name, read1, read2, num_threads, out_file)
+    logger_bwa_process.info(bwa_align_command)
+    #os.system(bwa_align_command)
+
+    (status, output) = subprocess.getstatusoutput(bwa_align_command)
+    logger_bwa_process.info(output)
+
     print('BWA alignment has been completed.')
     logger_bwa_process.info('BWA alignment has been completed.')
     return 0
@@ -126,15 +134,17 @@ def align_reads_bwa_based_all(bwa_dir, total_ref_fa_file,
         bwa_index_command = '{0} index -p {1} {2}'.format(
             bwa_dir, ref_index_name, ref_fa_file_bed)
         logger_bwa_process.info(bwa_index_command)
-        os.system(bwa_index_command)
+        (status, output) = subprocess.getstatusoutput(bwa_index_command)
+        logger_bwa_process.info(output)
         print('BWA genome index files have been built.')
     else:
         print('BWA genome index files exist.')
 
     bwa_align_command = '{0} mem -t {1} {2} {3} {4} > {5}'.format(
         bwa_dir, num_threads, ref_index_name, read1, read2, out_file)
-    print(bwa_align_command)
-    os.system(bwa_align_command)
+    (status, output) = subprocess.getstatusoutput(bwa_align_command)
+    logger_bwa_process.info(output)
+    logger_bwa_errors.info(stderr)
     print('BWA alignment has been completed.')
     logger_bwa_process.info('BWA alignment has been completed.')
     return 0

@@ -12,7 +12,16 @@ import sys
 import time
 import gzip
 import itertools
+import shlex
+import subprocess
 
+#put the info output to the log
+def stdout_err(command):
+    command_pope = shlex.split(command)
+    child = subprocess.Popen(command_pope, stdout=subprocess.PIPE,stderr=subprocess.PIPE,universal_newlines=True)
+    stdout, stderr = child.communicate()
+    child.wait()
+    return stdout, stderr
 #----------------------------------------------------------
 def read_fq(file_name, logger_trim_process, logger_trim_errors):
     if not os.path.isfile(file_name):
@@ -122,6 +131,10 @@ def trim_read_pairs_by_trimmomatic(trimmomatic_dir,
         logger_trim_errors.error('%s does not exist!', trimmomatic_dir)
         print("Error: cannot find trimmomatic.jar!")
         exit()
-    commond = 'java -jar {0} PE -threads 1 -phred33 -summary {1} {2} {3} {4} {5} {6} {7} ILLUMINACLIP:{8}:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:{9}'.format(
+    #trimmomatic_log = os.path.dirname(trimmed1) + '/' +'trimmomatic.log'
+    command = 'java -jar {0} PE -threads 1 -phred33 -summary {1} {2} {3} {4} {5} {6} {7} ILLUMINACLIP:{8}:2:30:10 LEADING:5 TRAILING:5 SLIDINGWINDOW:4:20 MINLEN:{9} '.format(
         trimmomatic_dir, stats_file, read1, read2, trimmed1, un_trimmed1, trimmed2, un_trimmed2, os.path.dirname(trimmomatic_dir) + '/adapters/TruSeq3-PE.fa', min_read_len)
-    os.system(commond)
+    stdout, stderr = stdout_err(command)
+    logger_trim_process.info(stdout)
+    logger_trim_errors.info(stderr)
+    #os.system(command)

@@ -171,7 +171,7 @@ def annotation(dict_cos,dict_clin,dict_g1000,variant_vcf,annotated_csv,stats_fil
             if filter != 'my_snp_filter' and filter != 'my_indel_filter':
             # if filter != "":
                 ac, af, an, baseqranksum, clippingranksum, dp, ds, end, excesshet, fs, inbreedingcoeff, mleac, mleaf, mq, mqranksum, qd, rae_mq, readposranksum, sor = get_info(info)
-                print(detail.split(':'))
+                #print(detail.split(':'))
                 #gt, ad, dp, gq, pl = detail.split(':')
                 if len(detail.split(':'))>5:
                     gt, ad, dp= detail.split(':')[0:3]
@@ -266,8 +266,8 @@ def fill_table(annotated_csv, annotated_csv_add, non_rs, non_cos, ref_ens):
         #subframe.iloc[i]['Gene_Name'], subframe.iloc[i]['Gene_ID'], subframe.iloc[i]['Feature_ID']
         if subframe.iloc[num]['Gene_Name'] is '-' and subframe.iloc[num]['Feature_ID'] is '-' and subframe.iloc[num]['Gene_ID'] is '-':
             subframe.iloc[num]['Gene_Name'] = subframe.iloc[num]['Gene_Name1']
-            print(subframe.iloc[num]['Gene_Name1'])
-            print(n2g)
+            #print(subframe.iloc[num]['Gene_Name1'])
+            #print(n2g)
             subframe.iloc[num]['Gene_ID'] = n2g[subframe.iloc[num]['Gene_Name1']]
             subframe.iloc[num]['Feature_ID'] = n2t[subframe.iloc[num]['Gene_Name1']]
         elif subframe.iloc[num]['Gene_Name'] is '-' and subframe.iloc[num]['Feature_ID'] is '-':

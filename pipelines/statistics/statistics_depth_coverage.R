@@ -33,13 +33,11 @@ print(paste("The output file prefix is ", opts$output, sep = ""))
 if (TRUE){
   pre_dat = read.table(opts$prefix_file, sep="\t")
   suf_dat = read.table(opts$suffix_file, sep="\t")
-  if('.list'== substr(opts$region,nchar(opts$region)-5,nchar(opts$region))){
-    region = read.table(opts$region)
-    if(substr(region[1,1],1,3) != 'chr'){
-     region = region[-1,]
+  region = read.table(opts$region)
+  if(substr(region[1,1],1,3) != 'chr'){
+    region = region[-1,]
   }
   region$region= apply(region,1,function(x){as.numeric(as.character(x[3]))-as.numeric(as.character(x[2]))})
-  }
 }
 
 # 4. 统计与绘图
@@ -56,7 +54,7 @@ if (TRUE){
       }
     }
   dat <-cbind(pre_dat,coverage_depth)
-  print(dat)
+  #print(dat)
   colnames(dat)<-c("targe region","targe length","mapped reads","non-mapped reads","coverage position length","sum of depth")
   dat$coverage_ratio<- round(dat[,5]/dat[,2],4)
   dat$mean_depth<-round(dat[,6]/dat[,2],4)
@@ -151,17 +149,17 @@ if (TRUE){
   write.table("\t", file=paste(opts$output,".txt",sep=""),append = F, quote = F, eol = "", row.names = F, col.names = F)
   # 保存统计结果，有waring正常
   write.table(dat, file=paste(opts$output,".txt",sep=""), append = T, quote = F, sep="\t", eol = "\n", na = "NA", dec = ".", row.names = T, col.names = T)
-  print(paste("The output table is ", opts$output, ".txt",  sep = ""))
+  #print(paste("The output table is ", opts$output, ".txt",  sep = ""))
   #----
   if(nchar(as.character(pre_dat[1,1]))>3){
   write.table("\t", file=paste(opts$output,".mergeCHOM.txt",sep=""),append = F, quote = F, eol = "", row.names = F, col.names = F)
   # 保存统计结果，有waring正常
   write.table(merge_dat, file=paste(opts$output,".mergeCHOM.txt",sep=""), append = T, quote = F, sep="\t", eol = "\n", na = "NA", dec = ".", row.names = T, col.names = T)
-  print(paste("The output table is ", opts$output, ".mergeCHOM.txt",  sep = ""))
+  #print(paste("The output table is ", opts$output, ".mergeCHOM.txt",  sep = ""))
   
   # 保存图片至文件，pdf方便AI修改成出版级图片
   ggsave(file=paste(opts$output,".mergeCHOM.pdf",sep=""), plot=p, width = 5, height = 5)
   ggsave(file=paste(opts$output,".mergeCHOM.jpg",sep=""), plot=p, width = 5, height = 5)
-  print(paste("The output figure is ", opts$output, ".pdf",  sep = ""))
+  #print(paste("The output figure is ", opts$output, ".pdf",  sep = ""))
  }
 }

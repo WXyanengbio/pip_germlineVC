@@ -67,10 +67,10 @@ if (TRUE){
   write.table("\t", file=paste(opts$output,".txt",sep=""),append = F, quote = F, eol = "", row.names = F, col.names = F)
   #保存统计结果，有waring正常
   write.table(dat1, file=paste(opts$output,".txt",sep=""), append = T, quote = F, sep="\t", eol = "\n", na = "NA", dec = ".", row.names = T, col.names = T)
-  print(paste("The output table is ", opts$output, ".txt",  sep = ""))
+  #print(paste("The output table is ", opts$output, ".txt",  sep = ""))
   #----
   # 保存图片至文件，pdf方便AI修改成出版级图片
   ggsave(file=paste(opts$output,".pdf",sep=""), plot=p, width = 6, height = 6)
   ggsave(file=paste(opts$output,".tiff",sep=""), plot=p, width = 6, height = 6)
-  print(paste("The output figure is ", opts$output, ".pdf",  sep = ""))
+  #print(paste("The output figure is ", opts$output, ".pdf",  sep = ""))
 }
