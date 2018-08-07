@@ -1,12 +1,14 @@
 __version__  =  '1.0'
 __author__  =  'Wang Xian'
 
+
 import logging
 import os
 import re
 import sys
 import time
 import argparse
+import yaml
 
 #sys.path.append(os.path.split(os.path.realpath(__file__))[0])
 #import the logging functions
@@ -34,10 +36,17 @@ from pipelines.benchmark.hap_benchmark import hap_py
 def script_information():
     print ("\nApplication: pipelines of QIAseq Targeted DNA Panel\n")
     print ("=====================================================================")
-    print ("Required environment: python \ JAVA\ R \ bwa \ samtools \ GATK \ UMI-tools \ hay.py ")
+    print ("Required environment: python \ JAVA\ R \ bwa \ samtools \ GATK \ UMI-tools")
+    print ("\n")
+    print("To get help , type:\n")
+    print("python3.6 run1.py -h")
 
-parser = argparse.ArgumentParser(usage = "\n\npython3.6 %(prog)s --source --sample_name")
+parser = argparse.ArgumentParser(usage = "\n\npython3.6 %(prog)s --yaml")
 
+parser.add_argument("--yaml", 
+                    type =str,
+                    default = 'null',
+                    help = "The yaml file of the parameters")
 parser.add_argument("--source", 
                     help = "Path to input reads in FASTA format", 
                     type = str)
@@ -238,15 +247,32 @@ def main():
     #time cost
     time_start1 = time.time()
     #---input
-    source = args.source
-    sample = args.sample_name
-    tailname = args.tailname
+    yaml_file = args.yaml
+    if yaml_file != 'null':
+        f = open(yaml_file)
+        file_yaml = yaml.load(f)
+        print(file_yaml)
+    if yaml_file != 'null' and 'source' in file_yaml.keys():
+        source = file_yaml['source']
+    else:
+        source = args.source
+    if yaml_file != 'null' and 'sample_name' in file_yaml.keys():
+        sample = file_yaml['sample_name']
+    else:
+        sample = args.sample_name
+    if yaml_file != 'null' and 'tailname' in file_yaml.keys():
+        tailname = file_yaml['tailname']
+    else:
+        tailname = args.tailname
+    
     if tailname != 'null':
         sample = sample + '_' + tailname
-
+    print(sample)
     #---check the outputdir
-    out_dir = args.output
-    if args.output is 'null':
+    if yaml_file != 'null' and 'output' in file_yaml.keys():
+        out_dir = file_yaml['output']
+        print(out_dir)
+    elif args.output is 'null':
         out_dir = sample
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
@@ -257,50 +283,139 @@ def main():
 
     logger_pipeline_process, logger_pipeline_errors = store_pipeline_logs(log_dir)
     #QC
-    fastqc_dir = args.fastqc_dir
+    if yaml_file != 'null' and 'fastqc_dir' in file_yaml.keys():
+        fastqc_dir = file_yaml['fastqc_dir']
+    else:
+        fastqc_dir = args.fastqc_dir
     #trim
-    min_read_len = args.min_read_len
-    common_seq1 = args.common_seq1
-    common_seq2 = args.common_seq2
+    if yaml_file != 'null' and 'min_read_len' in file_yaml.keys():
+        min_read_len = file_yaml['min_read_len']
+    else:
+        min_read_len = args.min_read_len
+    if yaml_file != 'null' and 'common_seq1' in file_yaml.keys():
+        common_seq1 = file_yaml['common_seq1']
+    else:
+        common_seq1 = args.common_seq1
+    if yaml_file != 'null' and 'common_seq2' in file_yaml.keys():
+        common_seq2 = file_yaml['common_seq2']
+    else:
+        common_seq2 = args.common_seq2
     #bwa---align
-    num_threads = args.num_threads
-    bwa_dir = args.bwa_dir
-    ref_fa_file = args.datasets_dir + '/' + args.ref_fa_file
-    ref_index_name = args.datasets_dir + '/' +args.ref_index_name
+    if yaml_file != 'null' and 'num_threads' in file_yaml.keys():
+        num_threads = file_yaml['num_threads']
+    else:
+        num_threads = args.num_threads
+    if yaml_file != 'null' and 'bwa_dir' in file_yaml.keys():
+        bwa_dir = file_yaml['bwa_dir']
+    else:
+        bwa_dir = args.bwa_dir
+    if yaml_file != 'null' and 'ref_fa_file' in file_yaml.keys():
+        ref_fa_file = args.datasets_dir + '/' + file_yaml['ref_fa_file']
+    else:
+        ref_fa_file = args.datasets_dir + '/' + args.ref_fa_file
+    if yaml_file != 'null' and 'ref_index_name' in file_yaml.keys():
+        ref_index_name = args.datasets_dir + '/' + file_yaml['ref_index_name']
+    else:
+        ref_index_name = args.datasets_dir + '/' +args.ref_index_name
     #post-align
-    samtools_dir = args.samtools_dir
-    min_mapq = args.min_mapq
-    max_soft_clip = args.max_soft_clip
-    max_dist = args.max_dist
-    primers_file = source + '/' + args.primers_file
+    if yaml_file != 'null' and 'samtools_dir' in file_yaml.keys():
+        samtools_dir = file_yaml['samtools_dir']
+    else:
+        samtools_dir = args.samtools_dir
+    if yaml_file != 'null' and 'min_mapq' in file_yaml.keys():
+        min_mapq = file_yaml['min_mapq']
+    else:
+        min_mapq = args.min_mapq
+    if yaml_file != 'null' and 'max_soft_clip' in file_yaml.keys():
+        max_soft_clip = file_yaml['max_soft_clip']
+    else:
+        max_soft_clip = args.max_soft_clip
+    if yaml_file != 'null' and 'max_dist' in file_yaml.keys():
+        max_dist = file_yaml['max_dist']
+    else:
+        max_dist = args.max_dist
+    if yaml_file != 'null' and 'primers_file' in file_yaml.keys():
+        primers_file = source + '/' + file_yaml['primers_file']
+    else:
+        primers_file = source + '/' + args.primers_file
     #--clustering
-    umitools_dir = args.umitools_dir
-    edit_dist = args.edit_dist
+    if yaml_file != 'null' and 'umitools_dir' in file_yaml.keys():
+        umitools_dir = file_yaml['umitools_dir']
+    else:
+        umitools_dir = args.umitools_dir
+    if yaml_file != 'null' and 'edit_dist' in file_yaml.keys():
+        edit_dist = file_yaml['edit_dist']
+    else:
+        edit_dist = args.edit_dist
     #--variant calling
-    memory_size = args.memory_size
-    memory_size = '-Xmx' + memory_size + 'G ' + '-Djava.io.tmpdir=./'
-    gatk_dir = args.gatk_dir
-    samtools_dir = args.samtools_dir
-    total_ref_fa_dict = args.datasets_dir + '/' + args.total_ref_fa_dict
-    total_ref_fa_file = args.datasets_dir + '/' + args.total_ref_fa_file
-    known_sites = args.known_sites
+    if yaml_file != 'null' and 'memory_size' in file_yaml.keys():
+        memory_size = file_yaml['memory_size']
+    else:
+        memory_size = args.memory_size
+    memory_size = '-Xmx' + str(memory_size) + 'G ' + '-Djava.io.tmpdir=./'
+    if yaml_file != 'null' and 'gatk_dir' in file_yaml.keys():
+        gatk_dir = file_yaml['gatk_dir']
+    else:
+        gatk_dir = args.gatk_dir
+    if yaml_file != 'null' and 'total_ref_fa_dict' in file_yaml.keys():
+        total_ref_fa_dict = args.datasets_dir + '/' + file_yaml['total_ref_fa_dict']
+    else:
+        total_ref_fa_dict = args.datasets_dir + '/' + args.total_ref_fa_dict
+    if yaml_file != 'null' and 'total_ref_fa_file' in file_yaml.keys():
+        total_ref_fa_file = args.datasets_dir + '/' + file_yaml['total_ref_fa_file']
+    else:
+        total_ref_fa_file = args.datasets_dir + '/' + args.total_ref_fa_file
+    if yaml_file != 'null' and 'known_sites' in file_yaml.keys():
+        known_sites = file_yaml['known_sites']
+    else:
+        known_sites = args.known_sites
     #read_length = args.read_length
-    exome_target_bed = args.datasets_dir + '/' + args.exome_target_bed
-    erc = args.erc
-    read_filter = args.read_filter
-    snp_filter = args.snp_filter
-    indel_filter = args.indel_filter
+    if yaml_file != 'null' and 'exome_target_bed' in file_yaml.keys():
+        exome_target_bed = args.datasets_dir + '/' + file_yaml['exome_target_bed']
+    else:
+        exome_target_bed = args.datasets_dir + '/' + args.exome_target_bed
+    if yaml_file != 'null' and 'erc' in file_yaml.keys():
+        erc = file_yaml['erc']
+    else:
+        erc = args.erc
+    if yaml_file != 'null' and 'read_filter' in file_yaml.keys():
+        read_filter = file_yaml['read_filter']
+    else:
+        read_filter = args.read_filter
+    if yaml_file != 'null' and 'snp_filter' in file_yaml.keys():
+        snp_filter = file_yaml['snp_filter']
+    else:
+        snp_filter = args.snp_filter
+    if yaml_file != 'null' and 'indel_filter' in file_yaml.keys():
+        indel_filter = file_yaml['indel_filter']
+    else:
+        indel_filter = args.indel_filter
     #--annotation
-    ref_ens = args.datasets_dir + '/' + args.anno_geneID
-    db_cosmic = args.datasets_dir + '/' + args.db_cosmic
-    db_clinvar = args.datasets_dir + '/' + args.db_clinvar
-    db_g1000 =  args.datasets_dir + '/' + args.db_g1000
+    if yaml_file != 'null' and 'ref_ens' in file_yaml.keys():
+        ref_ens = args.datasets_dir + '/' + file_yaml['ref_ens']
+    else:
+        ref_ens = args.datasets_dir + '/' + args.anno_geneID
+    if yaml_file != 'null' and 'db_cosmic' in file_yaml.keys():
+        db_cosmic = args.datasets_dir + '/' + file_yaml['db_cosmic']
+    else:
+        db_cosmic = args.datasets_dir + '/' + args.db_cosmic
+    if yaml_file != 'null' and 'db_clinvar' in file_yaml.keys():
+        db_clinvar = args.datasets_dir + '/' + file_yaml['db_clinvar']
+    else:
+        db_clinvar = args.datasets_dir + '/' + args.db_clinvar
+    if yaml_file != 'null' and 'db_g1000' in file_yaml.keys():
+        db_g1000 = args.datasets_dir + '/' + file_yaml['db_g1000']
+    else:
+        db_g1000 =  args.datasets_dir + '/' + args.db_g1000
     #--benchmark
-    benchmark_dir = args.benchmark_dir
-    confident_region_bed = args.datasets_dir + '/' + args.confident_region_bed
-    truth_vcf = args.datasets_dir + '/' + args.truth_vcf
+    #benchmark_dir = args.benchmark_dir
+    #confident_region_bed = args.datasets_dir + '/' + args.confident_region_bed
+    #truth_vcf = args.datasets_dir + '/' + args.truth_vcf
     #---
-    test_level = args.test
+    if yaml_file != 'null' and 'test' in file_yaml.keys():
+        test_level = file_yaml['test']
+    else:
+        test_level = args.test
     ##########################################################################################
     #---QC
     ##########################################################################################
@@ -336,7 +451,7 @@ def main():
     logger_pipeline_process.info("QC of reads is completed after %.2f min.", (time.time()-time_start)/60)
     
     if test_level >= 0:
-        print("Test QC module!")
+        print("Test QC module!\n\n\n")
     else:
         exit()
     ##########################################################################################
@@ -362,7 +477,7 @@ def main():
     logger_pipeline_process.info("Trim of reads is completed after %.2f min.", (time.time()-time_start)/60)
     
     if test_level >= 1:
-        print("Test trim module!")
+        print("Test trim module!\n\n\n")
     else:
         exit()
     ##########################################################################################
@@ -381,14 +496,14 @@ def main():
 
     logger_bwa_process, logger_bwa_errors = store_align_logs(log_dir)
     
-    returncode = align_reads_bwa(bwa_dir, ref_fa_file, ref_index_name,exome_target_bed, trim_read1, trim_read2, 
+    returncode = align_reads_bwa(bwa_dir, samtools_dir,ref_fa_file, ref_index_name, exome_target_bed, total_ref_fa_file, trim_read1, trim_read2, 
                                                 out_file, num_threads, logger_bwa_process, logger_bwa_errors)
-    
+    time.sleep(5)
     logger_bwa_process.info("Alignment of reads is completed after %.2f min.", (time.time()-time_start)/60)
     logger_pipeline_process.info("Align of reads is completed after %.2f min.", (time.time()-time_start)/60)
     
     if test_level >= 2:
-        print("Test align module!")
+        print("Test align module!\n\n\n")
     else:
         exit()
 
@@ -420,11 +535,11 @@ def main():
                         stats_file, primer_stats_file, logger_filter_process,
                         logger_filter_errors)
     
-    logger_bwa_process.info("Post Alignment of reads is completed after %.2f min.", (time.time()-time_start)/60)
+    logger_filter_process.info("Post Alignment of reads is completed after %.2f min.", (time.time()-time_start)/60)
     logger_pipeline_process.info("Post_align of reads is completed after %.2f min.", (time.time()-time_start)/60)
     
     if test_level >= 3:
-        print("Test psot align module!")
+        print("Test psot align module!\n\n\n")
     else:
         exit()
     ##########################################################################################
@@ -450,7 +565,7 @@ def main():
     logger_pipeline_process.info("Cluster of reads is completed after %.2f min.", (time.time()-time_start)/60)
     
     if test_level >= 4:
-        print("Test barcode clustering module!")
+        print("Test barcode clustering module!\n\n\n")
     else:
         exit()
     ##########################################################################################
@@ -473,7 +588,7 @@ def main():
     logger_pipeline_process.info('Reformat alignment SAM file is completed after %.2f min.',(time.time() - time_start)/60)
     
     if test_level >= 5:
-        print("Test reformat sam module!")
+        print("Test reformat sam module!\n\n\n")
     else:
         exit()
     ##########################################################################################
@@ -513,7 +628,7 @@ def main():
     logger_pipeline_process.info('variant_calling is completed after %.2f min.',(time.time() - time_start)/60)
 
     if test_level >= 6:
-        print("Test variant calling module!")
+        print("Test variant calling module!\n\n\n")
     else:
         exit()
     
@@ -559,31 +674,31 @@ def main():
     logger_pipeline_process.info('Annotation variant is completed after %.2f min.',(time.time() - time_start)/60)
 
     if test_level >= 7:
-        print("Test annotation variant module!")
+        print("Test annotation variant module!\n\n\n")
     else:
         exit()
     ##########################################################################################
     #---benchmarking 
     ##########################################################################################
     #time cost
-    time_start = time.time()
+    #time_start = time.time()
     #benchmarking_dir
-    benchmarking_dir = out_dir + '/'+ 'benchmarking'
-    if not os.path.exists(benchmarking_dir):
-        os.makedirs(benchmarking_dir)
+    #benchmarking_dir = out_dir + '/'+ 'benchmarking'
+    #if not os.path.exists(benchmarking_dir):
+    #    os.makedirs(benchmarking_dir)
 
-    logger_benchmark_process, logger_benchmark_errors = store_benchmark_logs(log_dir)
+    #logger_benchmark_process, logger_benchmark_errors = store_benchmark_logs(log_dir)
     
-    hap_py(benchmark_dir,truth_vcf, filter_snp, confident_region_bed, benchmarking_dir, total_ref_fa_file, exon_interval, num_threads, logger_benchmark_process, logger_benchmark_errors)
-    hap_py(benchmark_dir,truth_vcf, filter_indel, confident_region_bed, benchmarking_dir, total_ref_fa_file, exon_interval, num_threads, logger_benchmark_process, logger_benchmark_errors)
+    #hap_py(benchmark_dir,truth_vcf, filter_snp, confident_region_bed, benchmarking_dir, total_ref_fa_file, exon_interval, num_threads, logger_benchmark_process, logger_benchmark_errors)
+    #hap_py(benchmark_dir,truth_vcf, filter_indel, confident_region_bed, benchmarking_dir, total_ref_fa_file, exon_interval, num_threads, logger_benchmark_process, logger_benchmark_errors)
     
-    logger_benchmark_process.info('benchmarking is completed after %.2f min.',(time.time() - time_start)/60)
-    logger_pipeline_process.info('Benchmark is completed after %.2f min.',(time.time() - time_start)/60)
+    #logger_benchmark_process.info('benchmarking is completed after %.2f min.',(time.time() - time_start)/60)
+    #logger_pipeline_process.info('Benchmark is completed after %.2f min.',(time.time() - time_start)/60)
     
-    if test_level >= 8:
-        print("Test benchmark module!")
-    else:
-        exit()
+    #if test_level >= 8:
+    #    print("Test benchmark module!")
+    #else:
+    #    exit()
     ##########################################################################################
     #---statistics of the variant calling pipeline
     ##########################################################################################
@@ -627,6 +742,6 @@ def main():
     statistics_time(statistics_dir, sample, process_log, logger_statistics_process, logger_statistics_errors)
     #---
     if test_level == 9:
-        print("Test statistics module!")
+        print("Test statistics module!\n\n\n")
 if __name__ == '__main__':
     main()
