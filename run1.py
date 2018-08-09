@@ -221,10 +221,10 @@ parser.add_argument("-v",
                     '-version', 
                     action = 'version', 
                     version =' %(prog)s 1.0')
-parser.add_argument("--test",
-                    type = int,
-                    default = 9,
-                    help = "the subprocess of the script")
+parser.add_argument("--tools",
+                    type = str,
+                    default = 'all',
+                    help = "the subprocess of the script, such as qc, trim, align, post_align, cluster,reformat, variant_call, annotation, statis")
 
 if "-h" in sys.argv[1:] or "--help" in sys.argv[1:]:
     script_information()
@@ -251,7 +251,7 @@ def main():
     if yaml_file != 'null':
         f = open(yaml_file)
         file_yaml = yaml.load(f)
-        print(file_yaml)
+        #print(file_yaml)
     if yaml_file != 'null' and 'source' in file_yaml.keys():
         source = file_yaml['source']
     else:
@@ -267,11 +267,11 @@ def main():
     
     if tailname != 'null':
         sample = sample + '_' + tailname
-    print(sample)
+    #print(sample)
     #---check the outputdir
     if yaml_file != 'null' and 'output' in file_yaml.keys():
         out_dir = file_yaml['output']
-        print(out_dir)
+        #print(out_dir)
     elif args.output is 'null':
         out_dir = sample
     if not os.path.exists(out_dir):
@@ -412,48 +412,47 @@ def main():
     #confident_region_bed = args.datasets_dir + '/' + args.confident_region_bed
     #truth_vcf = args.datasets_dir + '/' + args.truth_vcf
     #---
-    if yaml_file != 'null' and 'test' in file_yaml.keys():
-        test_level = file_yaml['test']
+    if yaml_file != 'null' and 'tools' in file_yaml.keys():
+        tools = file_yaml['tools']
     else:
-        test_level = args.test
+        tools = args.tools
     ##########################################################################################
     #---QC
     ##########################################################################################
     #time cost
     time_start = time.time()
-    #qc_dir
     module = "QC"
-    qc_dir = out_dir + '/'+ 'QC'
-    if not os.path.exists(qc_dir):
-        os.makedirs(qc_dir)
-
+    #---
     read1 = source + '/' + sample + '_R1_001.fastq.gz'
     read2 = source + '/' + sample  + '_R2_001.fastq.gz'
     #---
-    logger_statistics_process, logger_statistics_errors = store_statistics_logs(log_dir)
-    qc_result1, qc_result2 = qc_raw_reads(fastqc_dir, qc_dir, 
+    if tools in ['all','qc']:
+        print("Test QC module!\n")
+    #qc_dir
+        qc_dir = out_dir + '/'+ 'QC'
+        if not os.path.exists(qc_dir):
+            os.makedirs(qc_dir)
+    #---
+        logger_statistics_process, logger_statistics_errors = store_statistics_logs(log_dir)
+        qc_result1, qc_result2 = qc_raw_reads(fastqc_dir, qc_dir, 
                  sample, module, 
                  read1, read2,
                  logger_statistics_process, logger_statistics_errors)
     #--check the quality of the raw reads
-    if float(qc_result1[7].strip('%')) > 70 and  float(qc_result2[7].strip('%')) > 70:
-        print("The ratio of read1 and read2 with Q30 quality are both higher than 70%.")
-    else:
-        exit("The ratio of read1 and read2 with Q30 quality are both lower than 80%!!!!!!!")
+        if float(qc_result1[7].strip('%')) > 70 and  float(qc_result2[7].strip('%')) > 70:
+            print("The ratio of read1 and read2 with Q30 quality are both higher than 70%.")
+        else:
+            exit("The ratio of read1 and read2 with Q30 quality are both lower than 80%!!!!!!!")
     #--statistics the N base in raw reads and set the cutoff of the min read length
-    if max(int(qc_result1[9]), int(qc_result2[9])) < min_read_len:
-        print("The cutoff of the min read length is the default: {0}".format(min_read_len))
-    else:
-        min_read_len = max(int(qc_result1[9]), int(qc_result2[9]))
-        print("The cutoff of the min read length is based on the N base in the reads: {0}".format(min_read_len))
+        if max(int(qc_result1[9]), int(qc_result2[9])) < min_read_len:
+            print("The cutoff of the min read length is the default: {0}".format(min_read_len))
+        else:
+            min_read_len = max(int(qc_result1[9]), int(qc_result2[9]))
+            print("The cutoff of the min read length is based on the N base in the reads: {0}".format(min_read_len))
+        logger_statistics_process.info("QC of reads is completed after %.2f min.", (time.time()-time_start)/60)
+        logger_pipeline_process.info("QC of reads is completed after %.2f min.", (time.time()-time_start)/60)
+        print("--" * 20 + '\n\n')
 
-    logger_statistics_process.info("QC of reads is completed after %.2f min.", (time.time()-time_start)/60)
-    logger_pipeline_process.info("QC of reads is completed after %.2f min.", (time.time()-time_start)/60)
-    
-    if test_level >= 0:
-        print("Test QC module!\n\n\n")
-    else:
-        exit()
     ##########################################################################################
     #---trim
     ##########################################################################################
@@ -461,25 +460,25 @@ def main():
     time_start = time.time()
     #undetermined_dir
     undetermined_dir = out_dir + '/'+ 'undetermined'
-    if not os.path.exists(undetermined_dir):
-        os.makedirs(undetermined_dir)
-
     trimmed1 = undetermined_dir + '/' + sample + '_R1_undetermined.fastq'
     trimmed2 = undetermined_dir + '/' + sample + '_R2_undetermined.fastq'
     stats_file = undetermined_dir + '/' + sample + '_basic_stats.txt'
-
-    logger_trim_process, logger_trim_errors = store_trim_logs(log_dir)
-    trim_read_pairs(read1, read2, trimmed1, trimmed2, min_read_len,
+    if tools in ['all','trim']:
+        print("please check the QC subprocess result--the min read length!")
+        print("The cutoff of the min read length is the default: {0}".format(min_read_len))
+        print("Test trim module!\n\n\n")
+        # ,kdir undetermined_dir
+        if not os.path.exists(undetermined_dir):
+            os.makedirs(undetermined_dir)
+        
+        logger_trim_process, logger_trim_errors = store_trim_logs(log_dir)
+        trim_read_pairs(read1, read2, trimmed1, trimmed2, min_read_len,
                            common_seq1, common_seq2, stats_file, logger_trim_process,
                            logger_trim_errors)
-    
-    logger_trim_process.info("Trimming of reads is completed after %.2f min.", (time.time()-time_start)/60)
-    logger_pipeline_process.info("Trim of reads is completed after %.2f min.", (time.time()-time_start)/60)
-    
-    if test_level >= 1:
-        print("Test trim module!\n\n\n")
-    else:
-        exit()
+        logger_trim_process.info("Trimming of reads is completed after %.2f min.", (time.time()-time_start)/60)
+        logger_pipeline_process.info("Trim of reads is completed after %.2f min.", (time.time()-time_start)/60)
+        print("--" * 20 + '\n\n')
+
     ##########################################################################################
     #---align
     ##########################################################################################
@@ -487,25 +486,21 @@ def main():
     time_start = time.time()
     #aligned_dir
     aligned_dir = out_dir + '/'+ 'aligned'
-    if not os.path.exists(aligned_dir):
-        os.makedirs(aligned_dir)
+    trim_read1 = out_dir + '/'+ 'undetermined'+ '/' + sample + '_R1_undetermined.fastq'
+    trim_read2 = out_dir + '/'+ 'undetermined'+ '/' + sample + '_R2_undetermined.fastq'
 
-    trim_read1 = trimmed1
-    trim_read2 = trimmed2
     out_file = aligned_dir + '/' + sample + '_aligned.sam'
-
-    logger_bwa_process, logger_bwa_errors = store_align_logs(log_dir)
-    
-    returncode = align_reads_bwa(bwa_dir, samtools_dir,ref_fa_file, ref_index_name, exome_target_bed, total_ref_fa_file, trim_read1, trim_read2, 
+    if tools in ['all','align']:
+        print("please check the Trim subprocess result--undetermined.fastq!")
+        print("Test align module!\n")
+        if not os.path.exists(aligned_dir):
+            os.makedirs(aligned_dir)
+        logger_bwa_process, logger_bwa_errors = store_align_logs(log_dir)
+        returncode = align_reads_bwa(bwa_dir, samtools_dir,ref_fa_file, ref_index_name, exome_target_bed, total_ref_fa_file, trim_read1, trim_read2, 
                                                 out_file, num_threads, logger_bwa_process, logger_bwa_errors)
-    time.sleep(5)
-    logger_bwa_process.info("Alignment of reads is completed after %.2f min.", (time.time()-time_start)/60)
-    logger_pipeline_process.info("Align of reads is completed after %.2f min.", (time.time()-time_start)/60)
-    
-    if test_level >= 2:
-        print("Test align module!\n\n\n")
-    else:
-        exit()
+        logger_bwa_process.info("Alignment of reads is completed after %.2f min.", (time.time()-time_start)/60)
+        logger_pipeline_process.info("Align of reads is completed after %.2f min.", (time.time()-time_start)/60)
+        print("--" * 20 + '\n\n')
 
     ######################################annotationmain####################################################
     #---post_align
@@ -514,10 +509,6 @@ def main():
     time_start = time.time()
     #post_aligned_dir
     filtered_dir = out_dir + '/'+ 'filtered'
-    if not os.path.exists(filtered_dir):
-        os.makedirs(filtered_dir)
-    
-    logger_filter_process, logger_filter_errors = store_filter_logs(log_dir)
     #out_file from the align
     alignment_sam = out_file
     #primers_file = primers_file
@@ -528,20 +519,23 @@ def main():
     primer_stats_file = filtered_dir + '/' + sample + '_primer_stats.csv'
     #max_dist = 2
     out_file2 = filtered_dir + '/' + sample + '_filtered.sam'
-    filter_alignment_samtools(samtools_dir, alignment_sam, min_mapq,
+
+    if tools in ['all','post_align']:
+        print("please check the Algin subprocess result--aligned.sam!")
+        print("Test post align module!\n")
+        if not os.path.exists(filtered_dir):
+            os.makedirs(filtered_dir)
+        logger_filter_process, logger_filter_errors = store_filter_logs(log_dir)
+        filter_alignment_samtools(samtools_dir, alignment_sam, min_mapq,
                               max_soft_clip, out_file1, stats_file,
                               logger_filter_process, logger_filter_errors)
-    identify_gs_primers(samtools_dir, out_file1, primers_file, max_dist, out_file2,
+        identify_gs_primers(samtools_dir, out_file1, primers_file, max_dist, out_file2,
                         stats_file, primer_stats_file, logger_filter_process,
                         logger_filter_errors)
-    
-    logger_filter_process.info("Post Alignment of reads is completed after %.2f min.", (time.time()-time_start)/60)
-    logger_pipeline_process.info("Post_align of reads is completed after %.2f min.", (time.time()-time_start)/60)
-    
-    if test_level >= 3:
-        print("Test psot align module!\n\n\n")
-    else:
-        exit()
+        logger_filter_process.info("Post Alignment of reads is completed after %.2f min.", (time.time()-time_start)/60)
+        logger_pipeline_process.info("Post_align of reads is completed after %.2f min.", (time.time()-time_start)/60)
+        print("--" * 20 + '\n\n')
+
     ##########################################################################################
     #---barcode clustering
     ##########################################################################################
@@ -549,25 +543,22 @@ def main():
     time_start = time.time()
     #clustering_dir
     clustered_dir = out_dir + '/'+ 'clustered'
-    if not os.path.exists(clustered_dir):
-        os.makedirs(clustered_dir)
-
-    logger_umi_process, logger_umi_errors = store_cluster_logs(log_dir)
-    
-    filtered_sam = out_file2
+    filtered_sam = out_dir + '/'+ 'filtered'+ '/' + sample + '_filtered.sam'
     filtered_bam = clustered_dir + '/' + sample + '_filtered.bam'
     sorted_bam = clustered_dir + '/' + sample + '_filtered_sorted.bam'
     umitool_stats = clustered_dir + '/' + sample + '_deduplicated'
     umis_sam = clustered_dir + '/' + sample + '_umis.sam'
-    
-    umitool(samtools_dir, umitools_dir, filtered_sam ,filtered_bam , sorted_bam, umitool_stats , umis_sam, edit_dist, logger_umi_process, logger_umi_errors)
-    logger_umi_process.info("UMIs tools clustering of reads is completed after %.2f min.", (time.time()-time_start)/60)
-    logger_pipeline_process.info("Cluster of reads is completed after %.2f min.", (time.time()-time_start)/60)
-    
-    if test_level >= 4:
-        print("Test barcode clustering module!\n\n\n")
-    else:
-        exit()
+    if tools in ['all','cluster']:
+        print("please check the post algin subprocess result--filtered.sam!")
+        print("Test cluster module!\n")
+        if not os.path.exists(clustered_dir):
+            os.makedirs(clustered_dir)
+        logger_umi_process, logger_umi_errors = store_cluster_logs(log_dir)
+        umitool(samtools_dir, umitools_dir, filtered_sam ,filtered_bam , sorted_bam, umitool_stats , umis_sam, edit_dist, logger_umi_process, logger_umi_errors)
+        logger_umi_process.info("UMIs tools clustering of reads is completed after %.2f min.", (time.time()-time_start)/60)
+        logger_pipeline_process.info("Cluster of reads is completed after %.2f min.", (time.time()-time_start)/60)
+        print("--" * 20 + '\n\n')
+
     ##########################################################################################
     #---reformat 
     ##########################################################################################
@@ -575,22 +566,19 @@ def main():
     time_start = time.time()
     #reformated_dir
     reformated_dir = out_dir + '/'+ 'reformated'
-    if not os.path.exists(reformated_dir):
-        os.makedirs(reformated_dir)
-
-    logger_reformat_process, logger_reformat_errors = store_cluster_logs(log_dir)
-    
-    alignment_sam = umis_sam
+    alignment_sam = out_dir + '/'+ 'clustered'+ '/' + sample + '_umis.sam'
     output_sam = reformated_dir + '/' + sample + '_vcready.sam'
-    reformat_sam(alignment_sam, output_sam, logger_reformat_process, logger_reformat_errors)
-    
-    logger_reformat_process.info('Finish reformating alignment SAM file is completed after %.2f min.',(time.time() - time_start)/60)
-    logger_pipeline_process.info('Reformat alignment SAM file is completed after %.2f min.',(time.time() - time_start)/60)
-    
-    if test_level >= 5:
-        print("Test reformat sam module!\n\n\n")
-    else:
-        exit()
+    if tools in ['all','reformat']:
+        print("please check the cluster subprocess result--umis.sam!")
+        print("Test reformat module!\n")
+        if not os.path.exists(reformated_dir):
+            os.makedirs(reformated_dir)
+        logger_reformat_process, logger_reformat_errors = store_cluster_logs(log_dir)
+        reformat_sam(alignment_sam, output_sam, logger_reformat_process, logger_reformat_errors)
+        logger_reformat_process.info('Finish reformating alignment SAM file is completed after %.2f min.',(time.time() - time_start)/60)
+        logger_pipeline_process.info('Reformat alignment SAM file is completed after %.2f min.',(time.time() - time_start)/60)
+        print("--" * 20 + '\n\n')
+
     ##########################################################################################
     #---Germline variant calling
     ##########################################################################################
@@ -598,40 +586,37 @@ def main():
     time_start = time.time()
     #germline_vc_dir
     germline_vc_dir = out_dir + '/'+ 'germline_vc'
-    if not os.path.exists(germline_vc_dir):
-        os.makedirs(germline_vc_dir)
-    
-    logger_germline_vc_process, logger_germline_vc_errors = store_germline_vc_logs(log_dir)
-    
     #---modify the known-sites
     known_sites = known_sites.replace(',' , ' --known-sites ' + args.datasets_dir + '/'  )
     known_sites = args.datasets_dir + '/' + known_sites
-    vready_sam = output_sam
-    sam_to_bem(gatk_dir, samtools_dir,
+    vready_sam = out_dir + '/'+ 'reformated'+ '/' + sample + '_vcready.sam'
+    marked_bqsr_bam = germline_vc_dir + '/' + sample + '_sorted.MarkDuplicates.BQSR.bam'
+    exon_interval = germline_vc_dir + '/' + 'target_interval.list'
+
+    if tools in ['all','variant_call']:
+        print("please check the reformat subprocess result--vcready.sam!")
+        print("Test variant_call module!\n")
+        if not os.path.exists(germline_vc_dir):
+            os.makedirs(germline_vc_dir)
+        logger_germline_vc_process, logger_germline_vc_errors = store_germline_vc_logs(log_dir)
+        sam_to_bem(gatk_dir, samtools_dir,
                vready_sam, sample,
                germline_vc_dir, memory_size,
                exome_target_bed, 
                total_ref_fa_file, total_ref_fa_dict,
                known_sites,
                logger_germline_vc_process, logger_germline_vc_errors)
-
-    marked_bqsr_bam = germline_vc_dir + '/' + sample + '_sorted.MarkDuplicates.BQSR.bam'
-    exon_interval = germline_vc_dir + '/' + 'target_interval.list'
-    germline_variant_calling(gatk_dir, marked_bqsr_bam,
+        germline_variant_calling(gatk_dir, marked_bqsr_bam,
                              sample, germline_vc_dir, 
                              memory_size, total_ref_fa_file, 
                              exon_interval, erc,
                              read_filter,
                              snp_filter,indel_filter,
                              logger_germline_vc_process, logger_germline_vc_errors)
-    logger_germline_vc_process.info('Germline variant calling is completed after %.2f min.',(time.time() - time_start)/60)
-    logger_pipeline_process.info('variant_calling is completed after %.2f min.',(time.time() - time_start)/60)
+        logger_germline_vc_process.info('Germline variant calling is completed after %.2f min.',(time.time() - time_start)/60)
+        logger_pipeline_process.info('variant_calling is completed after %.2f min.',(time.time() - time_start)/60)
+        print("--" * 20 + '\n\n')
 
-    if test_level >= 6:
-        print("Test variant calling module!\n\n\n")
-    else:
-        exit()
-    
     ##########################################################################################
     #---Annotation variant calling
     ##########################################################################################
@@ -639,44 +624,43 @@ def main():
     time_start = time.time()
     #Annotation dir
     annotation_dir = out_dir + '/'+ 'annotation'
-    if not os.path.exists(annotation_dir):
-        os.makedirs(annotation_dir)
-    
-    logger_annotation_process, logger_annotation_errors = store_annotation_logs(log_dir)
-    
     raw_vcf = germline_vc_dir + '/'  + sample + '.raw_variants.vcf'
     snp_vcf = germline_vc_dir + '/'  + sample + '.raw_variants_SNP.vcf'
     filter_snp = germline_vc_dir + '/'  + sample + '.filter_SNP.vcf'
     indel_vcf = germline_vc_dir + '/'  + sample + '.raw_variants_indel.vcf'
     filter_indel = germline_vc_dir + '/'  + sample + '.filter_indel.vcf'
     #annotation
-    annotationmain(db_cosmic, db_clinvar, db_g1000, 
+    if tools in ['all','annotation']:
+        print("please check the variant_call subprocess result--VCF!")
+        print("Test annotation module!\n")
+    #Annotation dir
+        if not os.path.exists(annotation_dir):
+            os.makedirs(annotation_dir)
+        logger_annotation_process, logger_annotation_errors = store_annotation_logs(log_dir)
+        annotationmain(db_cosmic, db_clinvar, db_g1000, 
                    ref_ens,
                    raw_vcf, sample,
                    annotation_dir, logger_annotation_process, logger_annotation_errors)
-    annotationmain(db_cosmic, db_clinvar, db_g1000, 
+        annotationmain(db_cosmic, db_clinvar, db_g1000, 
                    ref_ens,
                    snp_vcf, sample,
                    annotation_dir, logger_annotation_process, logger_annotation_errors)
-    annotationmain(db_cosmic, db_clinvar, db_g1000, 
+        annotationmain(db_cosmic, db_clinvar, db_g1000, 
                    ref_ens,
                    filter_snp, sample,
                    annotation_dir, logger_annotation_process, logger_annotation_errors)
-    annotationmain(db_cosmic, db_clinvar, db_g1000, 
+        annotationmain(db_cosmic, db_clinvar, db_g1000, 
                    ref_ens,
                    indel_vcf, sample,
                    annotation_dir, logger_annotation_process, logger_annotation_errors)
-    annotationmain(db_cosmic, db_clinvar, db_g1000, 
+        annotationmain(db_cosmic, db_clinvar, db_g1000, 
                    ref_ens,
                    filter_indel, sample,
                    annotation_dir, logger_annotation_process, logger_annotation_errors)
-    logger_annotation_process.info('Finish annotation variant  is completed after %.2f min.',(time.time() - time_start)/60)
-    logger_pipeline_process.info('Annotation variant is completed after %.2f min.',(time.time() - time_start)/60)
+        logger_annotation_process.info('Finish annotation variant  is completed after %.2f min.',(time.time() - time_start)/60)
+        logger_pipeline_process.info('Annotation variant is completed after %.2f min.',(time.time() - time_start)/60)
+        print("--" * 20 + '\n\n')
 
-    if test_level >= 7:
-        print("Test annotation variant module!\n\n\n")
-    else:
-        exit()
     ##########################################################################################
     #---benchmarking 
     ##########################################################################################
@@ -713,35 +697,42 @@ def main():
     statistics_trim_dir = statistics_dir + '/'+ 'trim_QC'
     if not os.path.exists(statistics_trim_dir):
         os.makedirs(statistics_trim_dir)
-    module = "Trim"
-    trim_result1, trim_result2 = qc_raw_reads(fastqc_dir, statistics_trim_dir, 
+    if tools in ['all','statis']:
+        print("please check the others subprocess results!")
+        print("Test statistics module!\n")
+        if tools == 'statis':
+            logger_statistics_process, logger_statistics_errors = store_statistics_logs(log_dir)
+    #statistics dir
+        if not os.path.exists(statistics_dir):
+            os.makedirs(statistics_dir)
+        module = "Trim"
+        trim_result1, trim_result2 = qc_raw_reads(fastqc_dir, statistics_trim_dir, 
                  sample, module, 
                  trimmed1, trimmed2,
                  logger_statistics_process, logger_statistics_errors)
     #--statistics the align
-    module1 = "Align"
-    align_sorted_bam = statistics_depth_coverage(samtools_dir, out_file, statistics_dir, sample, module1, exome_target_bed,logger_statistics_process, logger_statistics_errors)
-    align_statistics = statistics_sam_bam(samtools_dir, sorted_bam, statistics_dir,sample, module1, logger_statistics_process, logger_statistics_errors)
+        module1 = "Align"
+        align_sorted_bam = statistics_depth_coverage(samtools_dir, out_file, statistics_dir, sample, module1, exome_target_bed,logger_statistics_process, logger_statistics_errors)
+        align_statistics = statistics_sam_bam(samtools_dir, sorted_bam, statistics_dir,sample, module1, logger_statistics_process, logger_statistics_errors)
     #--statistics the filter
     #----cluster module would build the filter sorted bam, but it has been changed UMIs-tools
-    module2 = "Fliter"
-    filtered_sorted_bam = statistics_depth_coverage(samtools_dir, filtered_sam, statistics_dir, sample, module2,exome_target_bed, logger_statistics_process, logger_statistics_errors)
-    fliter_statistics = statistics_sam_bam(samtools_dir, filtered_sorted_bam, statistics_dir, sample, module2, logger_statistics_process, logger_statistics_errors)
+        module2 = "Fliter"
+        filtered_sorted_bam = statistics_depth_coverage(samtools_dir, filtered_sam, statistics_dir, sample, module2,exome_target_bed, logger_statistics_process, logger_statistics_errors)
+        fliter_statistics = statistics_sam_bam(samtools_dir, filtered_sorted_bam, statistics_dir, sample, module2, logger_statistics_process, logger_statistics_errors)
     # statistics the umi-tools
-    module3 = "Cluster_reformat"
-    cr_sorted_bam = statistics_depth_coverage(samtools_dir, vready_sam, statistics_dir, sample, module3,exome_target_bed, logger_statistics_process, logger_statistics_errors)
-    cr_statistics = statistics_sam_bam(samtools_dir, cr_sorted_bam, statistics_dir, sample, module3, logger_statistics_process, logger_statistics_errors)
+        module3 = "Cluster_reformat"
+        cr_sorted_bam = statistics_depth_coverage(samtools_dir, vready_sam, statistics_dir, sample, module3,exome_target_bed, logger_statistics_process, logger_statistics_errors)
+        cr_statistics = statistics_sam_bam(samtools_dir, cr_sorted_bam, statistics_dir, sample, module3, logger_statistics_process, logger_statistics_errors)
     #-merge the sorted bam
-    merge_statistics_sam_bam(logger_statistics_process, logger_statistics_errors, statistics_dir, sample, ','.join([module1,module2,module3]),align_statistics,fliter_statistics,cr_statistics)
+        merge_statistics_sam_bam(logger_statistics_process, logger_statistics_errors, statistics_dir, sample, ','.join([module1,module2,module3]),align_statistics,fliter_statistics,cr_statistics)
     
-    logger_statistics_process.info('Statistics is completed after %.2f min.',(time.time() - time_start)/60)
-    logger_pipeline_process.info('Statistics is completed after %.2f min.',(time.time() - time_start)/60)
-    logger_pipeline_process.info('Pipeline : {0} is completed after {1} min.'.format(sample, ('%.2f' % ((time.time() - time_start1)/60))))
+        logger_statistics_process.info('Statistics is completed after %.2f min.',(time.time() - time_start)/60)
+        logger_pipeline_process.info('Statistics is completed after %.2f min.',(time.time() - time_start)/60)
+        logger_pipeline_process.info('Pipeline : {0} is completed after {1} min.'.format(sample, ('%.2f' % ((time.time() - time_start1)/60))))
     #--statistics the time cost
-    process_log = out_dir + '/'+ 'log' + '/' + 'process.log'
-    statistics_time(statistics_dir, sample, process_log, logger_statistics_process, logger_statistics_errors)
-    #---
-    if test_level == 9:
-        print("Test statistics module!\n\n\n")
+        process_log = out_dir + '/'+ 'log' + '/' + 'process.log'
+        statistics_time(statistics_dir, sample, process_log, logger_statistics_process, logger_statistics_errors)
+        print("--" * 20 + '\n\n')
+
 if __name__ == '__main__':
     main()
