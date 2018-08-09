@@ -7,6 +7,9 @@ sample_name: 18071001_S1_L001
 #the tailname of sample raw read
 #tailname: 
 
+#the subprocess of the script: such as qc, trim, align, post_align, cluster,reformat, variant_call, annotation, statis
+tools: all
+
 #the tailname of sample raw read
 datasets_dir: /home/dell/Works/Projects/Datasets
 
@@ -84,7 +87,6 @@ memory_size: 4
 
 #the list of --known-sites , sep by: ,
 known_sites: known_sites/1000G_phase1.snps.high_confidence.hg19.sites.vcf,known_sites/Mills_and_1000G_gold_standard.indels.hg19.sites.vcf,known_sites/dbsnp_138.hg19.vcf
-
 #switch to running HaplotypeCaller in GVCF mode
 erc: GVCF
 
@@ -108,6 +110,3 @@ db_g1000: annonDB/breast_cancer_variant_1000genomes.csv
 
 #add annotation gene ID of variants
 anno_geneID: annonDB/geneid_cancer_qiagen.csv
-
-#the subprocess of the script
-test: 9
