@@ -189,9 +189,7 @@ def statistics_depth_coverage(samtools_dir, sam_bam, out_dir,sample, module, exo
     coverage_in_target_region = out_dir + '/' + sample +'_'+ module + '_covergerInTargetRegion.txt'
     command5 ='{0} mpileup {1} | perl -alne \'{2}\' > {3}'.format(samtools_dir, sorted_bam,
         '{$pos{$F[0]}++;$depth{$F[0]}+=$F[3]} END{print "$_\t$pos{$_}\t$depth{$_}" foreach sort keys %pos}',coverage_in_target_region)
-    stdout, stderr = stdout_err(command5)
-    logger_statistics_process.info(stdout)
-    logger_statistics_errors.info(stderr)
+    os.system(command5)
     #-statistics and plot of  the depth and coverage in target region
     statistics_plot = out_dir + '/' + sample +'_'+ module + '_depth_coverageInTargetRegion'
     scriptdir = os.path.dirname(os.path.abspath(__file__))
@@ -203,9 +201,7 @@ def statistics_depth_coverage(samtools_dir, sam_bam, out_dir,sample, module, exo
     bases_depth_in_target_region = out_dir + '/' + sample +'_'+ module + '_basesDepthInTargetRegion.txt'
     command7 ='{0} mpileup {1} | perl -alne \'{2}\' > {3}'.format(samtools_dir, sorted_bam,
         '{$depth{$F[3]}++}END{print "$_\t$depth{$_}" foreach sort{$a <=> $b}keys %depth}',bases_depth_in_target_region)
-    stdout, stderr = stdout_err(command7)
-    logger_statistics_process.info(stdout)
-    logger_statistics_errors.info(stderr)
+    os.system(command7)
     #-statistics and plot of  the depth and coverage in target region
     statistics_plot1 = out_dir + '/' + sample +'_'+ module + '_basesDepthInTargetRegion'
     scriptdir = os.path.dirname(os.path.abspath(__file__))
