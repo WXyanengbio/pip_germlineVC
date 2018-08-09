@@ -667,7 +667,7 @@ def main():
     #--variant calling
     if yaml_file != 'null' and 'memory_size' in file_yaml.keys():
         memory_size = file_yaml['memory_size']
-    else:
+    else:samtools
         memory_size = args.memory_size
     memory_size = '-Xmx' + str(memory_size) + 'G ' + '-Djava.io.tmpdir=./'
     if yaml_file != 'null' and 'gatk_dir' in file_yaml.keys():
@@ -795,13 +795,13 @@ def main():
                              memory_size, total_ref_fa_file, 
                              exon_interval, erc,
                              snp_filter,indel_filter)
-    logger_pipeline_process.info('GATK_bqsr is completed after %.2f min.', (time.time()-time_start)/60)
+    logger_pipeline_process.info('GATK is completed after %.2f min.', (time.time()-time_start)/60)
     
     
     #GATK-without BQSR
       #time cost
     time_start = time.time()
-    germline_vc_dir1= out_dir + '/'+ 'gatk_without_bqsr'
+    germline_vc_dir1= out_dir + '/'+ 'gatk_with_bqsr'
     if not os.path.exists(germline_vc_dir1):
         os.makedirs(germline_vc_dir1)
     germline_variant_calling(gatk_dir, baser_bam_to_variant,
@@ -809,7 +809,7 @@ def main():
                              memory_size, total_ref_fa_file, 
                              exon_interval, erc,
                              snp_filter,indel_filter)
-    logger_pipeline_process.info('GATK is completed after %.2f min.', (time.time()-time_start)/60)
+    logger_pipeline_process.info('GATK_bqsr is completed after %.2f min.', (time.time()-time_start)/60)
     
     
     #samtools+bcftools

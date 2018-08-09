@@ -1,0 +1,41 @@
+#GATK
+gatk_dir: gatk
+#samtools+bcftools
+samtools_dir: samtools
+bcftools_dir: /home/dell/Works/Softwares/bioapps/bcftools/bcftools
+#VarDict
+vardict_dir: /home/dell/Works/Softwares/bioapps/VarDictJava/VarDict/vardict
+#Strelka2
+strelka2_dir: /home/dell/Works/Softwares/bioapps/strelka-2.9.6.release_src/bin/configureStrelkaGermlineWorkflow.py
+bgzip: /home/dell/Works/Softwares/bioapps/tabix-0.2.6/bgzip
+tabix: /home/dell/Works/Softwares/bioapps/tabix-0.2.6/tabix
+#VarScan2+samtools
+varsan2_dir: /home/dell/Works/Softwares/bioapps/VarScan.v2.3.9.jar
+#--
+vready_bam: /home/dell/Works/Projects/Datasets/truthDB/na12878_target_chr13_chr17_sorted.bam
+sample_name: NA12878_BRCA
+output: /home/dell/Works/Projects/Benchmark_0809
+memory_size: 4
+exome_target_bed: genome/target_breast/target_breast_BRCA.bed 
+#the install path of benchmark
+benchmark_dir: /home/dell/Works/Softwares/bioapps/benchmarking-tools/tools/hap.py_build/bin/hap.py
+#the path of ref index--if there isn't a ref index, it will make a index in the path of ref fasta by bwa
+ref_index_name: genome/target_breast/target_breast_BRCA
+#the path of ref fasta
+ref_fa_file: genome/target_breast/target_breast.refSeq.fa
+#the path of ref total ref fa
+total_ref_fa_file: genome/ucsc.hg19.fasta
+#the path of ref total chrom ref fa without chrX, chrY, chrM, chrUn , chr*_random
+total_ref_chrom_fa_file: genome/ucsc.hg19.chrom_no_XYM.fasta
+#the path of ref total ref fa dict
+total_ref_fa_dict: genome/ucsc.hg19.dict
+#the list of --known-sites , sep by: ,
+known_sites: known_sites/1000G_phase1.snps.high_confidence.hg19.sites.vcf,known_sites/Mills_and_1000G_gold_standard.indels.hg19.sites.vcf,known_sites/dbsnp_138.hg19.vcf
+#switch to running HaplotypeCaller in GVCF mode
+erc: GVCF
+#add parameters for filtering SNPs
+snp_filter: QD < 5.0 || FS > 60.0 || MQ < 50.0 || SOR > 3.0 || MQRankSum < -2.5 || ReadPosRankSum < -3.0
+#add parameters for filtering Indels
+indel_filter: QD < 5.0 || FS > 200 || ReadPosRankSum < -3.0 || SOR > 10.0
+
+
