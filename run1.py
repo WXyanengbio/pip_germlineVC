@@ -25,13 +25,13 @@ from pipelines.cluster_barcode.umitools import umitool
 #import the reformat sam function
 from pipelines.reformat.reformat_sam import reformat_sam
 #import the variant calling funcitons
-from pipelines.variant_call.g_variantcall1 import sam_to_bem , germline_variant_calling
+from pipelines.variant_call.g_variantcall1 import sam_to_bam , germline_variant_calling
 #import the annotation variant funcitons
 from pipelines.variant_call.annotation_gatk_hc import annotationmain
 #import the statistics functions
 from pipelines.statistics.prestatistics_module import qc_raw_reads, statistics_depth_coverage, statistics_sam_bam, statistics_time, merge_statistics_sam_bam
 #import the benchmaking funciton
-from pipelines.benchmark.hap_benchmark import hap_py
+#from pipelines.benchmark.hap_benchmark import hap_py
 
 def script_information():
     print ("\nApplication: pipelines of QIAseq Targeted DNA Panel\n")
@@ -185,11 +185,6 @@ parser.add_argument("--erc",
                     type = str, 
                     default = 'GVCF',
                     help = "switch to running HaplotypeCaller in GVCF mode"
-                    )
-parser.add_argument("--read_filter", 
-                    type = str, 
-                    default = 'no',
-                    help = "add a read filter that deals with some problems"
                     )
 parser.add_argument("--snp_filter", 
                     type = str, 
@@ -378,10 +373,6 @@ def main():
         erc = file_yaml['erc']
     else:
         erc = args.erc
-    if yaml_file != 'null' and 'read_filter' in file_yaml.keys():
-        read_filter = file_yaml['read_filter']
-    else:
-        read_filter = args.read_filter
     if yaml_file != 'null' and 'snp_filter' in file_yaml.keys():
         snp_filter = file_yaml['snp_filter']
     else:
@@ -573,7 +564,7 @@ def main():
         print("Test reformat module!\n")
         if not os.path.exists(reformated_dir):
             os.makedirs(reformated_dir)
-        logger_reformat_process, logger_reformat_errors = store_cluster_logs(log_dir)
+        logger_reformat_process, logger_reformat_errors = store_reformat_logs(log_dir)
         reformat_sam(alignment_sam, output_sam, logger_reformat_process, logger_reformat_errors)
         logger_reformat_process.info('Finish reformating alignment SAM file is completed after %.2f min.',(time.time() - time_start)/60)
         logger_pipeline_process.info('Reformat alignment SAM file is completed after %.2f min.',(time.time() - time_start)/60)
@@ -599,7 +590,7 @@ def main():
         if not os.path.exists(germline_vc_dir):
             os.makedirs(germline_vc_dir)
         logger_germline_vc_process, logger_germline_vc_errors = store_germline_vc_logs(log_dir)
-        sam_to_bem(gatk_dir, samtools_dir,
+        sam_to_bam(gatk_dir, samtools_dir,
                vready_sam, sample,
                germline_vc_dir, memory_size,
                exome_target_bed, 
@@ -610,7 +601,6 @@ def main():
                              sample, germline_vc_dir, 
                              memory_size, total_ref_fa_file, 
                              exon_interval, erc,
-                             read_filter,
                              snp_filter,indel_filter,
                              logger_germline_vc_process, logger_germline_vc_errors)
         logger_germline_vc_process.info('Germline variant calling is completed after %.2f min.',(time.time() - time_start)/60)
@@ -626,9 +616,9 @@ def main():
     annotation_dir = out_dir + '/'+ 'annotation'
     raw_vcf = germline_vc_dir + '/'  + sample + '.raw_variants.vcf'
     snp_vcf = germline_vc_dir + '/'  + sample + '.raw_variants_SNP.vcf'
-    filter_snp = germline_vc_dir + '/'  + sample + '.filter_SNP.vcf'
+    #filter_snp = germline_vc_dir + '/'  + sample + '.filter_SNP.vcf'
     indel_vcf = germline_vc_dir + '/'  + sample + '.raw_variants_indel.vcf'
-    filter_indel = germline_vc_dir + '/'  + sample + '.filter_indel.vcf'
+    #filter_indel = germline_vc_dir + '/'  + sample + '.filter_indel.vcf'
     #annotation
     if tools in ['all','annotation']:
         print("please check the variant_call subprocess result--VCF!")
@@ -645,18 +635,18 @@ def main():
                    ref_ens,
                    snp_vcf, sample,
                    annotation_dir, logger_annotation_process, logger_annotation_errors)
-        annotationmain(db_cosmic, db_clinvar, db_g1000, 
-                   ref_ens,
-                   filter_snp, sample,
-                   annotation_dir, logger_annotation_process, logger_annotation_errors)
+        #annotationmain(db_cosmic, db_clinvar, db_g1000, 
+        #           ref_ens,
+        #           filter_snp, sample,
+        #           annotation_dir, logger_annotation_process, logger_annotation_errors)
         annotationmain(db_cosmic, db_clinvar, db_g1000, 
                    ref_ens,
                    indel_vcf, sample,
                    annotation_dir, logger_annotation_process, logger_annotation_errors)
-        annotationmain(db_cosmic, db_clinvar, db_g1000, 
-                   ref_ens,
-                   filter_indel, sample,
-                   annotation_dir, logger_annotation_process, logger_annotation_errors)
+        #annotationmain(db_cosmic, db_clinvar, db_g1000, 
+        #           ref_ens,
+        #           filter_indel, sample,
+        #           annotation_dir, logger_annotation_process, logger_annotation_errors)
         logger_annotation_process.info('Finish annotation variant  is completed after %.2f min.',(time.time() - time_start)/60)
         logger_pipeline_process.info('Annotation variant is completed after %.2f min.',(time.time() - time_start)/60)
         print("--" * 20 + '\n\n')
@@ -713,7 +703,7 @@ def main():
     #--statistics the align
         module1 = "Align"
         align_sorted_bam = statistics_depth_coverage(samtools_dir, out_file, statistics_dir, sample, module1, exome_target_bed,logger_statistics_process, logger_statistics_errors)
-        align_statistics = statistics_sam_bam(samtools_dir, sorted_bam, statistics_dir,sample, module1, logger_statistics_process, logger_statistics_errors)
+        align_statistics = statistics_sam_bam(samtools_dir, align_sorted_bam, statistics_dir,sample, module1, logger_statistics_process, logger_statistics_errors)
     #--statistics the filter
     #----cluster module would build the filter sorted bam, but it has been changed UMIs-tools
         module2 = "Fliter"
@@ -724,8 +714,8 @@ def main():
         cr_sorted_bam = statistics_depth_coverage(samtools_dir, vready_sam, statistics_dir, sample, module3,exome_target_bed, logger_statistics_process, logger_statistics_errors)
         cr_statistics = statistics_sam_bam(samtools_dir, cr_sorted_bam, statistics_dir, sample, module3, logger_statistics_process, logger_statistics_errors)
     #-merge the sorted bam
-        merge_statistics_sam_bam(logger_statistics_process, logger_statistics_errors, statistics_dir, sample, ','.join([module1,module2,module3]),align_statistics,fliter_statistics,cr_statistics)
-    
+        merge_statistics_sam_bam(logger_statistics_process, logger_statistics_errors, statistics_dir, 
+                                 sample, ','.join([module1,module2,module3]),align_statistics,fliter_statistics,cr_statistics)
         logger_statistics_process.info('Statistics is completed after %.2f min.',(time.time() - time_start)/60)
         logger_pipeline_process.info('Statistics is completed after %.2f min.',(time.time() - time_start)/60)
         logger_pipeline_process.info('Pipeline : {0} is completed after {1} min.'.format(sample, ('%.2f' % ((time.time() - time_start1)/60))))
