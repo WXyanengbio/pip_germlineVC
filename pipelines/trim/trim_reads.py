@@ -4,7 +4,6 @@ __all__  =  ['read1' , 'read2' , 'trimmed1' ,'un_trimmed1', 'trimmed2' ,'un_trim
 __version__  =  '1.0'
 __author__  =  'Maggie Ruimin Sun'
 
-
 import logging
 import os
 import re
@@ -69,7 +68,8 @@ def trim_read_pairs(read1, read2, trimmed1, trimmed2, min_read_len, common_seq1,
     time_start = time.time()
     num_total_reads = 0
     num_short_reads = 0
-    num_error_reads = 0
+    num_error_reads1 = 0
+    num_error_reads2 = 0
     fout1 = open(trimmed1, 'w')
     fout2 = open(trimmed2, 'w')
 
@@ -77,15 +77,15 @@ def trim_read_pairs(read1, read2, trimmed1, trimmed2, min_read_len, common_seq1,
                       read_fq(read2, logger_trim_process, logger_trim_errors)):
         num_total_reads += 1
         if r1[0][0] != '@' or r2[0][0] != '@':
-            num_error_reads += 1
+            num_error_reads1 += 1
             logger_trim_process.info("Error read pair: \n\t"
                                      + '\t'.join(r1) + '\n\t' + '\t'.join(r2) + '\n')
         else:
             start_common = r2[1].find(common_seq2)
             if start_common < 12:
-                num_error_reads += 1
-                logger_trim_process.info("Error barcode/common seqs:" + str(start_common) + "\n\t"
-                                         + '\t'.join(r1) + '\n\t' + '\t'.join(r2) + '\n')
+                num_error_reads2 += 1
+                #logger_trim_process.info("Error barcode/common seqs:" + str(start_common) + "\n\t"
+                #                         + '\t'.join(r1) + '\n\t' + '\t'.join(r2) + '\n')
             else:
                 umi = r2[1][(start_common - 12):start_common]
                 qua = r2[3][(start_common - 12):start_common]
@@ -95,8 +95,8 @@ def trim_read_pairs(read1, read2, trimmed1, trimmed2, min_read_len, common_seq1,
                 pos_trim_r2, r2 = trim_read2(r2, common_seq1)
                 if pos_trim_r1 < min_read_len or pos_trim_r2 < min_read_len:
                     num_short_reads += 1
-                    logger_trim_process.info("Short read pair: \n\t"
-                                             + '\t'.join(r1) + '\n\t' + '\t'.join(r2) + '\n')
+                   # logger_trim_process.info("Short read pair: \n\t"
+                    #                         + '\t'.join(r1) + '\n\t' + '\t'.join(r2) + '\n')
                 else:
                     #umi = umi + ';' + qua
                     h1 = r1[0].split(' ')[0] + '_' + umi + ' ' + r1[0].split(' ')[1]
@@ -107,13 +107,14 @@ def trim_read_pairs(read1, read2, trimmed1, trimmed2, min_read_len, common_seq1,
     fout2.close()
     print('Total number of reads == ' + str(num_total_reads))
     print('Number of short reads (<{0}bp) == {1}'.format(min_read_len, num_short_reads))
-    print('Number of error reads == ' + str(num_error_reads))
+    print('Number of error reads == ' + str(num_error_reads1+num_error_reads2))
 
     stats_out = open(stats_file, 'w')
     stats_out.write('Total number of reads == ' + str(num_total_reads) + '\n')
     stats_out.write('Number of short reads (<{0}bp) == {1}\n'.format(
         min_read_len, num_short_reads))
-    stats_out.write('Number of error reads == ' + str(num_error_reads) + '\n')
+    stats_out.write('Number of error reads pair fq == ' + str(num_error_reads1) + '\n')
+    stats_out.write('Number of error barcode/common seqs == ' + str(num_error_reads2) + '\n')
     stats_out.write('The time of trimming is %s minutes.' % str((time.time() - time_start) / 60))
 
 def trim_read_pairs_by_trimmomatic(trimmomatic_dir,
