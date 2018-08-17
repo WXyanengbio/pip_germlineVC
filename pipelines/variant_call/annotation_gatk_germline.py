@@ -1,34 +1,15 @@
-#FILTER=<ID=LowQual,Description="Low quality">
-#FORMAT=<ID=AD,Number=R,Type=Integer,Description="Allelic depths for the ref and alt alleles in the order listed">
-#FORMAT=<ID=DP,Number=1,Type=Integer,Description="Approximate read depth (reads with MQ=255 or with bad mates are filtered)">
-#FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
-#FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
-#FORMAT=<ID=MIN_DP,Number=1,Type=Integer,Description="Minimum DP observed within the GVCF block">
-#FORMAT=<ID=PGT,Number=1,Type=String,Description="Physical phasing haplotype information, describing how the alternate alleles are phased in relation to one another">
-#FORMAT=<ID=PID,Number=1,Type=String,Description="Physical phasing ID information, where each unique ID within a given sample (but not across samples) connects records within a phasing group">
-#FORMAT=<ID=PL,Number=G,Type=Integer,Description="Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification">
-#FORMAT=<ID=RGQ,Number=1,Type=Integer,Description="Unconditional reference genotype confidence, encoded as a phred quality -10*log10 p(genotype call is wrong)">
-#FORMAT=<ID=SB,Number=4,Type=Integer,Description="Per-sample component statistics which comprise the Fisher's Exact Test to detect strand bias.">
-#INFO=<ID=AC,Number=A,Type=Integer,Description="Allele count in genotypes, for each ALT allele, in the same order as listed">
-#INFO=<ID=AF,Number=A,Type=Float,Description="Allele Frequency, for each ALT allele, in the same order as listed">
-#INFO=<ID=AN,Number=1,Type=Integer,Description="Total number of alleles in called genotypes">
-#INFO= VF ,Description="Variant Frequency Allele bases/ (Allele bases + Ref Bases)">
-#INFO=<ID=BaseQRankSum,Number=1,Type=Float,Description="Z-score from Wilcoxon rank sum test of Alt Vs. Ref base qualities">
-#INFO=<ID=ClippingRankSum,Number=1,Type=Float,Description="Z-score From Wilcoxon rank sum test of Alt vs. Ref number of hard clipped bases">
-#INFO=<ID=DP,Number=1,Type=Integer,Description="Approximate read depth; some reads may have been filtered">
-#INFO=<ID=DS,Number=0,Type=Flag,Description="Were any of the samples downsampled?">
-#INFO=<ID=END,Number=1,Type=Integer,Description="Stop position of the interval">
-#INFO=<ID=ExcessHet,Number=1,Type=Float,Description="Phred-scaled p-value for exact test of excess heterozygosity">
-#INFO=<ID=FS,Number=1,Type=Float,Description="Phred-scaled p-value using Fisher's exact test to detect strand bias">
-#INFO=<ID=InbreedingCoeff,Number=1,Type=Float,Description="Inbreeding coefficient as estimated from the genotype likelihoods per-sample when compared against the Hardy-Weinberg expectation">
-#INFO=<ID=MLEAC,Number=A,Type=Integer,Description="Maximum likelihood expectation (MLE) for the allele counts (not necessarily the same as the AC), for each ALT allele, in the same order as listed">
-#INFO=<ID=MLEAF,Number=A,Type=Float,Description="Maximum likelihood expectation (MLE) for the allele frequency (not necessarily the same as the AF), for each ALT allele, in the same order as listed">
-#INFO=<ID=MQ,Number=1,Type=Float,Description="RMS Mapping Quality">
-#INFO=<ID=MQRankSum,Number=1,Type=Float,Description="Z-score From Wilcoxon rank sum test of Alt vs. Ref read mapping qualities">
-#INFO=<ID=QD,Number=1,Type=Float,Description="Variant Confidence/Quality by Depth">
-#INFO=<ID=RAW_MQ,Number=1,Type=Float,Description="Raw data for RMS Mapping Quality">
-#INFO=<ID=ReadPosRankSum,Number=1,Type=Float,Description="Z-score from Wilcoxon rank sum test of Alt vs. Ref read position bias">
-#INFO=<ID=SOR,Number=1,Type=Float,Description="Symmetric Odds Ratio of 2x2 contingency table to detect strand bias">
+# INFO=<ID=TYPE,Number=1,Type=String,Description="Variant type: SNP or INDEL">
+# INFO=<ID=DP,Number=1,Type=Integer,Description="Total read depth">
+# INFO=<ID=MT,Number=1,Type=Integer,Description="Total MT depth">
+# INFO=<ID=UMT,Number=1,Type=Integer,Description="Filtered MT depth">
+# INFO=<ID=PI,Number=1,Type=Float,Description="Variant prediction index">
+# INFO=<ID=THR,Number=1,Type=Integer,Description="Variant prediction index minimum threshold">
+# INFO=<ID=VMT,Number=1,Type=Integer,Description="Variant MT depth">
+# INFO=<ID=VMF,Number=1,Type=Float,Description="Variant MT fraction">
+# INFO=<ID=VSM,Number=1,Type=Integer,Description="Variant strong MT depth">
+# FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+# FORMAT=<ID=AD,Number=.,Type=Integer,Description="Filtered allelic MT depths for the ref and alt alleles">
+# FORMAT=<ID=VF,Number=1,Type=Float,Description="Variant MT fraction, same as VMF">
 # CLNDN--ClinVar`s preferred disease name for the concept specified by disease identifiers in CLNDISD.
 # HGVS--Top-level(primary assembly,alt,or patch) HGVS expression.
 # CLNSIG--Clinical significance for this single variant.
@@ -43,17 +24,6 @@
 # are more accurate. The results are annotated as 10 feature groups (separately for coding and
 #  non coding variants) details of which can be found in the original FATHMM-MKL paper.
 # Mutation_Somatic_Status--Information on whether the sample was reported to be Confirmed Somatic, Previously Reported or Variant of unknown origin.
-from __future__ import barry_as_FLUFL
-
-__all__  =  ['cosmic', 'clinvar', 'g1000' , 
-             'ref_ens',
-             'vcf', 
-             'sample' , 'output' , 'snp_filter', 'indel_filter',
-             'logger_annotation_process', 'logger_annotation_errors']
-__version__  =  '1.0'
-__author__  =  'Yang XueKai'
-
-import os
 import sys
 import time
 import pandas as pd
@@ -299,7 +269,9 @@ def read_vcf_filter(snp_filter, indel_filter):
         para, char, value = limit.split(" ")
         indel_limit[para] = [char, value]
     return snp_limit, indel_limit
-def annotation(dict_cos,dict_clin,dict_g1000,variant_vcf,annotated_csv,stats_file, snp_filter, indel_filter,sample_name,logger_annotation_process):
+
+
+def annotation(dict_cos,dict_clin,dict_g1000,variant_vcf,annotated_csv,stats_file, snp_filter, indel_filter,sample_name):
     key_list = []
     key = ''
     change1 = ''
@@ -369,11 +341,11 @@ def annotation(dict_cos,dict_clin,dict_g1000,variant_vcf,annotated_csv,stats_fil
                     output.write(new)
                 key_list.append(key)
     output.close()
-    logger_annotation_process.info('The sample has %s variants.' % len(key_list))
-    logger_annotation_process.info('%s variants in COSMIC database' % num_in_cosmic)
-    logger_annotation_process.info('%s variants in Clinvar database' % num_in_clinvar)
-    logger_annotation_process.info('%s variants in G1000 database\n' % num_in_g1000)
-    logger_annotation_process.info('%s variants unmatch in cosmic and clinvar.' % num_unmatch)
+    print ('The sample has %s variants.' % len(key_list))
+    print ('%s variants in COSMIC database' % num_in_cosmic)
+    print ('%s variants in Clinvar database' % num_in_clinvar)
+    print ('%s variants in G1000 database\n' % num_in_g1000)
+    print ('%s variants unmatch in cosmic,clinvar and g1000\n.' % num_unmatch)
     stats_out = open(stats_file,'w')
     stats_out.write('#The sample has %s variants.\n' % len(key_list))
     stats_out.write('#Type\tvariants\n')
@@ -383,7 +355,6 @@ def annotation(dict_cos,dict_clin,dict_g1000,variant_vcf,annotated_csv,stats_fil
     stats_out.write('G1000\t%s\n' % num_in_g1000)
     stats_out.write('unmatch\t%s\n' % num_unmatch)
     stats_out.close()
-
 #match genename,ENSG and ENST from ensembl.
 def fill_table(annotated_csv, annotated_csv_add, non_rs, non_cos, ref_ens):
     g2n = {}
@@ -397,20 +368,21 @@ def fill_table(annotated_csv, annotated_csv_add, non_rs, non_cos, ref_ens):
         g2t[l2] = l3
         n2g[l1] = l2
         n2t[l1] = l3
-    #df = pd.read_csv(annotated_csv)
-    df = pd.read_table(annotated_csv)
+    df = pd.read_csv(annotated_csv)
     subframe = df[['Gene_Name','Gene_ID','Feature_ID','Gene_Name1','RS_ID','RS_ID1']] #n,g,t,n1
     #for name,id,transcript in subframe.iterrows():
     for num in range(0, len(subframe)):
         #subframe.iloc[i]['Gene_Name'], subframe.iloc[i]['Gene_ID'], subframe.iloc[i]['Feature_ID']
-        if subframe.iloc[num]['Gene_Name'] is '-' and subframe.iloc[num]['Feature_ID'] is '-' and subframe.iloc[num]['Gene_ID'] is '-' and subframe.iloc[num]['Gene_Name1'] is not '-':
+        if subframe.iloc[num]['Gene_Name'] is '-' and subframe.iloc[num]['Feature_ID'] is '-' and subframe.iloc[num]['Gene_ID'] is '-':
             subframe.iloc[num]['Gene_Name'] = subframe.iloc[num]['Gene_Name1']
+            print(subframe.iloc[num]['Gene_Name1'])
+            print(n2g)
             subframe.iloc[num]['Gene_ID'] = n2g[subframe.iloc[num]['Gene_Name1']]
             subframe.iloc[num]['Feature_ID'] = n2t[subframe.iloc[num]['Gene_Name1']]
-        elif subframe.iloc[num]['Gene_Name'] is '-' and subframe.iloc[num]['Feature_ID'] is '-' and subframe.iloc[num]['Gene_ID'] is not '-':
+        elif subframe.iloc[num]['Gene_Name'] is '-' and subframe.iloc[num]['Feature_ID'] is '-':
             subframe.iloc[num]['Gene_Name'] = g2n[subframe.iloc[num]['Gene_ID']]
             subframe.iloc[num]['Feature_ID'] = g2t[subframe.iloc[num]['Gene_ID']]
-        elif subframe.iloc[num]['Gene_ID'] is '-' and subframe.iloc[num]['Gene_Name'] is not '-':
+        elif subframe.iloc[num]['Gene_ID'] is '-':
             subframe.iloc[num]['Gene_ID'] = n2g[subframe.iloc[num]['Gene_Name']]
         if subframe.iloc[num]['RS_ID'] is '-' and subframe.iloc[num]['RS_ID1'] is not '-':
             subframe.iloc[num]['RS_ID'] = subframe.iloc[num]['RS_ID1']
@@ -428,53 +400,36 @@ def fill_table(annotated_csv, annotated_csv_add, non_rs, non_cos, ref_ens):
     df.insert(8, 'Gene_ID', ensg)
     df.insert(9, 'Feature_ID', enst)
     df.insert(7, 'RS_ID', rs)
-    df.to_csv(annotated_csv_add, index=False, sep='\t')
-    df[(True^df['RS_ID'].isin(['-']))].to_csv(non_rs, index=False, sep='\t')
-    df[(True^df['COSMIC_ID'].isin(['-']))].to_csv(non_cos, index=False, sep='\t')
+    df.to_csv(annotated_csv_add, index=False, sep=',')
+    df[(True^df['RS_ID'].isin(['-']))].to_csv(non_rs, index=False, sep=',')
+    df[(True^df['COSMIC_ID'].isin(['-']))].to_csv(non_cos, index=False, sep=',')
 
-#-annotation main
-def annotationmain(cosmic, clinvar, g1000, 
-                   ref_ens,
-                   vcf, sample,snp_filter, indel_filter,
-                   output, logger_annotation_process, logger_annotation_errors):
-    if 'raw_variants_SNP.vcf' in vcf:
-        annotated_csv = output + '/' + sample + '.raw_SNP.annotated.txt'
-        annotated_csv_add = output + '/' + sample + '.raw_SNP.annotated_ensembl.txt'
-        non_rs = output + '/' + sample + '.raw_SNP_non_rs.txt'
-        non_cos = output + '/' + sample + '.raw_SNP_non_cos.txt'
-        stats_file = output + '/' + sample + '.raw_SNP_annotate_stats.txt'
-    elif 'raw_variants_indel.vcf' in vcf:
-        annotated_csv = output + '/' + sample + '.raw_indel.annotated.txt'
-        annotated_csv_add = output + '/' + sample + '.raw_indel.annotated_ensembl.txt'
-        non_rs = output + '/' + sample + '.raw_indel_non_rs.txt'
-        non_cos = output + '/' + sample + '.raw_indel_non_cos.txt'
-        stats_file = output + '/' + sample + '.raw_indel_annotate_stats.txt'
-    elif 'filter_SNP.vcf' in vcf:
-        annotated_csv = output + '/' + sample + '.filter_SNP.annotated.txt'
-        annotated_csv_add = output + '/' + sample + '.filter_SNP.annotated_ensembl.txt'
-        non_rs = output + '/' + sample + '.filter_SNP_non_rs.txt'
-        non_cos = output + '/' + sample + '.filter_SNP_non_cos.txt'
-        stats_file = output + '/' + sample + '.filter_SNP_annotate_stats.txt'
-    elif 'filter_indel.vcf' in vcf:
-        annotated_csv = output + '/' + sample + '.filter_indel.annotated.txt'
-        annotated_csv_add = output + '/' + sample + '.filter_indel.annotated_ensembl.txt'
-        non_rs = output + '/' + sample + '.filter_indel_non_rs.txt'
-        non_cos = output + '/' + sample + '.filter_indel_non_cos.txt'
-        stats_file = output + '/' + sample + '.filter_indel_annotate_stats.txt'
-    elif 'raw_variants.vcf' in vcf:
-        annotated_csv = output + '/' + sample + '.raw_variants.annotated.txt'
-        annotated_csv_add = output + '/' + sample + '.raw_variants.annotated_ensembl.txt'
-        non_rs = output + '/' + sample + '.raw_variants_non_rs.txt'
-        non_cos = output + '/' + sample + '.raw_variants_non_cos.txt'
-        stats_file = output + '/' + sample + '.raw_variants_annotate_stats.txt'
-    #-read the annotation database
-    if not os.path.isfile(vcf):
-        logger_annotation_errors.error("%s does not exist!\n", vcf)
-        print(vcf + ' does not exist!')
-    else:
-        #dict_cos, dict_clin, dict_g1000 = read_database(cosmic,clinvar,g1000)
-        #--annotation
-        annotation(cosmic, clinvar, g1000,vcf,annotated_csv,stats_file, snp_filter, indel_filter,sample,logger_annotation_process)
-        #--add the annotation
-        fill_table(annotated_csv, annotated_csv_add, non_rs, non_cos, ref_ens)
+def main():
+    time_start = time.time()
+    (source, sample_name_file) = sys.argv[1:]
+    cosmic= '/home/dell/Works/Projects/Datasets/annonDB/COSMIC_variant.csv'
+    clinvar= '/home/dell/Works/Projects/Datasets/annonDB/breast_cancer_variant_clinvar.csv'
+    g1000= '/home/dell/Works/Projects/Datasets/annonDB/breast_cancer_variant_1000genomes.csv'
+    ref_ens= '/home/dell/Works/Projects/Datasets/annonDB/geneid_cancer_qiagen.csv'
+    snp_filter='DP < 30 || QD < 2.0 || FS > 60.0 || MQ < 50.0 || SOR > 3.0 || MQRankSum < -2.5 || ReadPosRankSum < -3.0'
+    indel_filter= 'DP < 30 || QD < 2.0 || FS > 200 || ReadPosRankSum < -3.0 || SOR > 10.0'
+    #--
+    dict_cos, dict_clin, dict_g1000 = read_database(cosmic,clinvar,g1000)
+    #--
+    snp_limit, indel_limit= read_vcf_filter(snp_filter, indel_filter)
+    
+    sample_name_list=open(sample_name_file,'r')
+    for sample_name in sample_name_list:
+        sample_name = sample_name.strip()
+        variant_vcf = source + sample_name + '_L001.raw_variants.vcf'
+        annotated_csv = source + sample_name + '.annotated.txt'
+        annotated_csv_add = source + sample_name + '.annotated_add.txt'
+        non_rs = source + sample_name + '.non_rs.csv'
+        non_cos = source + sample_name + '.non_cos.csv'
+        stats_file = source + sample_name + '.annotate_stats.txt'
+        annotation(dict_cos,dict_clin,dict_g1000,variant_vcf,annotated_csv,stats_file, snp_limit, indel_limit,sample_name)
+        #fill_table(annotated_csv,annotated_csv_add,non_rs,non_cos,ref_ens)
+    print('The time of used annotation is %s minutes.' % str((time.time() - time_start) / 60))
 
+if __name__ == '__main__':
+    main()
