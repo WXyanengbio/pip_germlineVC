@@ -2,7 +2,7 @@ from __future__ import barry_as_FLUFL
 
 __all__  =  [ 'sample' , 'output ' , 'memory_size' , 'gatk_dir ' , 'vready_sam', 'marked_bqsr_bam',
               'ref_fa_file' ,'ref_fa_dict', 'exome_target_bed' , 'erc' , 'samtools_dir' ,
-              'known_sites', 'read_filter', 'snp_filter' , 'indel_filter',
+              'known_sites', 'snp_filter' , 'indel_filter',
               'logger_g_variantcalling_process', 'logger_g_variantcalling_errors']
 __version__  =  '1.0'
 __author__  =  'Wang Xian'
@@ -43,7 +43,7 @@ def check_variant_exit(tmpvcf):
         check_value = 1
     return check_value
 
-def sam_to_bem(gatk_dir, samtools_dir,
+def sam_to_bam(gatk_dir, samtools_dir,
                vready_sam, sample,
                output, memory_size,
                exome_target_bed, 
@@ -131,72 +131,73 @@ def sam_to_bem(gatk_dir, samtools_dir,
     os.system(command_count4)
     logger_g_variantcalling_process.info("Samtools build the index of  marked bam----cost %.2f min.", (time.time()-time_start1)/60)
     #---------------------------------------
+    if os.path.basename(exome_target_bed) == 'all':
     #Base(Quality Score) Recalibration
-    original_recal_data_table =  output + '/' + sample + '_original.recal_data.csv'
-    original_bgsr_bam =  output + '/' + sample + '_sorted.MarkDuplicates.originalBQSR.bam'
-    recal_data_table =  output + '/' + sample + '_bqsr.recal_data.csv'
-    bgsr_bam =  output + '/' + sample + '_sorted.MarkDuplicates.BQSR.bam'
-    if os.path.basename(exome_target_bed) != 'all':
-        #BaseRecalibrator---Generate Base Quality Score Recalibration (BQSR) model--first
-        command_count5_1 ='{0} --java-options "{1}" BaseRecalibrator -R {2} -I {3} -L {4} --known-sites {5} -O {6} --bqsr-baq-gap-open-penalty 40 \
-                          --showHidden true'.format(gatk_dir, memory_size, ref_fa_file, mark_rg_bam, exon_interval, known_sites, original_recal_data_table)
-        #ApplyBQSR--Apply Base Quality Score Recalibration (BQSR) model--first
-        command_count7_1 ='{0} --java-options "{1}" ApplyBQSR -R {2} -I {3} -bqsr {4} -L {5} -O {6} --showHidden true'.format(
-            gatk_dir, memory_size, ref_fa_file, mark_rg_bam, original_recal_data_table, exon_interval, original_bgsr_bam)
-        #BaseRecalibrator---Generate Base Quality Score Recalibration (BQSR) model--second
-        command_count5_2 ='{0} --java-options "{1}" BaseRecalibrator -R {2} -I {3} -L {4} --known-sites {5} -O {6} --bqsr-baq-gap-open-penalty 40 \
+        original_recal_data_table =  output + '/' + sample + '_original.recal_data.csv'
+        original_bgsr_bam =  output + '/' + sample + '_sorted.MarkDuplicates.originalBQSR.bam'
+        recal_data_table =  output + '/' + sample + '_bqsr.recal_data.csv'
+        bgsr_bam =  output + '/' + sample + '_sorted.MarkDuplicates.BQSR.bam'
+        if os.path.basename(exome_target_bed) != 'all':
+            #BaseRecalibrator---Generate Base Quality Score Recalibration (BQSR) model--first
+            command_count5_1 ='{0} --java-options "{1}" BaseRecalibrator -R {2} -I {3} -L {4} --known-sites {5} -O {6} --bqsr-baq-gap-open-penalty 40 \
+                          --showHidden true'.format(gatk_dir, memory_size, ref_fa_file, mark_rg_bam, exon_interval,
+                                                    known_sites, original_recal_data_table)
+            #ApplyBQSR--Apply Base Quality Score Recalibration (BQSR) model--first
+            command_count7_1 ='{0} --java-options "{1}" ApplyBQSR -R {2} -I {3} -bqsr {4} -L {5} -O {6} --showHidden true'.format(
+                gatk_dir, memory_size, ref_fa_file, mark_rg_bam, original_recal_data_table, exon_interval, original_bgsr_bam)
+            #BaseRecalibrator---Generate Base Quality Score Recalibration (BQSR) model--second
+            command_count5_2 ='{0} --java-options "{1}" BaseRecalibrator -R {2} -I {3} -L {4} --known-sites {5} -O {6} --bqsr-baq-gap-open-penalty 40 \
                           --showHidden true'.format(gatk_dir, memory_size, ref_fa_file, mark_rg_bam, exon_interval, known_sites, recal_data_table)
-        #ApplyBQSR--Apply Base Quality Score Recalibration (BQSR) model--second
-        command_count7_2 ='{0} --java-options "{1}" ApplyBQSR -R {2} -I {3} -bqsr {4} -L {5} -O {6} --showHidden true'.format(
-            gatk_dir, memory_size, ref_fa_file, mark_rg_bam, recal_data_table, exon_interval, bgsr_bam)
-    else:
-        #BaseRecalibrator---Generate Base Quality Score Recalibration (BQSR) model
-        command_count5_1 ='{0} --java-options "{1}" BaseRecalibrator -R {2} -I {3} --known-sites {4} -O {5} --bqsr-baq-gap-open-penalty 40 \
+            #ApplyBQSR--Apply Base Quality Score Recalibration (BQSR) model--second
+            command_count7_2 ='{0} --java-options "{1}" ApplyBQSR -R {2} -I {3} -bqsr {4} -L {5} -O {6} --showHidden true'.format(
+                gatk_dir, memory_size, ref_fa_file, mark_rg_bam, recal_data_table, exon_interval, bgsr_bam)
+        else:
+            #BaseRecalibrator---Generate Base Quality Score Recalibration (BQSR) model
+            command_count5_1 ='{0} --java-options "{1}" BaseRecalibrator -R {2} -I {3} --known-sites {4} -O {5} --bqsr-baq-gap-open-penalty 40 \
                           --showHidden true'.format(gatk_dir, memory_size, ref_fa_file, mark_rg_bam, known_sites, original_recal_data_table)
-        #ApplyBQSR--Apply Base Quality Score Recalibration (BQSR) model--first
-        command_count7_1 ='{0} --java-options "{1}" ApplyBQSR -R {2} -I {3} -bqsr {4} -O {5} --showHidden true'.format(
-            gatk_dir, memory_size, ref_fa_file, mark_rg_bam, original_recal_data_table, original_bgsr_bam)
-        #BaseRecalibrator---Generate Base Quality Score Recalibration (BQSR) model
-        command_count5_2 ='{0} --java-options "{1}" BaseRecalibrator -R {2} -I {3} --known-sites {4} -O {5} --bqsr-baq-gap-open-penalty 40 \
+            #ApplyBQSR--Apply Base Quality Score Recalibration (BQSR) model--first
+            command_count7_1 ='{0} --java-options "{1}" ApplyBQSR -R {2} -I {3} -bqsr {4} -O {5} --showHidden true'.format(
+                gatk_dir, memory_size, ref_fa_file, mark_rg_bam, original_recal_data_table, original_bgsr_bam)
+            #BaseRecalibrator---Generate Base Quality Score Recalibration (BQSR) model
+            command_count5_2 ='{0} --java-options "{1}" BaseRecalibrator -R {2} -I {3} --known-sites {4} -O {5} --bqsr-baq-gap-open-penalty 40 \
                          --showHidden true'.format(gatk_dir, memory_size, ref_fa_file, mark_rg_bam, known_sites, recal_data_table)
-        #ApplyBQSR--Apply Base Quality Score Recalibration (BQSR) model--second
-        command_count7_2 ='{0} --java-options "{1}" ApplyBQSR -R {2} -I {3} -bqsr {4} -O {5} --showHidden true'.format(
-            gatk_dir, memory_size, ref_fa_file, mark_rg_bam, recal_data_table, bgsr_bam)
-    time_start1= time.time()
-    stdout, stderr = stdout_err(command_count5_1)
-    logger_g_variantcalling_process.info(stdout)
-    logger_g_variantcalling_errors.info(stderr)
-    stdout, stderr = stdout_err(command_count7_1)
-    logger_g_variantcalling_process.info(stdout)
-    logger_g_variantcalling_errors.info(stderr)
-    stdout, stderr = stdout_err(command_count5_2)
-    logger_g_variantcalling_process.info(stdout)
-    logger_g_variantcalling_errors.info(stderr)
-    stdout, stderr = stdout_err(command_count7_2)
-    logger_g_variantcalling_process.info(stdout)
-    logger_g_variantcalling_errors.info(stderr)
-    logger_g_variantcalling_process.info("GATK generate Base Quality Score Recalibration (BQSR) model----cost %.2f min.", (time.time()-time_start1)/60)
-    #AnalyzeCovariates--Generate report of Base Quality Score Recalibration (BQSR) model
-    base_reports = output + '/' + sample + '.BQSR.before_VS_after.pdf'
-    base_reports_csv = output + '/' + sample + '.BQSR.before_VS_after.csv'
-    command_count6 ='{0} --java-options "{1}" AnalyzeCovariates --before-report-file {2} --after-report-file {3} --plots-report-file {4} \
-      --intermediate-csv-file {5} --showHidden true'.format(gatk_dir, memory_size, original_recal_data_table, 
+            #ApplyBQSR--Apply Base Quality Score Recalibration (BQSR) model--second
+            command_count7_2 ='{0} --java-options "{1}" ApplyBQSR -R {2} -I {3} -bqsr {4} -O {5} --showHidden true'.format(
+                gatk_dir, memory_size, ref_fa_file, mark_rg_bam, recal_data_table, bgsr_bam)
+        time_start1= time.time()
+        stdout, stderr = stdout_err(command_count5_1)
+        logger_g_variantcalling_process.info(stdout)
+        logger_g_variantcalling_errors.info(stderr)
+        stdout, stderr = stdout_err(command_count7_1)
+        logger_g_variantcalling_process.info(stdout)
+        logger_g_variantcalling_errors.info(stderr)
+        stdout, stderr = stdout_err(command_count5_2)
+        logger_g_variantcalling_process.info(stdout)
+        logger_g_variantcalling_errors.info(stderr)
+        stdout, stderr = stdout_err(command_count7_2)
+        logger_g_variantcalling_process.info(stdout)
+        logger_g_variantcalling_errors.info(stderr)
+        logger_g_variantcalling_process.info("GATK generate Base Quality Score Recalibration (BQSR) model----cost %.2f min.", (time.time()-time_start1)/60)
+        #AnalyzeCovariates--Generate report of Base Quality Score Recalibration (BQSR) model
+        base_reports = output + '/' + sample + '.BQSR.before_VS_after.pdf'
+        base_reports_csv = output + '/' + sample + '.BQSR.before_VS_after.csv'
+        command_count6 ='{0} --java-options "{1}" AnalyzeCovariates --before-report-file {2} --after-report-file {3} --plots-report-file {4} \
+          --intermediate-csv-file {5} --showHidden true'.format(gatk_dir, memory_size, original_recal_data_table, 
                                                              recal_data_table, base_reports,base_reports_csv )
-    time_start1= time.time()
-    stdout, stderr = stdout_err(command_count6)
-    logger_g_variantcalling_process.info(stdout)
-    logger_g_variantcalling_errors.info(stderr)
-    logger_g_variantcalling_process.info("ATK generate report of Base Quality Score Recalibration (BQSR) model----cost %.2f min.", (time.time()-time_start1)/60)
-    logger_g_variantcalling_process.info("GATK apply Base Quality Score Recalibration (BQSR) model----cost %.2f min.", (time.time()-time_start1)/60)
+        time_start1= time.time()
+        stdout, stderr = stdout_err(command_count6)
+        logger_g_variantcalling_process.info(stdout)
+        logger_g_variantcalling_errors.info(stderr)
+        logger_g_variantcalling_process.info("ATK generate report of Base Quality Score Recalibration (BQSR) model----cost %.2f min.", 
+                                             (time.time()-time_start1)/60)
+        logger_g_variantcalling_process.info("GATK apply Base Quality Score Recalibration (BQSR) model----cost %.2f min.", (time.time()-time_start1)/60)
     #time used for translating the format of the sam by samtools and GATK
     logger_g_variantcalling_process.info('Compeleted translating the format of the sam by samtools and GATK.')
-
 
 def germline_variant_calling(gatk_dir, marked_BQSR_bam,
                             sample, output, 
                             memory_size, ref_fa_file,
                             exon_interval, erc,
-                            read_filter,
                             snp_filter,indel_filter,
                             logger_g_variantcalling_process, logger_g_variantcalling_errors):
     if exon_interval != 'all':
@@ -218,12 +219,6 @@ def germline_variant_calling(gatk_dir, marked_BQSR_bam,
             command_count = command_count + ' -O {0} -ERC {1}'.format(vcf, erc)
         else:
             logger_g_variantcalling_process.info('{0} is not a HaplotypeCaller model. Please check the input parameter of ERC!'.format(ERC))
-
-    if read_filter == 'no':
-        logger_g_variantcalling_process.info('Run HaplotypeCaller without a read filter!')
-    else:
-        logger_g_variantcalling_process.info('Run HaplotypeCaller with a read filter that deals with some problems in bam!')
-        command_count = command_count + ' ' + '--read-filter {0}'.format(read_filter)
     logger_g_variantcalling_process.info('Begin to do germline variant calling.')
     time_start1 = time.time()
     stdout, stderr = stdout_err(command_count)
@@ -251,26 +246,26 @@ def germline_variant_calling(gatk_dir, marked_BQSR_bam,
     logger_g_variantcalling_process.info('Compeleted SelectVariants SNP by GATK.')
     logger_g_variantcalling_process.info('Time cost at SelectVariants SNP == ' + str((time.time() - time_start1) / 60) + 'min')
     #filter variant in SNP
-    filter_snp_vcfs_tmp = output + '/' + sample + '.filter_SNP_tmp.vcf'
-    command_count2fstmp ='{0} --java-options "{1}" VariantFiltration -R {2} --variant {3} -O {4} \
-         --filter-expression "{5}" --filter-name "my_snp_filter" --showHidden true'.format(
-        gatk_dir, memory_size, ref_fa_file, snp_vcf,filter_snp_vcfs_tmp, snp_filter)
-    stdout, stderr = stdout_err(command_count2fstmp)
-    logger_g_variantcalling_process.info(stdout)
-    logger_g_variantcalling_errors.info(stderr)
+    #filter_snp_vcfs_tmp = output + '/' + sample + '.filter_SNP_tmp.vcf'
+    #command_count2fstmp ='{0} --java-options "{1}" VariantFiltration -R {2} --variant {3} -O {4} \
+    #     --filter-expression "{5}" --filter-name "my_snp_filter" --showHidden true'.format(
+    #    gatk_dir, memory_size, ref_fa_file, snp_vcf,filter_snp_vcfs_tmp, snp_filter)
+    #stdout, stderr = stdout_err(command_count2fstmp)
+    #logger_g_variantcalling_process.info(stdout)
+    #logger_g_variantcalling_errors.info(stderr)
     #--check the raw SNPs number in tmp vcf
-    if check_variant_exit(filter_snp_vcfs_tmp) == 0:
-        print('There is no SNPs in {0}'.format(sample))
-        logger_g_variantcalling_process.info('There is no SNPs in {0}'.format(sample))
-    elif check_variant_exit(filter_snp_vcfs_tmp) == 1:
-        filter_snp_vcfs = output + '/' + sample + '.filter_SNP.vcf'
-        command_count2fs ='{0} --java-options "{1}" SelectVariants --variant {2} -O {3} --exclude-filtered true --showHidden true'.format(
-           gatk_dir, memory_size, filter_snp_vcfs_tmp,filter_snp_vcfs)
-        stdout, stderr = stdout_err(command_count2fs)
-        logger_g_variantcalling_process.info(stdout)
-        logger_g_variantcalling_errors.info(stderr)
-        logger_g_variantcalling_process.info('Compeleted filter SNP by GATK.')
-        logger_g_variantcalling_process.info('Time cost at filter SNP == ' + str((time.time() - time_start1) / 60) + 'min')
+    #if check_variant_exit(filter_snp_vcfs_tmp) == 0:
+    #    print('There is no SNPs in {0}'.format(sample))
+    #    logger_g_variantcalling_process.info('There is no SNPs in {0}'.format(sample))
+    #elif check_variant_exit(filter_snp_vcfs_tmp) == 1:
+    #    filter_snp_vcfs = output + '/' + sample + '.filter_SNP.vcf'
+    #    command_count2fs ='{0} --java-options "{1}" SelectVariants --variant {2} -O {3} --exclude-filtered true --showHidden true'.format(
+    #       gatk_dir, memory_size, filter_snp_vcfs_tmp,filter_snp_vcfs)
+    #    stdout, stderr = stdout_err(command_count2fs)
+    #    logger_g_variantcalling_process.info(stdout)
+    #    logger_g_variantcalling_errors.info(stderr)
+    #    logger_g_variantcalling_process.info('Compeleted filter SNP by GATK.')
+    #    logger_g_variantcalling_process.info('Time cost at filter SNP == ' + str((time.time() - time_start1) / 60) + 'min')
     #indel
     indel_vcf = output + '/' + sample + '.raw_variants_indel.vcf'
     command_count3 ='{0} --java-options "{1}" SelectVariants -R {2} --variant {3} -O {4} --select-type-to-include INDEL --showHidden true'.format(
@@ -281,23 +276,23 @@ def germline_variant_calling(gatk_dir, marked_BQSR_bam,
     logger_g_variantcalling_process.info('Compeleted SelectVariants indel by GATK.')
     logger_g_variantcalling_process.info('Time cost at SelectVariants indel == ' + str((time.time() - time_start1) / 60) + 'min')
     #filter variant in indel
-    filter_indel_vcfi_tmp = output + '/' + sample + '.filter_indel_tmp.vcf'
-    command_count2fitmp ='{0} --java-options "{1}" VariantFiltration -R {2} --variant {3} -O {4} \
-      --filter-expression "{5}" --filter-name "my_indel_filter" --showHidden true'.format(
-        gatk_dir, memory_size, ref_fa_file, indel_vcf, filter_indel_vcfi_tmp, indel_filter)
-    stdout, stderr = stdout_err(command_count2fitmp)
-    logger_g_variantcalling_process.info(stdout)
-    logger_g_variantcalling_errors.info(stderr)
+    #filter_indel_vcfi_tmp = output + '/' + sample + '.filter_indel_tmp.vcf'
+    #command_count2fitmp ='{0} --java-options "{1}" VariantFiltration -R {2} --variant {3} -O {4} \
+    #  --filter-expression "{5}" --filter-name "my_indel_filter" --showHidden true'.format(
+    #    gatk_dir, memory_size, ref_fa_file, indel_vcf, filter_indel_vcfi_tmp, indel_filter)
+    #stdout, stderr = stdout_err(command_count2fitmp)
+    #logger_g_variantcalling_process.info(stdout)
+    #logger_g_variantcalling_errors.info(stderr)
     #--check the raw indel number in tmp vcf
-    if check_variant_exit(filter_indel_vcfi_tmp) == 0:
-        print('There is no SNPs in {0}'.format(sample))
-        logger_g_variantcalling_process.info('There is no indel in {0}'.format(sample))
-    elif check_variant_exit(filter_indel_vcfi_tmp) == 1:
-        filter_indel_vcfi = output + '/' + sample + '.filter_indel.vcf'
-        command_count2fi ='{0} --java-options "{1}" SelectVariants --variant {2} -O {3} --exclude-filtered true --showHidden true'.format(
-            gatk_dir, memory_size,filter_indel_vcfi_tmp, filter_indel_vcfi)
-        stdout, stderr = stdout_err(command_count2fi)
-        logger_g_variantcalling_process.info(stdout)
-        logger_g_variantcalling_errors.info(stderr)
-        logger_g_variantcalling_process.info('Compeleted filter SNP by GATK.')
-        logger_g_variantcalling_process.info('Time cost at filter SNP == ' + str((time.time() - time_start1) / 60) + 'min')
+    #if check_variant_exit(filter_indel_vcfi_tmp) == 0:
+    #    print('There is no SNPs in {0}'.format(sample))
+    #    logger_g_variantcalling_process.info('There is no indel in {0}'.format(sample))
+    #elif check_variant_exit(filter_indel_vcfi_tmp) == 1:
+    #    filter_indel_vcfi = output + '/' + sample + '.filter_indel.vcf'
+    #    command_count2fi ='{0} --java-options "{1}" SelectVariants --variant {2} -O {3} --exclude-filtered true --showHidden true'.format(
+    #        gatk_dir, memory_size,filter_indel_vcfi_tmp, filter_indel_vcfi)
+    #    stdout, stderr = stdout_err(command_count2fi)
+    #    logger_g_variantcalling_process.info(stdout)
+    #    logger_g_variantcalling_errors.info(stderr)
+    #    logger_g_variantcalling_process.info('Compeleted filter SNP by GATK.')
+    #    logger_g_variantcalling_process.info('Time cost at filter SNP == ' + str((time.time() - time_start1) / 60) + 'min')
