@@ -200,12 +200,12 @@ parser.add_argument("--read_filter",
                     )
 parser.add_argument("--snp_filter", 
                     type = str, 
-                    default = 'QD < 5.0 || FS > 60.0 || MQ < 50.0 || SOR > 3.0 || MQRankSum < -2.5 || ReadPosRankSum < -3.0',
+                    default = 'DP < 10 || QD < 2.0 || FS > 60.0 || MQ < 40.0 || SOR > 3.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0',
                     help = "add parameters for filtering SNPs"
                     )
 parser.add_argument("--indel_filter",
                     type = str, 
-                    default = 'QD < 5.0 || FS > 200 || ReadPosRankSum < -3.0 || SOR > 10.0',
+                    default = 'DP < 10 || QD < 2.0 || FS > 200 || ReadPosRankSum < -20.0 || SOR > 10.0',
                     help = "add parameters for filtering Indels"
                     )
 parser.add_argument("--db_cosmic", 
@@ -469,6 +469,9 @@ def samtools_call(samtools_dir, bcftools_dir, bam, sample, outputdir, total_ref_
     os.system(command3)
     command4 = os.path.dirname(bcftools_dir)+'/misc/plot-vcfstats '+ vchk + '-p '+ outputdir + '/plots/'
     os.system(command4)
+    bcftools_filter_vcf=  outputdir + '/'+ sample + '_filter.vcf'
+    command5 = bcftools_dir + ' filter -O v -o '+  bcftools_filter_vcf + ' -s LOWQUAL -e \'QUAL<30 || FMT/DP <5\' '+  vcf
+    os.system(command4)
     #command4 = perl -ne 'print $_ if /DP4=(\d+),(\d+),(\d+),(\d+)/ && ($3+$4)>=10 && ($3+$4)/($1+$2+$3+$4)>=0.8' var.raw.vcf > snp_indel.final.vcf
     return vcf
 
@@ -667,7 +670,7 @@ def main():
     #--variant calling
     if yaml_file != 'null' and 'memory_size' in file_yaml.keys():
         memory_size = file_yaml['memory_size']
-    else:samtools
+    else:
         memory_size = args.memory_size
     memory_size = '-Xmx' + str(memory_size) + 'G ' + '-Djava.io.tmpdir=./'
     if yaml_file != 'null' and 'gatk_dir' in file_yaml.keys():
