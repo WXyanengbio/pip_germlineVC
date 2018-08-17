@@ -257,36 +257,6 @@ if (TRUE){
                         text_y=as.numeric(exon_statis_me[2:c(nrow(exon)+1),3]))
 }
   dir.create(opts$output)
-# 5. 保存图表
-if (FALSE){
-
-    p = ggplot(dat, aes(x = posi)) + 
-      geom_line(aes(y = depth), colour = 'green') +
-      #geom_line(aes(y = exon), colour = 'red') +
-      geom_area(aes(y = pmin(y1, depth)), fill = 'red',alpha=0.45)+
-      geom_text(data=data_exon,aes(x=text_x,y=text_y,label=exon))+
-      facet_wrap(~chr,scale="free",ncol=4)+
-    xlab("Position of Bases") + ylab("Depth of Bases")+
-    theme_bw()
-  ggsave(file=paste(opts$output,"/",opts$output,".pdf",sep=""), plot=p, width = 30, height = 40,limitsize = FALSE)
-  #ggsave(file=paste(opts$output,".tiff",sep=""), plot=p, width = 25, height = 50)
-  #exon_statis=cbind(rownames(exon_statis),exon_statis)
-  #write.table(exon_statis, file=paste(opts$output,"/",opts$output,".exon_statis.txt",sep=""),
- #             append = T, quote = F, sep="\t", eol = "\n", na = "NA", dec = ".", row.names = F, col.names = T)
-}
   exon_statis_me=cbind(rownames(exon_statis_me),exon_statis_me)
   write.table(exon_statis_me, file=paste(opts$output,"/",opts$output,".exon_statis.txt",sep=""),
               append = T, quote = F, sep="\t", eol = "\n", na = "NA", dec = ".", row.names = F, col.names = T)
-if (FALSE){
-for(i in 1:nrow(region)){
-dat1= subset(dat,chr ==as.character(region[,1])[i])
-data_exon1=subset(data_exon,chr ==as.character(region[,1])[i])
-if(nrow(data_exon1)>0){
-p = ggplot(dat1, aes(x = posi)) + 
-      geom_line(aes(y = depth), colour = 'green') +
-      geom_text(data=data_exon1,aes(x=text_x,y=text_y,label=exon))+
-      geom_area(aes(y = pmin(depth, y1)), fill = 'red',alpha=0.45)+
-    xlab(as.character(region[,1])[i]) + ylab("Depth of Bases")+
-    theme_bw()
-  ggsave(file=paste(opts$output,"/",as.character(region[,1])[i],".pdf",sep=""), plot=p, width = 8, height = 8,limitsize = FALSE)}
-}}

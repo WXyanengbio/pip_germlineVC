@@ -162,7 +162,7 @@ def qc_raw_reads(fastQC_dir, out_dir, sample, module, read1, read2,logger_statis
 def statistics_depth_coverage(samtools_dir, sam_bam, out_dir,sample, module, exome_target_bed, logger_statistics_process, logger_statistics_errors):
     if not os.path.isfile(sam_bam):
         logger_statistics_errors.error("%s does not exist!\n", sam_bam)
-        print(sam_bam + ' does not exist!')
+        #print(sam_bam + ' does not exist!')
     if re.search('.sam$', sam_bam):
         bam = sam_bam.rstrip('.sam') + '.bam'
         command1 = samtools_dir + ' view -bS ' + sam_bam + ' > ' + bam
@@ -173,12 +173,12 @@ def statistics_depth_coverage(samtools_dir, sam_bam, out_dir,sample, module, exo
         bam = sam_bam
         sorted_bam = sam_bam.rstrip('.bam') + '_sorted.bam'
     if not os.path.isfile(sorted_bam):
-        print(sorted_bam + ' does not exist!')
+        #print(sorted_bam + ' does not exist!')
         command2 = samtools_dir + ' sort ' + bam + ' > ' + sorted_bam
         os.system(command2)
     sorted_bam_index  = sorted_bam +  '.bai'
     if not os.path.isfile(sorted_bam_index):
-        print(sorted_bam_index + ' does not exist!')
+        #print(sorted_bam_index + ' does not exist!')
         command3 = samtools_dir + ' index ' + sorted_bam
         os.system(command3)
     #-numbers of reads in target region
@@ -190,6 +190,7 @@ def statistics_depth_coverage(samtools_dir, sam_bam, out_dir,sample, module, exo
     command5 ='{0} mpileup {1} | perl -alne \'{2}\' > {3}'.format(samtools_dir, sorted_bam,
         '{$pos{$F[0]}++;$depth{$F[0]}+=$F[3]} END{print "$_\t$pos{$_}\t$depth{$_}" foreach sort keys %pos}',coverage_in_target_region)
     os.system(command5)
+    #-
     #-statistics and plot of  the depth and coverage in target region
     statistics_plot = out_dir + '/' + sample +'_'+ module + '_depth_coverageInTargetRegion'
     scriptdir = os.path.dirname(os.path.abspath(__file__))
@@ -197,6 +198,11 @@ def statistics_depth_coverage(samtools_dir, sam_bam, out_dir,sample, module, exo
     stdout, stderr = stdout_err(command6)
     logger_statistics_process.info(stdout)
     logger_statistics_errors.info(stderr)
+    #- statistics of the depth of the baes in region
+    if module == 'Align':
+        bases_depth_in_region = out_dir + '/' + sample +'_'+ module + '_basesDepthInRegion.txt'
+        command7 ='{0} depth {1} > {2}'.format(samtools_dir, sorted_bam, bases_depth_in_region)
+        os.system(command7)
     #depth of the bases in target region
     bases_depth_in_target_region = out_dir + '/' + sample +'_'+ module + '_basesDepthInTargetRegion.txt'
     command7 ='{0} mpileup {1} | perl -alne \'{2}\' > {3}'.format(samtools_dir, sorted_bam,
@@ -216,7 +222,7 @@ def statistics_sam_bam(samtools_dir, sam_bam, out_dir, sample, module, logger_st
     #-statistics of
     if not os.path.isfile(sam_bam):
         logger_statistics_errors.error("%s does not exist!\n", sam_bam)
-        print(sam_bam + ' does not exist!')
+        #print(sam_bam + ' does not exist!')
     align_statistics = out_dir + '/' + sample +'_'+ module +  '_statistics.txt'
     command = samtools_dir + ' stats ' + sam_bam +' | grep ^SN | cut -f 2-3  > ' + align_statistics
     os.system(command)
@@ -226,7 +232,7 @@ def statistics_sam_bam(samtools_dir, sam_bam, out_dir, sample, module, logger_st
 def statistics_time(out_dir, sample, process, logger_statistics_process, logger_statistics_errors):
     if not os.path.isfile(process):
         logger_statistics_errors.error("%s does not exist!\n", process)
-        print(process + ' does not exist!')
+        #print(process + ' does not exist!')
     time_statistics = out_dir + '/' + sample +'_'+ 'time_Cost'
     scriptdir = os.path.dirname(os.path.abspath(__file__))
     command = 'Rscript ' + scriptdir + '/statistics_time.R' + ' -p ' + process + ' -o ' + time_statistics
@@ -237,10 +243,16 @@ def merge_statistics_sam_bam(logger_statistics_process, logger_statistics_errors
     for arg in args:
         if not os.path.isfile(arg):
             logger_statistics_errors.error("%s does not exist!\n", arg)
-            print(arg + ' does not exist!')
+            #print(arg + ' does not exist!')
     statisticsfiles = ','.join(args)
     mergestatistics = out_dir + '/' + sample +'_merge_sam_bam_statisticsfile.txt'
     scriptdir = os.path.dirname(os.path.abspath(__file__))
     command = 'Rscript ' + scriptdir + '/statistics_merge_sam_bam_statisticsfile.R' + ' -p ' + statisticsfiles + ' -g '+ names +' -o ' + mergestatistics
     os.system(command)
 
+def merge_statistics(sample_preinfo, exome_target,qc,trim_qc,
+                     trim_statis,filter_statis, primer_statis, umi_statis, align_base):
+    scriptdir = os.path.dirname(os.path.abspath(__file__))
+    command = 'Rscript {0}/statistics_preinfo.R -q {1} -t {2} -c {3} -f {4} -p {5} -u {6} -a {7} -e {7} -o {8}'.format(scriptdir,qc,trim_qc,
+                     trim_statis,filter_statis, primer_statis, umi_statis, align_base, exome_target,sample_preinfo)
+    os.system(command)
