@@ -13,7 +13,7 @@ from difflib import SequenceMatcher
 
 time_start = time.time()
 
-def filter_alignment_samtools(samtools_dir, alignment_sam, min_mapq, 
+def filter_alignment_samtools1(samtools_dir, alignment_sam, min_mapq, 
                               max_soft_clip, out_file, stats_file,
                               logger_filter_process, logger_filter_errors):
     stats_file_tmp = stats_file + '.tmp'
@@ -30,7 +30,7 @@ def filter_alignment_samtools(samtools_dir, alignment_sam, min_mapq,
         samtools_dir, alignment_sam, out_file_tmp1)
     os.system(command_samtools)
     # Count unmapped reads
-    command_count2 = '{0} view -cf 4 {1} | cut -f1 | uniq | wc -l >> {2}'.format(
+    command_count2 = '{0} view -f 4 {1} | cut -f1 | uniq | wc -l >> {2}'.format(
         samtools_dir, out_file_tmp1, stats_file_tmp)
     os.system(command_count2)
     # Discard unmapped reads
@@ -67,6 +67,92 @@ def filter_alignment_samtools(samtools_dir, alignment_sam, min_mapq,
     os.system('rm '+stats_file_tmp)
     os.system('rm '+out_file_tmp1 + ' '+out_file_tmp2)
 
+
+def filter_alignment_samtools(samtools_dir, alignment_sam, min_mapq,
+                              max_soft_clip, out_file, stats_file,
+                              logger_filter_process, logger_filter_errors):
+    stats_file_tmp = stats_file + '.tmp'
+    command_count = '{0} view {1} | cut -f1 | uniq | wc -l >> {2}'.format(
+        samtools_dir, alignment_sam, stats_file_tmp)
+    logger_filter_process.info('Samtools counts the total number of read pairs.')
+    os.system(command_count)
+
+    # Count supplimentary alignments
+    command_count1 = '{0} view -f 2048 {1} | cut -f1 | uniq | wc -l >> {2}'.format(
+        samtools_dir, alignment_sam, stats_file_tmp)
+    logger_filter_process.info('Samtools counts the supplimentary alignments.')
+    os.system(command_count1)
+
+    out_file_tmp1 = out_file + '_tmp1.sam'
+    command_samtools = '{0} view -ShF 2048 {1} > {2}'.format(
+        samtools_dir, alignment_sam, out_file_tmp1)
+    os.system(command_samtools)
+
+    command_count = '{0} view {1} | cut -f1 | uniq | wc -l >> {2}'.format(
+        samtools_dir, out_file_tmp1, stats_file_tmp)
+    logger_filter_process.info('Samtools counts the number of read pairs without 2048.')
+    os.system(command_count)
+
+    # Count unmapped reads
+    command_count2 = '{0} view -f 8 {1} | cut -f1 | uniq | wc -l >> {2}'.format(
+        samtools_dir, out_file_tmp1, stats_file_tmp)
+    logger_filter_process.info('Samtools counts the total number of unmapped read pairs.')
+    os.system(command_count2)
+    # Discard all unmapped read pairs
+    out_file_tmp2 = out_file + '_tmp2.sam'
+    command_samtools = '{0} view -ShF 8 {1} > {2}'.format(samtools_dir, out_file_tmp1, out_file_tmp2)
+    os.system(command_samtools)
+    command_samtools = '{0} view -ShF 4 {1} > {2}'.format(samtools_dir, out_file_tmp2, out_file_tmp1)
+    os.system(command_samtools)
+    # Discard read pairs mapped to different target sequences
+    command_samtools1 = "{0} view -Sh {1} \
+    | perl -lane 'print if $F[0] =~ /^@/; print if $F[6] =~ /=/;' > {2}".format(
+        samtools_dir, out_file_tmp1, out_file_tmp2)
+    logger_filter_process.info('Samtools discards the secondary/supplimentary/unmapped alignments\
+        and those read pairs mapped to different target regions.')
+    os.system(command_samtools1)
+    command_count3 = "{0} view {1} | cut -f1 | uniq | wc -l >> {2}".format(
+        samtools_dir, out_file_tmp2, stats_file_tmp)
+    os.system(command_count3)
+    # Discard alignments with MAPQ < min_mapq
+    command_count4 = '{0} view -q {1} {2} | cut -f1 | uniq | wc -l >> {3}'.format(
+        samtools_dir, min_mapq, out_file_tmp2, stats_file_tmp)
+    logger_filter_process.info('Samtools counts the alignments with higher MapQ.')
+    os.system(command_count4)
+    # Drop the above alignments and those beginning with exact matches > max_soft_clip
+    # command_samtools2 = "{0} view -Shq {1} {2}\
+    # | perl -lane 'print if $F[0] =~ /^@/; next unless $F[5] =~ /^(\d+)M/;print if $1 >= {3}'\
+    # >{4}".format(samtools_dir, min_mapq, out_file_tmp2, max_soft_clip, out_file)
+    command_samtools2 = "{0} view -Shq {1} {2} > {3}".format(samtools_dir, min_mapq,
+                                                             out_file_tmp2, out_file)
+    os.system(command_samtools2)
+    logger_filter_process.info('Samtools discards the alignments with lower MapQ and mismatched beginning.')
+    command_count5 = '{0} view {1} | cut -f1 | uniq | wc -l >> {2}'.format(samtools_dir, out_file, stats_file_tmp)
+    os.system(command_count5)
+    #print('Compeleted filtering alignments with samtools.')
+
+    # Output the alignment statistics.
+    stats = open(stats_file_tmp)
+    (total_count, sec_count,rm_sec_count, unmap_count, same_chr_count,
+     hmapq_count, final_count) = [int(x.strip()) for x in stats.readlines()[0:7]]
+    stats.close()
+    stats_out = open(stats_file, 'w')
+    stats_out.write('Total number of read pairs == {0}\n'.format(total_count))
+    stats_out.write('Number of secondary/supplimentary alignments == {0}\n'.format(sec_count))
+    stats_out.write('Number of unmapped read pairs == {0}\n'.format(unmap_count))
+    #remained = total_count - sec_count - unmap_count
+    print(rm_sec_count)
+    remained = total_count - unmap_count
+    stats_out.write('Number of read pairs mapped to different target regions == {0}\n'.format(
+        remained - same_chr_count))
+    stats_out.write('Number of low MAPQ alignments (< {0}) == {1}\n'.format(min_mapq, same_chr_count - hmapq_count))
+    stats_out.write('Number of alignments passed SAMTools filtration == {0}\n'.format(final_count))
+    stats_out.write(
+        'Percent of alignments passed SAMTools filtration == {0}%\n'.format(100 * final_count / total_count))
+    #stats_out.write('Time cost at samtools filtration == {0} min\n'.format((time.time() - time_start) / 60))
+    stats_out.close()
+    os.system('rm ' + stats_file_tmp)
+    os.system('rm ' + out_file_tmp1 + ' ' + out_file_tmp2)
 
 def complement_base(base):
     if base == 'A':
@@ -284,10 +370,10 @@ def identify_gs_primers(samtools_dir, alignment_sam, primers_file, max_dist,
     
     ratio_off = 100*num_off_target / num_total_alignments
     ratio_on = 100*num_on_target / num_total_alignments
-    print('Total number of alignments (PE) == ' + str(num_total_alignments))
-    print('Number of reads mapped in unproper pairs == ' + str(num_unproper_pairs))
-    print('Number of off-target alignments == {0} ({1}%)({2})'.format(num_off_target, ratio_off, num_off_target_wrong_strand))
-    print('Number of on-target alignments == {0} ({1}%)'.format(num_on_target, ratio_on))
+    #print('Total number of alignments (PE) == ' + str(num_total_alignments))
+    #print('Number of reads mapped in unproper pairs == ' + str(num_unproper_pairs))
+    #print('Number of off-target alignments == {0} ({1}%)({2})'.format(num_off_target, ratio_off, num_off_target_wrong_strand))
+    #print('Number of on-target alignments == {0} ({1}%)'.format(num_on_target, ratio_on))
 
     stats_out = open(stats_file, 'a')
     stats_out.write('Number of reads mapped in unproper pairs == '+str(num_unproper_pairs)+'\n')
