@@ -139,9 +139,9 @@ def split_variant(line):
         dp1 = float(dp1)
         dp2 = float(dp2)
         vf1 = str(round(dp1/(dp0+dp1+dp2),4))
-        vf2 = str(round(dp1/(dp0+dp1+dp2),4))
-        return [[chrom, pos, ref, alt, filter, qual, dp, af1,vf1, baseqranksum, fs, inbreedingcoeff, mq, mqranksum, qd, readposranksum, sor],
-                [chrom, pos, ref, alt, filter, qual, dp, af2,vf2, baseqranksum, fs, inbreedingcoeff, mq, mqranksum, qd, readposranksum, sor]
+        vf2 = str(round(dp2/(dp0+dp1+dp2),4))
+        return [[chrom, pos, ref, alt1, filter, qual, dp, af1,vf1, baseqranksum, fs, inbreedingcoeff, mq, mqranksum, qd, readposranksum, sor],
+                [chrom, pos, ref, alt2, filter, qual, dp, af2,vf2, baseqranksum, fs, inbreedingcoeff, mq, mqranksum, qd, readposranksum, sor]
                 ]
 def comp_filter(limists,value):
     result=[]
@@ -281,7 +281,7 @@ def annotation(dict_cos,dict_clin,dict_g1000,variant_vcf,annotated_csv,stats_fil
     num_unmatch = 0
     var = open(variant_vcf, 'r')
     output = open(annotated_csv, 'w')
-    output.write('\t'.join(['Sample','CHR','POS','REF','ALT','FILTER','QUAL','DP','AF','VF','Baseqranksum','FS','Inbreedingcoeff','MQ',
+    output.write('\t'.join(['Sample','CHR','POS','REF','ALT','FILTER','QUAL','DP','GT','VF','Baseqranksum','FS','Inbreedingcoeff','MQ',
                             'MQRankSum','QD','ReadPosRankSum','SOR','Gene_ID','RS_ID','CLNDN','HGVS','CLNSIG',
         'COSMIC_ID','Mutation_Description','Feature_ID','Gene_Name','Gene_CDS_Length','Mutation_Zygosity','LOH','Mutation_Strand',
         'HGVS.c','HGVS.p','FATHMM_Prediction','FATHMM_Score','Mutation_Somatic_Status','Gene_Name1','RS_ID1','EAS_AF','EUR_AF','AMR_AF',
@@ -293,7 +293,7 @@ def annotation(dict_cos,dict_clin,dict_g1000,variant_vcf,annotated_csv,stats_fil
                 chrom = chrom[3:]
                 value = [chrom, pos, ref, alt, filter, qual, dp, af, vf, baseqranksum, fs, inbreedingcoeff, mq, mqranksum, qd, readposranksum, sor]
                 #print(value)
-                if len(ref) == len(alt):
+                if len(ref) == len(alt) and len(ref)==1:
                     change = ref + '>' + alt
                     change1 = base_paired[ref] + '>' + base_paired[alt]
                     filter = comp_filter(snp_filter,value)
