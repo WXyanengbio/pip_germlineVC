@@ -21,9 +21,9 @@ option_list <- list(
 opts <- parse_args(OptionParser(option_list=option_list))
 
 # 显示输入输出确认是否正确
-print(paste("The prefix file is ", opts$prefix_file, sep = ""))
-print(paste("The suffix file is ", opts$suffix_file, sep = ""))
-print(paste("The output file prefix is ", opts$output, sep = ""))
+#print(paste("The prefix file is ", opts$prefix_file, sep = ""))
+#print(paste("The suffix file is ", opts$suffix_file, sep = ""))
+#print(paste("The output file prefix is ", opts$output, sep = ""))
 
 
 # 3. 读取输入文件
@@ -121,7 +121,7 @@ if (TRUE){
     #                                    "chr13","chr14","chr15","chr16","chr17","chr18",
     #                                    "chr19","chr20","chr22","chrX","chrY"),7])
     merge_dat_sub = na.omit(merge_dat_sub)
-    print(head(merge_dat_sub))
+    #print(head(merge_dat_sub))
     merge_dat_sub1 = merge_dat_sub[which(merge_dat_sub$mean_depth>40),]
     merge_dat_sub1$CHOM = factor(as.character(merge_dat_sub1$CHOM),levels =as.character(merge_dat_sub1$CHOM))
     p <- ggplot(data=merge_dat_sub1, aes(x=CHOM, y= target)) +

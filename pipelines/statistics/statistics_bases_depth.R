@@ -20,8 +20,8 @@ option_list <- list(
 opts <- parse_args(OptionParser(option_list=option_list))
 
 # 显示输入输出确认是否正确
-print(paste("The prefix file is ", opts$prefix_file, sep = ""))
-print(paste("The output file prefix is ", opts$output, sep = ""))
+#print(paste("The prefix file is ", opts$prefix_file, sep = ""))
+#print(paste("The output file prefix is ", opts$output, sep = ""))
 
 
 # 3. 读取输入文件
@@ -80,5 +80,5 @@ if (TRUE){
 if (TRUE){
   ggsave(file=paste(opts$output,".pdf",sep=""), plot=p, width = 5, height = 5)
   ggsave(file=paste(opts$output,".tiff",sep=""), plot=p, width = 5, height = 5)
-  print(paste("The output figure is ", opts$output, ".pdf",  sep = ""))
+  #print(paste("The output figure is ", opts$output, ".pdf",  sep = ""))
 }

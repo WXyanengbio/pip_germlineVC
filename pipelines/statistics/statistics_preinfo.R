@@ -26,7 +26,7 @@ option_list <- list(
   make_option(c("-a", "--align_base"), type="character", 
               help="Input align_base"),
   make_option(c("-e", "--exon"), type="character", 
-              help="Input exon"),
+              help="Input exon, if there is no exon file : n"),
   make_option(c("-o", "--output"), type="character", default="output",
               help="output directory or prefix [default %default]")
 )
@@ -54,12 +54,12 @@ file2s <- read.table(opts$trim_qc)
 
  names<-c(names,gsub('_L001.QC.statistics.txt','',name))
  }
-print(qcs)
+
  qcs<-as.data.frame(qcs)
  colnames(qcs)<-names
 # remove the mean base qualit 
 qcs=qcs[-c(5,13),]
-print(qcs)
+
  qcs=cbind(Library_name=c('Number of raw read pairs','Minimum read length (raw)',
                       'Maximum read length (raw)','GC% (raw)',
                       'Q20 in raw reads (%)','Q30 in raw reads (%)','Number of clean read pairs','Precentage of clean read pairs (%)','Minimum read length (clean)',
@@ -69,7 +69,7 @@ print(qcs)
   #write.table(trims, file=paste(opts$output,".trims_statis.txt",sep=""),
   #            append = T, quote = F, sep="\t", eol = "\n", na = "NA", dec = ".", row.names = F, col.names = T)
  }
-print(qcs)
+
  files<-read.table(opts$trim_statis)
  if(TRUE){
  trims=c()
@@ -106,7 +106,6 @@ for(i in 1:nrow(files)){
  file<-as.character(files[i,1])
  dat = read.table(file,sep="\t")
  dat = dat[,1]
- #dat = dat[-c(4,8,13),]
  filter=c()
  for(j in 1:length(dat)){
  if(j>=10){
@@ -130,15 +129,14 @@ for(i in 1:nrow(files)){
  names<-c(names,gsub('_L001_align_stats.txt','',name))
  }
  filters <-as.data.frame(filters)
- #print(names)
+
  colnames(filters)<-names
  filters=cbind(Library_name=filter[,1],filters)
   #write.table(filters, file=paste(opts$output,".filters_statis.txt",sep=""),
   #            append = T, quote = F, sep="\t", eol = "\n", na = "NA", dec = ".", row.names = F, col.names = T)
  }
-print(filters)
+
  files<-read.table(opts$umi_statis)
- #print(files)
  if(TRUE){
  umis=c()
  names=c()
@@ -286,7 +284,8 @@ if(TRUE){
   region$end=as.numeric(apply(region,1,function(x){unlist(strsplit(as.character(x[1]),"_"))[3]}))
   exon<-c()
 
-  if(opts$exon != 'n'){
+exon_F=unlist(strsplit(opts$exon,"/",fix))[length(unlist(strsplit(opts$exon,"/")))]
+  if(exon_F != 'n'){
     suf_dat = read.csv(opts$exon,header=F)
   for(i in 1:nrow(region)){
      a=intersect(which(region[i,3]>=suf_dat[,3] & suf_dat[,3]> region[i,2]), which(suf_dat[,2] >= region[i,2] & suf_dat[,2] <= region[i,3]))
@@ -307,27 +306,22 @@ if(TRUE){
     }
     subb=c()
     if(length(a)==0 & length(b)>0){
-    #print(b)
     for(j1 in 1:length(b)){
     start=1
     end = suf_dat[b[j1],3]-region[i,2]
     target = as.character(region[,1])[i]
     subb<-rbind(subb,c(start,end,target,as.character(suf_dat[b[j1],1])))
     }
-    #print(subb)
     exon<-rbind(exon,subb)
     }
     subc=c()
     if(length(a)==0 & length(c)>0){
-    #print(c)
     for(j2 in 1:length(c)){
-    #print(suf_dat[a[j],])
     start =suf_dat[c[j2],2]-region[i,2]
     end = region[i,3]-region[i,2]
     target = as.character(region[,1])[i]
     subc<-rbind(subc,c(start,end,target,as.character(suf_dat[c[j2],1])))
     }
-    #print(subc)
     exon<-rbind(exon,subc)
     }
   }
@@ -420,7 +414,6 @@ if(TRUE){
           x100_ratio,x200_ratio,x500_ratio,x50,x100,x200,x500,
           x5_men,x25_men,x50_men,
          x75_men,x100_men)
-  print(exon_statis_me)
   exon_statis_mes<-cbind(exon_statis_mes, exon_statis_me)
  }
 }
@@ -434,7 +427,6 @@ if(TRUE){
                            "Number of x200 bases depth of target exon/region","Number of x500 bases depth of target exon/region","% of target bases >= 5% of mean BD",
                            "% of target bases >= 25% of mean BD","% of target bases >= 50% of mean BD",
                            "% of target bases >= 75% of mean BD","% of target bases >= mean BD"),exon_statis_mes)
-print(exon_statis_mes)
 }
 colnames(qcs)<- colnames(qcs)
 colnames(trims)<-colnames(qcs)
@@ -448,12 +440,8 @@ data<-rbind(data,qcs[7:nrow(qcs),])
 data<-rbind(data,filters[-1,])
 data<-rbind(data,umis)
 data<-rbind(data,primers)
-print(data)
-print(exon_statis_mes)
 exon_statis_mes<-exon_statis_mes[-c(10:13),]
 data<-rbind(data,exon_statis_mes)
-#print(data)
-#print(class(data))
 colnames(data)<-colnames(qcs)
 data<- as.matrix(data)
 write.table(data, file=opts$output, append = T, quote = F, sep="\t", eol = "\n", na = "NA", dec = ".", row.names = F, col.names = T)
