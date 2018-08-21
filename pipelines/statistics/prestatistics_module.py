@@ -60,11 +60,12 @@ def split_n_bases(nbases):
 # get informations from the qc result of the reads
 def getinfo(fastqc,logger_statistics_process, logger_statistics_errors):
     qc_read = fastqc.split(".fastq")[0] + '_fastqc.zip'
-    command1 = 'unzip' + ' -o ' + qc_read  + ' -d ' + os.path.dirname(qc_read)
-    #os.system(command1)
-    stdout, stderr = stdout_err(command1)
-    logger_statistics_process.info(stdout)
-    logger_statistics_errors.info(stderr)
+    if not os.path.isfile( fastqc.split(".fastq")[0] + '_fastqc'):
+        command1 = 'unzip' + ' -o ' + qc_read  + ' -d ' + os.path.dirname(qc_read)
+        #os.system(command1)
+        stdout, stderr = stdout_err(command1)
+        logger_statistics_process.info(stdout)
+        logger_statistics_errors.info(stderr)
     print('{0} has been completed.'.format(qc_read))
     qc_data = qc_read.rstrip(".zip") + '/' + 'fastqc_data.txt'
     qcdata = open(qc_data,"r")
@@ -142,12 +143,15 @@ def getinfo(fastqc,logger_statistics_process, logger_statistics_errors):
 
 #--QC reads by fastQC
 def qc_raw_reads(fastQC_dir, out_dir, sample, module, read1, read2,logger_statistics_process, logger_statistics_errors):
-    command1 = '{0} {1} {2} -o {3}'.format(fastQC_dir, read1, read2, out_dir)
-    stdout, stderr = stdout_err(command1)
-    logger_statistics_process.info(stdout)
-    logger_statistics_errors.info(stderr)
-    #os.system(command1)
-    print('QC-{0} has been completed.\n'.format(module))
+    qc_read = out_dir + '/' + os.path.basename(read1).split(".fastq")[0] + '_fastqc.zip'
+    if not os.path.isfile(qc_read):
+        command1 = '{0} {1} {2} -o {3}'.format(fastQC_dir, read1, read2, out_dir)
+        stdout, stderr = stdout_err(command1)
+        logger_statistics_process.info(stdout)
+        logger_statistics_errors.info(stderr)
+        print('QC-{0} has been completed.\n'.format(module))
+    else:
+        print('QC-{0} exists.\n'.format(module))
     qc_statistics = out_dir + '/' + sample + '.' + module +'.statistics.txt'
     qc_result1 =getinfo(out_dir + '/' + os.path.basename(read1),logger_statistics_process, logger_statistics_errors)
     qc_result2 =getinfo(out_dir + '/' + os.path.basename(read2),logger_statistics_process, logger_statistics_errors)
@@ -183,31 +187,36 @@ def statistics_depth_coverage(samtools_dir, sam_bam, out_dir,sample, module, exo
         os.system(command3)
     #-numbers of reads in target region
     num_reads_in_target_region = out_dir + '/' + sample +'_'+ module + '_numbersReadsInTargetRegion.txt'
-    command4 = samtools_dir + ' idxstats ' + sorted_bam + ' > ' + num_reads_in_target_region
-    os.system(command4)
+    if not os.path.isfile(num_reads_in_target_region):
+        command4 = samtools_dir + ' idxstats ' + sorted_bam + ' > ' + num_reads_in_target_region
+        os.system(command4)
     #-coverage of reads in target region
     coverage_in_target_region = out_dir + '/' + sample +'_'+ module + '_covergerInTargetRegion.txt'
-    command5 ='{0} mpileup {1} | perl -alne \'{2}\' > {3}'.format(samtools_dir, sorted_bam,
+    if not os.path.isfile(coverage_in_target_region):
+        command5 ='{0} mpileup {1} | perl -alne \'{2}\' > {3}'.format(samtools_dir, sorted_bam,
         '{$pos{$F[0]}++;$depth{$F[0]}+=$F[3]} END{print "$_\t$pos{$_}\t$depth{$_}" foreach sort keys %pos}',coverage_in_target_region)
-    os.system(command5)
+        os.system(command5)
     #-
     #-statistics and plot of  the depth and coverage in target region
     statistics_plot = out_dir + '/' + sample +'_'+ module + '_depth_coverageInTargetRegion'
-    scriptdir = os.path.dirname(os.path.abspath(__file__))
-    command6 = 'Rscript ' + scriptdir + '/statistics_depth_coverage.R' + ' -p ' + num_reads_in_target_region + ' -s ' + coverage_in_target_region + ' -r '+ exome_target_bed + ' -o ' + statistics_plot
-    stdout, stderr = stdout_err(command6)
-    logger_statistics_process.info(stdout)
-    logger_statistics_errors.info(stderr)
+    if not os.path.isfile(statistics_plot):
+        scriptdir = os.path.dirname(os.path.abspath(__file__))
+        command6 = 'Rscript ' + scriptdir + '/statistics_depth_coverage.R' + ' -p ' + num_reads_in_target_region + ' -s ' + coverage_in_target_region + ' -r '+ exome_target_bed + ' -o ' + statistics_plot
+        stdout, stderr = stdout_err(command6)
+        logger_statistics_process.info(stdout)
+        logger_statistics_errors.info(stderr)
     #- statistics of the depth of the baes in region
     if module == 'Align':
         bases_depth_in_region = out_dir + '/' + sample +'_'+ module + '_basesDepthInRegion.txt'
-        command7 ='{0} depth {1} > {2}'.format(samtools_dir, sorted_bam, bases_depth_in_region)
-        os.system(command7)
+        if not os.path.isfile(bases_depth_in_region):
+            command7 ='{0} depth {1} > {2}'.format(samtools_dir, sorted_bam, bases_depth_in_region)
+            os.system(command7)
     #depth of the bases in target region
     bases_depth_in_target_region = out_dir + '/' + sample +'_'+ module + '_basesDepthInTargetRegion.txt'
-    command7 ='{0} mpileup {1} | perl -alne \'{2}\' > {3}'.format(samtools_dir, sorted_bam,
-        '{$depth{$F[3]}++}END{print "$_\t$depth{$_}" foreach sort{$a <=> $b}keys %depth}',bases_depth_in_target_region)
-    os.system(command7)
+    if not os.path.isfile(bases_depth_in_target_region):
+        command7 ='{0} mpileup {1} | perl -alne \'{2}\' > {3}'.format(samtools_dir, sorted_bam,
+         '{$depth{$F[3]}++}END{print "$_\t$depth{$_}" foreach sort{$a <=> $b}keys %depth}',bases_depth_in_target_region)
+        os.system(command7)
     #-statistics and plot of  the depth and coverage in target region
     statistics_plot1 = out_dir + '/' + sample +'_'+ module + '_basesDepthInTargetRegion'
     scriptdir = os.path.dirname(os.path.abspath(__file__))
@@ -224,8 +233,9 @@ def statistics_sam_bam(samtools_dir, sam_bam, out_dir, sample, module, logger_st
         logger_statistics_errors.error("%s does not exist!\n", sam_bam)
         #print(sam_bam + ' does not exist!')
     align_statistics = out_dir + '/' + sample +'_'+ module +  '_statistics.txt'
-    command = samtools_dir + ' stats ' + sam_bam +' | grep ^SN | cut -f 2-3  > ' + align_statistics
-    os.system(command)
+    if not os.path.isfile(align_statistics):
+        command = samtools_dir + ' stats ' + sam_bam +' | grep ^SN | cut -f 2-3  > ' + align_statistics
+        os.system(command)
     return align_statistics
 
 #--statistics of the time cost by the pipeline
@@ -253,6 +263,6 @@ def merge_statistics_sam_bam(logger_statistics_process, logger_statistics_errors
 def merge_statistics(sample_preinfo, exome_target,qc,trim_qc,
                      trim_statis,filter_statis, primer_statis, umi_statis, align_base):
     scriptdir = os.path.dirname(os.path.abspath(__file__))
-    command = 'Rscript {0}/statistics_preinfo.R -q {1} -t {2} -c {3} -f {4} -p {5} -u {6} -a {7} -e {7} -o {8}'.format(scriptdir,qc,trim_qc,
+    command = 'Rscript {0}/statistics_preinfo.R -q {1} -t {2} -c {3} -f {4} -p {5} -u {6} -a {7} -e {8} -o {9}'.format(scriptdir,qc,trim_qc,
                      trim_statis,filter_statis, primer_statis, umi_statis, align_base, exome_target,sample_preinfo)
     os.system(command)

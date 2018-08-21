@@ -42,22 +42,34 @@ file2s <- read.table(opts$trim_qc)
  file2<-as.character(file2s[i,1])
  dat1 = read.table(file1,header=T,sep='\t')
  dat2 = read.table(file2,,header=T,sep='\t')
+ #print(dat1)
+ r_q20<-round((as.numeric(gsub('%','',dat1[1,9]))+as.numeric(gsub('%','',dat1[2,9])))/2,2)
+ r_q30<-round((as.numeric(gsub('%','',dat1[1,10]))+as.numeric(gsub('%','',dat1[2,10])))/2,2)
  c_q20<-round((as.numeric(gsub('%','',dat2[1,9]))+as.numeric(gsub('%','',dat2[2,9])))/2,2)
  c_q30<-round((as.numeric(gsub('%','',dat2[1,10]))+as.numeric(gsub('%','',dat2[2,10])))/2,2)
- qc<-c(dat1[1,3],dat2[1,3],round(dat2[1,3]*100/dat1[1,3],2),dat2[1,4:7],c_q20,c_q30)
+ qc<-c(dat1[1,3],dat1[1,4:7],r_q20,r_q30,
+       dat2[1,3],round(dat2[1,3]*100/dat1[1,3],2),dat2[1,4:7],c_q20,c_q30)
  qcs<-cbind(qcs,qc)
  name=unlist(strsplit(file1,"/"))[length(unlist(strsplit(file1,"/")))]
+
  names<-c(names,gsub('_L001.QC.statistics.txt','',name))
  }
+print(qcs)
  qcs<-as.data.frame(qcs)
  colnames(qcs)<-names
- qcs=cbind(read_set=c('raw reads','clean reads','Precent of trim','min length of clean reads',
-                      'max length of clean reads','GC content of clean reads','mean base qualit of clean reads',
-                      'Q20 of clean reads','Q30 of clean reads'),
+# remove the mean base qualit 
+qcs=qcs[-c(5,13),]
+print(qcs)
+ qcs=cbind(Library_name=c('Number of raw read pairs','Minimum read length (raw)',
+                      'Maximum read length (raw)','GC% (raw)',
+                      'Q20 in raw reads (%)','Q30 in raw reads (%)','Number of clean read pairs','Precentage of clean read pairs (%)','Minimum read length (clean)',
+                      'Maximum read length (clean)','GC% (clean)',
+                      'Q20 in clean reads (%)','Q30 in clean reads (%)'),
            qcs)
   #write.table(trims, file=paste(opts$output,".trims_statis.txt",sep=""),
   #            append = T, quote = F, sep="\t", eol = "\n", na = "NA", dec = ".", row.names = F, col.names = T)
  }
+print(qcs)
  files<-read.table(opts$trim_statis)
  if(TRUE){
  trims=c()
@@ -65,7 +77,8 @@ file2s <- read.table(opts$trim_qc)
  for(i in 1:nrow(files)){
  file<-as.character(files[i,1])
  dat = read.table(file,sep="\t")
- dat = dat[-c(1,nrow(dat)),]
+# remove the total reads, error reads pair fq, cost time
+ dat = dat[-c(1,3,nrow(dat)),]
  trim=c()
  for(j in 1:length(dat)){
  if(length(unlist(strsplit(as.character(dat[j])," == ")))==2){
@@ -101,7 +114,7 @@ for(i in 1:nrow(files)){
    number=unlist(strsplit(subfilter[2]," "))[1]
    precent=substr(unlist(strsplit(subfilter[2]," "))[2],2,6)
   filter<-rbind(filter,c(subfilter[1],number))
-  filter<-rbind(filter,c(gsub("Precent","Number",subfilter[1]),precent))
+  filter<-rbind(filter,c(paste(gsub("Number","Precent",subfilter[1])," (%)",sep=""),precent))
  }else{
    if(j==7){
    subfilter=unlist(strsplit(as.character(dat[j])," == "))
@@ -119,11 +132,11 @@ for(i in 1:nrow(files)){
  filters <-as.data.frame(filters)
  #print(names)
  colnames(filters)<-names
- filters=cbind(read_set=filter[,1],filters)
+ filters=cbind(Library_name=filter[,1],filters)
   #write.table(filters, file=paste(opts$output,".filters_statis.txt",sep=""),
   #            append = T, quote = F, sep="\t", eol = "\n", na = "NA", dec = ".", row.names = F, col.names = T)
  }
-
+print(filters)
  files<-read.table(opts$umi_statis)
  #print(files)
  if(TRUE){
@@ -134,19 +147,20 @@ for(i in 1:nrow(files)){
  dat = fread(file)
 # print(head(dat))
  reads= sum(dat[,7])
- sums=nrow(dat)
- mean=reads/sums
- quant=quantile(unlist(dat[,7]), probs = c(0.25,0.5,0.75,1))
- umis <- cbind(umis,c(reads,sums,mean,quant))
+ sums=sum(dat[,6])
+ mean=round(reads/sums,3)
+ umi=unlist(dat[which(dat[,6]!=0),6])
+ quant=quantile(umi, probs = c(0.25,0.5,0.75,1))
+ umis <- cbind(umis,c(sums,reads,mean,quant))
  name=unlist(strsplit(file,"/"))[length(unlist(strsplit(file,"/")))]
  names<-c(names,gsub('_L001_deduplicated_per_umi.tsv','',name))
  }
  umis<-as.data.frame(umis)
  colnames(umis)<-names
  
-  umis=cbind(read_set=c("read fragments","MTs","read fragments per MT, mean",
-               "read fragments per MT, 25th percentile","read fragments per MT, 50th percentile",
-              "read fragments per MT, 75th percentile","read fragments per MT, 100th percentile"),umis)
+  umis=cbind(Library_name=c("Number of MTs","Number of consolidated read pairs","Mean read depth per MT",
+               "25% of read depth per MT","Median of read depth per MT",
+              "75% of read depth per MT","Maximun of read depth per MT"),umis)
   #write.table(umis, file=paste(opts$output,".umis_statis.txt",sep=""),
   #            append = T, quote = F, sep="\t", eol = "\n", na = "NA", dec = ".", row.names = F, col.names = T)
  }
@@ -158,14 +172,14 @@ for(i in 1:nrow(files)){
 for(i in 1:nrow(files)){
  file<-as.character(files[i,1])
  dat = fread(file)
- num<-nrow(dat)
- meanprimer_mt_depth<-round(umis[2,i+1]/num,2)
+ num<-length(which(dat[,6]>0))
+ meanprimer_mt_depth<-round(umis[1,i+1]/num,2)
  x5<-round(length(which(dat[,6]>meanprimer_mt_depth*0.05))*100/num,2)
  x25<-round(length(which(dat[,6]>meanprimer_mt_depth*0.25))*100/num,2)
  x50<-round(length(which(dat[,6]>meanprimer_mt_depth*0.50))*100/num,2)
  x75<-round(length(which(dat[,6]>meanprimer_mt_depth*0.75))*100/num,2)
  x100<-round(length(which(dat[,6]>meanprimer_mt_depth*1))*100/num,2)
- mean_primer_read_depth <-round(as.numeric(qcs[2,i+1])/num,2)
+ mean_primer_read_depth <-round(as.numeric(umis[2,i+1])/num,2)
  rx5<-round(length(which(dat[,6]>mean_primer_read_depth*0.05))*100/num,2)
  rx25<-round(length(which(dat[,6]>mean_primer_read_depth*0.25))*100/num,2)
  rx50<-round(length(which(dat[,6]>mean_primer_read_depth*0.50))*100/num,2)
@@ -177,12 +191,12 @@ for(i in 1:nrow(files)){
  }
    primers<-as.data.frame(primers)
  colnames(primers)<-names
- primers=cbind(read_set=c("primers","mean primer MT depth","% of primers >= 5% of mean MT depth",
-               "% of primers >= 25% of mean MT depth","% of primers >= 50% of mean MT depth",
-              "% of primers >= 75% of mean MT depth","% of primers >= 100% of mean MT depth",
-                        "mean primer read fragment depth","% of primers >= 5% of mean read fragment depth",
-              "% of primers >= 25% of mean read fragment depth","% of primers >= 50% of mean read fragment depth",
-                         "% of primers >= 75% of mean read fragment depth","% of primers >= 100% of mean read fragment depth"),primers)
+ primers=cbind(Library_name=c("Number of targeted primers","Mean MT depth per primer (mean MDP)","% of primers >= 5% of mean MDP",
+               "% of primers >= 25% of mean MDP","% of primers >= 50% of mean MDP",
+              "% of primers >= 75% of mean MDP","% of primers >= mean MDP",
+                        "Mean read depth per primer (mean RDP)","% of primers >= 5% of mean RDP",
+              "% of primers >= 25% of mean RDP","% of primers >= 50% of mean RDP",
+                         "% of primers >= 75% of mean RDP","% of primers >= mean RDP"),primers)
   }
 
 #--------------------------
@@ -413,26 +427,30 @@ if(TRUE){
   exon_statis_mes<-as.data.frame(exon_statis_mes)
   colnames(exon_statis_mes)<-names
   
-  exon_statis_mes<-cbind(read_set=c("target exon/region lenth","total bases depth of target exon/region","mean bases depth of target exon/region","min bases depth of target exon/region",
-                           "max bases depth of target exon/region","precent of x50 bases depth of target exon/region","precent of x100 bases depth of target exon/region",
-                           "precent of x200 bases depth of target exon/region","precent of x500 bases depth of target exon/region",
+  exon_statis_mes<-cbind(Library_name=c("Length of target region","Total number of requencing bases (covering target region)","Mean sequencing depth per base (mean BD)","Minimun BD",
+                           "Maximun BD","% of target bases with BD >= 50x","% of target bases with BD >= 100x",
+                           "% of target bases with BD >= 200x","% of target bases with BD >= 500x",
                            "Number of x50 bases depth of target exon/region","Number of x100 bases depth of target exon/region",
-                           "Number of x200 bases depth of target exon/region","Number of x500 bases depth of target exon/region","precent of 5% mean bases depthof target exon/region",
-                           "precent of 25% mean bases depth of target exon/region","precent of 50% mean bases depth of target exon/region",
-                           "precent of 75% mean bases depth of target exon/region","precent of 100% mean bases depth of target exon/region"),exon_statis_mes)
+                           "Number of x200 bases depth of target exon/region","Number of x500 bases depth of target exon/region","% of target bases >= 5% of mean BD",
+                           "% of target bases >= 25% of mean BD","% of target bases >= 50% of mean BD",
+                           "% of target bases >= 75% of mean BD","% of target bases >= mean BD"),exon_statis_mes)
 print(exon_statis_mes)
 }
 colnames(qcs)<- colnames(qcs)
 colnames(trims)<-colnames(qcs)
+colnames(umis)<-colnames(qcs)
 colnames(filters)<-colnames(qcs)
 colnames(primers)<-colnames(qcs)
 colnames(exon_statis_mes)<-colnames(qcs)
 
-data <-rbind(qcs,trims)
-data<-rbind(data,filters)
+data <-rbind(qcs[1:6,],trims)
+data<-rbind(data,qcs[7:nrow(qcs),])
+data<-rbind(data,filters[-1,])
+data<-rbind(data,umis)
 data<-rbind(data,primers)
 print(data)
 print(exon_statis_mes)
+exon_statis_mes<-exon_statis_mes[-c(10:13),]
 data<-rbind(data,exon_statis_mes)
 #print(data)
 #print(class(data))

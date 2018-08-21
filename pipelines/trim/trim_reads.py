@@ -111,10 +111,10 @@ def trim_read_pairs(read1, read2, trimmed1, trimmed2, min_read_len, common_seq1,
 
     stats_out = open(stats_file, 'w')
     stats_out.write('Total number of reads == ' + str(num_total_reads) + '\n')
-    stats_out.write('Number of short reads (<{0}bp) == {1}\n'.format(
+    stats_out.write('Number of short reads (either read_length <{0}bp) == {1}\n'.format(
         min_read_len, num_short_reads))
-    stats_out.write('Number of error reads pair fq == ' + str(num_error_reads1) + '\n')
-    stats_out.write('Number of error barcode/common seqs == ' + str(num_error_reads2) + '\n')
+    stats_out.write('Number of unproper read pairs (containing incorrect headers) == ' + str(num_error_reads1) + '\n')
+    stats_out.write('Number of read pairs without correct common sequences/MTs == ' + str(num_error_reads2) + '\n')
     stats_out.write('The time of trimming is %s minutes.' % str((time.time() - time_start) / 60))
 
 def trim_read_pairs_by_trimmomatic(trimmomatic_dir,

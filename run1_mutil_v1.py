@@ -45,25 +45,12 @@ parser.add_argument("--yaml",
                     type =str,
                     default = 'null',
                     help = "The yaml file of the parameters")
-#parser.add_argument("--source", 
-#                    help = "Path to input reads in FASTA format", 
-#                    type = str)
 parser.add_argument("--file_list", 
                     help = "Path to file contian tow colown: one is the path of raw reads, two is the sampleID of raw reads", 
                     type = str)
 parser.add_argument("--threads", 
                     help = "the threads of multiprocessing ", 
                     type = int)
-#parser.add_argument("--source", 
-#                    help = "Path to input reads in FASTA format", 
-#                    type = str)
-#parser.add_argument("--sample_name", 
-#                    help = "the sample name of raw reads", 
-#                    type = str)
-#parser.add_argument("--tailname", 
-#                    type =str,
-#                    default = 'null',
-#                    help = "the tailname of sample raw read")
 parser.add_argument("--datasets_dir", 
                     type =str,
                     default = '/home/dell/Works/Projects/Datasets',
@@ -594,16 +581,10 @@ if __name__ == '__main__':
         out_dir = file_yaml['output']
     else:
         exit('No output path in the yaml')
-        #print(out_dir)
-    #elif args.output is 'null':
-    #    out_dir = sample
-    #if not os.path.exists(out_dir):
-    #    os.makedirs(out_dir)
-    #----pipeline log file
-    #log_dir = out_dir + '/' + 'log/'
-    #if not os.path.exists(log_dir):
-    #    os.makedirs(log_dir)
-    #QC
+    if yaml_file != 'null' and 'threads' in file_yaml.keys():
+        threads = file_yaml['threads']
+    else:
+        threads = args.threads
     if yaml_file != 'null' and 'fastqc_dir' in file_yaml.keys():
         fastqc_dir = file_yaml['fastqc_dir']
     else:
@@ -734,7 +715,9 @@ if __name__ == '__main__':
         tools = args.tools
     #---check the cpus and memery
     time_start_run = time.time()
-    threads = args.threads
+    #---
+    #threads = args.threads
+    
     num_thread_of_process = int(cores/threads)
     if num_thread_of_process*threads > 0.7*cores:
         num_thread_of_process = num_thread_of_process -1
@@ -787,17 +770,17 @@ if __name__ == '__main__':
         sample_preinfo = out_dir +'/pre_info.txt'
         qc = out_dir +'/QC.statistics.list'
         os.system('ls {0}/*/QC/*QC.statistics.txt > {1}'.format(out_dir,qc ))
-        trim_qc = out_dir +'/' + 'Trim.statistics.list'
+        trim_qc = out_dir +'/' + 'QC_Trim.statistics.txt'
         os.system('ls {0}/*/statistics/trim_QC/*Trim.statistics.txt > {1}'.format(out_dir,trim_qc))
-        trim_statis = out_dir + '/trim.basic_stats.list'
+        trim_statis = out_dir + '/trim.basic_stats.txt'
         os.system('ls {0}/*/undetermined/*_basic_stats.txt > {1}'.format(out_dir,trim_statis))
-        filter_statis = out_dir + '/align_stats.list'
+        filter_statis = out_dir + '/align.basic_stats.txt'
         os.system('ls {0}/*/filtered/*_align_stats.txt > {1}'.format(out_dir,filter_statis))
-        primer_statis = out_dir + '/primer_stats.csv'
+        primer_statis = out_dir + '/primer.basic_stats.txt'
         os.system('ls {0}/*/filtered/*_primer_stats.csv > {1}'.format(out_dir,primer_statis))
-        umi_statis = out_dir + '/deduplicated_per_umi.tsv'
+        umi_statis = out_dir + '/umis.basic_stats.txt'
         os.system('ls {0}/*/clustered/*_deduplicated_per_umi.tsv > {1}'.format(out_dir,umi_statis))
-        align_base = out_dir + '/Trim_basesDepthInRegion.txt'
-        os.system('ls {0}/*/statistics/*_Trim_basesDepthInRegion.csv > {1}'.format(out_dir,align_base))
+        align_base = out_dir + '/basesDepthInRegion.stats.txt'
+        os.system('ls {0}/*/statistics/*_Align_basesDepthInRegion.txt > {1}'.format(out_dir,align_base))
         merge_statistics(sample_preinfo,exome_target,qc,trim_qc,trim_statis,filter_statis, primer_statis, umi_statis, align_base)
     #----
