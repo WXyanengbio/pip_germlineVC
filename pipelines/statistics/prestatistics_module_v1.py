@@ -63,7 +63,7 @@ def getinfo(fastqc,logger_statistics_process, logger_statistics_errors):
         store_statistics_logs(logger_statistics_process,'null',stdout)
         store_statistics_logs('null',logger_statistics_errors,stderr)
     #print('{0} has been completed.'.format(qc_read))
-    store_statistics_logs(logger_statistics_process, 'null', '{0} has been completed.'.format(qc_read))
+    store_statistics_logs(logger_statistics_process, 'null', '{0} has been completed.\n'.format(qc_read))
     qc_data = qc_read.rstrip(".zip") + '/' + 'fastqc_data.txt'
     qcdata = open(qc_data,"r")
     modules = 0
@@ -156,27 +156,35 @@ def statistics_depth_coverage(samtools_dir, sam_bam, out_dir,sample, module, exo
         store_statistics_logs('null',logger_statistics_errors,sam_bam + " does not exist!\n")
     if re.search('.sam$', sam_bam):
         bam = sam_bam.rstrip('.sam') + '.bam'
-        command1 = samtools_dir + ' view -bS ' + sam_bam + ' > ' + bam
-        os.system(command1)
-        store_statistics_logs(logger_statistics_process,'null','{0} has been tranformed to bam.'.format(sam_bam))
+        command1 = samtools_dir + ' view -bS ' + sam_bam + ' -o ' + bam
+        stdout, stderr = stdout_err(command1)
+        store_statistics_logs(logger_statistics_process,'null',stdout)
+        store_statistics_logs('null',logger_statistics_errors,stderr)
+        store_statistics_logs(logger_statistics_process,'null','{0} has been tranformed to bam.\n'.format(sam_bam))
         sorted_bam = sam_bam.rstrip('.sam') + '_sorted.bam'
     elif re.search('.bam$', sam_bam):
         bam = sam_bam
         sorted_bam = sam_bam.rstrip('.bam') + '_sorted.bam'
     if not os.path.isfile(sorted_bam):
         #print(sorted_bam + ' does not exist!')
-        command2 = samtools_dir + ' sort ' + bam + ' > ' + sorted_bam
-        os.system(command2)
+        command2 = samtools_dir + ' sort ' + bam + ' -o ' + sorted_bam
+        stdout, stderr = stdout_err(command2)
+        store_statistics_logs(logger_statistics_process,'null',stdout)
+        store_statistics_logs('null',logger_statistics_errors,stderr)
     sorted_bam_index  = sorted_bam +  '.bai'
     if not os.path.isfile(sorted_bam_index):
         #print(sorted_bam_index + ' does not exist!')
         command3 = samtools_dir + ' index ' + sorted_bam
-        os.system(command3)
+        stdout, stderr = stdout_err(command3)
+        store_statistics_logs(logger_statistics_process,'null',stdout)
+        store_statistics_logs('null',logger_statistics_errors,stderr)
     #-numbers of reads in target region
     num_reads_in_target_region = out_dir + '/' + sample +'_'+ module + '_numbersReadsInTargetRegion.txt'
     if not os.path.isfile(num_reads_in_target_region):
-        command4 = samtools_dir + ' idxstats ' + sorted_bam + ' > ' + num_reads_in_target_region
-        os.system(command4)
+        command4 = samtools_dir + ' idxstats ' + sorted_bam + ' -o ' + num_reads_in_target_region
+        stdout, stderr = stdout_err(command4)
+        store_statistics_logs(logger_statistics_process,'null',stdout)
+        store_statistics_logs('null',logger_statistics_errors,stderr)
     #-coverage of reads in target region
     coverage_in_target_region = out_dir + '/' + sample +'_'+ module + '_covergerInTargetRegion.txt'
     if not os.path.isfile(coverage_in_target_region):
@@ -217,7 +225,7 @@ def statistics_depth_coverage(samtools_dir, sam_bam, out_dir,sample, module, exo
 def statistics_sam_bam(samtools_dir, sam_bam, out_dir, sample, module, logger_statistics_process, logger_statistics_errors):
     #-statistics of
     if not os.path.isfile(sam_bam):
-        logger_statistics_errors.error("%s does not exist!\n", sam_bam)
+        store_statistics_logs('null',logger_statistics_errors, sam_bam +" does not exist!\n")
         #print(sam_bam + ' does not exist!')
     align_statistics = out_dir + '/' + sample +'_'+ module +  '_statistics.txt'
     if not os.path.isfile(align_statistics):
@@ -228,7 +236,7 @@ def statistics_sam_bam(samtools_dir, sam_bam, out_dir, sample, module, logger_st
 #--statistics of the time cost by the pipeline
 def statistics_time(out_dir, sample, process, logger_statistics_process, logger_statistics_errors):
     if not os.path.isfile(process):
-        logger_statistics_errors.error("%s does not exist!\n", process)
+        store_statistics_logs('null',logger_statistics_errors, process +" does not exist!\n")
         #print(process + ' does not exist!')
     time_statistics = out_dir + '/' + sample +'_'+ 'time_Cost'
     scriptdir = os.path.dirname(os.path.abspath(__file__))
@@ -239,7 +247,7 @@ def statistics_time(out_dir, sample, process, logger_statistics_process, logger_
 def merge_statistics_sam_bam(logger_statistics_process, logger_statistics_errors, out_dir, sample, names,*args):
     for arg in args:
         if not os.path.isfile(arg):
-            logger_statistics_errors.error("%s does not exist!\n", arg)
+            store_statistics_logs('null',logger_statistics_errors,arg+" does not exist!\n")
             #print(arg + ' does not exist!')
     statisticsfiles = ','.join(args)
     mergestatistics = out_dir + '/' + sample +'_merge_sam_bam_statisticsfile.txt'

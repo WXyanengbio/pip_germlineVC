@@ -80,12 +80,12 @@ def trim_read_pairs(read1, read2, trimmed1, trimmed2, min_read_len, common_seq1,
         num_total_reads += 1
         if r1[0][0] != '@' or r2[0][0] != '@':
             num_error_reads1 += 1
-            store_trim_logs(logger_trim_process, 'null',"Error read pair: \n\t" + '\t'.join(r1) + '\n\t' + '\t'.join(r2) + '\n')
+            store_trim_logs('null', logger_trim_errors,"Error read pair: \n\t" + '\t'.join(r1) + '\n\t' + '\t'.join(r2) + '\n')
         else:
             start_common = r2[1].find(common_seq2)
             if start_common < 12:
                 num_error_reads2 += 1
-                store_trim_logs(logger_trim_process,'null',"Error barcode/common seqs:" + str(start_common) + "\n\t" + '\t'.join(r1) + '\n\t' + '\t'.join(r2) + '\n')
+                store_trim_logs('null', logger_trim_errors,"Error barcode/common seqs:" + str(start_common) + "\n\t" + '\t'.join(r1) + '\n\t' + '\t'.join(r2) + '\n')
             else:
                 umi = r2[1][(start_common - 12):start_common]
                 qua = r2[3][(start_common - 12):start_common]
@@ -95,7 +95,7 @@ def trim_read_pairs(read1, read2, trimmed1, trimmed2, min_read_len, common_seq1,
                 pos_trim_r2, r2 = trim_read2(r2, common_seq1)
                 if pos_trim_r1 < min_read_len or pos_trim_r2 < min_read_len:
                     num_short_reads += 1
-                    store_trim_logs(logger_trim_process,'null',"Short read pair: \n\t" + '\t'.join(r1) + '\n\t' + '\t'.join(r2) + '\n')
+                    store_trim_logs('null', logger_trim_errors,"Short read pair: \n\t" + '\t'.join(r1) + '\n\t' + '\t'.join(r2) + '\n')
                 else:
                     #umi = umi + ';' + qua
                     h1 = r1[0].split(' ')[0] + '_' + umi + ' ' + r1[0].split(' ')[1]
@@ -124,12 +124,12 @@ def trim_read_pairs_by_trimmomatic(trimmomatic_dir,
                                    stats_file, logger_trim_process,
                                    logger_trim_errors):
     if not os.path.isfile(read1):
-        store_trim_logs('null', logger_trim_errors, read1 + ' does not exist!' + '\n')
-        store_trim_logs('null', logger_trim_errors, 'Error: cannot find NGS read file!' + '\n')
+        store_trim_logs(logger_trim_process,'null', read1 + ' does not exist!' + '\n')
+        store_trim_logs(logger_trim_process,'null', 'Error: cannot find NGS read file!' + '\n')
         exit()
     if not os.path.isfile(trimmomatic_dir):
-        store_trim_logs('null', logger_trim_errors, trimmomatic_dir + ' does not exist!' + '\n')
-        store_trim_logs('null', logger_trim_errors, 'Error: cannot find trimmomatic.jar!' + '\n')
+        store_trim_logs(logger_trim_process,'null', trimmomatic_dir + ' does not exist!' + '\n')
+        store_trim_logs(logger_trim_process,'null', 'Error: cannot find trimmomatic.jar!' + '\n')
         exit()
     command = 'java -jar {0} PE -threads 1 -phred33 -summary {1} {2} {3} {4} {5} {6} {7} ILLUMINACLIP:{8}:2:30:10 LEADING:5 TRAILING:5 SLIDINGWINDOW:4:20 MINLEN:{9} '.format(
         trimmomatic_dir, stats_file, read1, read2, trimmed1, un_trimmed1, trimmed2, un_trimmed2, os.path.dirname(trimmomatic_dir) + '/adapters/TruSeq3-PE.fa', min_read_len)

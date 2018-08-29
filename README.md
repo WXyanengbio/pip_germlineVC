@@ -11,7 +11,7 @@
        make
        sudo make install
        #python3.6 -m pip install pkg --user
-       packages == Cython, Pandas, Numpy, Scipy, pysam, bx-python, setuptools, future, regex, matplotlib, pyyaml
+       packages == Cython, Pandas, Numpy, Scipy, pysam, bx-python, setuptools, future, regex, matplotlib, pyyaml, yaml
       
    1.1.2 Java
        java == 1.8
