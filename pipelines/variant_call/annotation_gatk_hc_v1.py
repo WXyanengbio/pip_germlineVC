@@ -78,31 +78,30 @@ def read_database(cosmic,clinvar,g1000):
     dict_cos = {}
     cos.readline()
     for db1 in cos.readlines():
-        # if not db.startswith('Gene_name'):
-        Gene_name, Accession_Number, Gene_CDS_length, HGNC_ID, Sample_name, ID_sample, ID_tumour, Primary_site, \
-        Site_subtype1, Site_subtype2, Site_subtype3, Primary_histology, Histology_subtype1, Histology_subtype2, \
-        Histology_subtype3, Genome_wide_screen, Mutation_ID, Mutation_CDS, Mutation_AA, Mutation_Description, \
-        Mutation_zygosity, LOH, GRCh, Chr, Start, End, Mutation_strand, SNP, Resistance_Mutation, FATHMM_prediction, \
-        FATHMM_score, Mutation_somatic_status, Pubmed_PMID, ID_STUDY, Sample_source, Tumor_origin, Age = db1.strip().split(',')
-        if Mutation_CDS is 'NS':
+        # if not db.startswith('gene_name'):
+        gene_name, accession_number, gene_cds_length, hgnc_id, sample_name, id_sample, id_tumour, primary_site, \
+        site_subtype1, site_subtype2, site_subtype3, primary_histology, histology_subtype1, histology_subtype2, \
+        histology_subtype3, genome_wide_screen, mutation_id, mutation_cds, mutation_aa, mutation_description, \
+        mutation_zygosity, loh, grch, chr, start, end, mutation_strand, snp, resistance_mutation, fathmm_prediction, \
+        fathmm_score, mutation_somatic_status, pubmed_pmid, id_study, sample_source, tumor_origin, age = db1.strip().split(',')
+        if mutation_cds is 'ns':
             continue
-        if 'del' in Mutation_CDS:
-            Change = Mutation_CDS[Mutation_CDS.find('del'):]
-        elif 'ins' in Mutation_CDS:
-            Change = Mutation_CDS[Mutation_CDS.find('ins'):]
-        elif '>' in Mutation_CDS:
-            Change = Mutation_CDS[Mutation_CDS.find('>')-1:]
-        key1 = [Chr, Start ,Change]
-        value1 = [Mutation_ID, Mutation_Description, Accession_Number, Gene_name, Gene_CDS_length,
-                  Mutation_zygosity, LOH, Mutation_strand, Mutation_CDS, Mutation_AA, FATHMM_prediction, FATHMM_score,
-                  Mutation_somatic_status]
+        if 'del' in mutation_cds:
+            change = mutation_cds[mutation_cds.find('del'):]
+        elif 'ins' in mutation_cds:
+            change = mutation_cds[mutation_cds.find('ins'):]
+        elif '>' in mutation_cds:
+            change = mutation_cds[mutation_cds.find('>')-1:]
+        key1 = [chr, start ,change]
+        value1 = [mutation_id, mutation_description, accession_number, gene_name, gene_cds_length,
+                  mutation_zygosity, loh, mutation_strand, mutation_cds, mutation_aa, fathmm_prediction, fathmm_score,
+                  mutation_somatic_status]
         dict_cos[','.join(key1)] = ','.join(value1)
     clin = open(clinvar, 'r')
     dict_clin = {}
     clin.readline()
     for db2 in clin.readlines():
-        genename, chr, start, end, geneid, alleleid, rs, pos, ref, alt, af_esp, af_exac, af_tgp, \
-        clndn, clnhgvs, clnsig = db2.strip().split(',')
+        genename, chr, start, end, geneid, pos,ref, alt, alleleid, rs, af_esp, af_exac, af_tgp, clndn, clnhgvs, clnsig = db2.strip().split(',')
         if rs is 'N':
             rs = '-'
         if len(ref) == len(alt):
@@ -192,7 +191,8 @@ def comp_filter(limists,value):
     for para in limists.keys():
         if para == 'DP':
             if value[6] == '-':
-                result.append('No'+para)
+                count+=1
+                #result.append('No'+para)
             elif limists[para][0] =='>':
                 if float(limists[para][1]) >= float(value[6]):
                     count+=1
@@ -203,22 +203,24 @@ def comp_filter(limists,value):
                     count+=1
                 else:
                     result.append('Low'+para)
-        elif para == 'QUAL':
-            if value[5] == '-':
-                result.append('No'+para)
-            elif limists[para][0] =='>':
-                if float(limists[para][1]) >= float(value[5]):
-                    count+=1
-                else:
-                    result.append('High'+para)
-            else:
-                if float(limists[para][1]) <= float(value[5]):
-                    count+=1
-                else:
-                    result.append('Low'+para)
+        #elif para == 'QUAL':
+        #    if value[5] == '-':
+        #        count+=1
+                #result.append('No'+para)
+        #    elif limists[para][0] =='>':
+        #        if float(limists[para][1]) >= float(value[5]):
+        #            count+=1
+        #        else:
+        #            result.append('High'+para)
+        #    else:
+        #        if float(limists[para][1]) <= float(value[5]):
+        #            count+=1
+        #        else:
+        #            result.append('Low'+para)
         elif para == 'QD':
             if value[14] == '-':
-                result.append('No'+para)
+                count+=1
+                #result.append('No'+para)
             elif limists[para][0] =='>':
                 if float(limists[para][1]) >= float(value[14]):
                     count+=1
@@ -231,7 +233,8 @@ def comp_filter(limists,value):
                     result.append('Low'+para)
         elif para == 'FS':
             if value[10] == '-':
-                result.append('No'+para)
+                count+=1
+                #result.append('No'+para)
             elif limists[para][0] =='>':
                 if float(limists[para][1]) >= float(value[10]):
                     count+=1
@@ -244,7 +247,8 @@ def comp_filter(limists,value):
                     result.append('Low'+para)
         elif para == 'MQ':
             if value[12] == '-':
-                result.append('No'+para)
+                count+=1
+                #result.append('No'+para)
             elif limists[para][0] =='>':
                 if float(limists[para][1]) >= float(value[12]):
                     count+=1
@@ -257,7 +261,8 @@ def comp_filter(limists,value):
                     result.append('Low'+para)
         elif para == 'SOR':
             if value[16] == '-':
-                result.append('No'+para)
+                count+=1
+                #result.append('No'+para)
             elif limists[para][0] =='>':
                 if float(limists[para][1]) >= float(value[16]):
                     count+=1
@@ -270,7 +275,8 @@ def comp_filter(limists,value):
                     result.append('Low'+para)
         elif para == 'MQRankSum':
             if value[13] == '-':
-                result.append('No'+para)
+                count+=1
+                #result.append('No'+para)
             elif limists[para][0] =='>':
                 if float(limists[para][1]) >= float(value[13]):
                     count+=1
@@ -283,7 +289,8 @@ def comp_filter(limists,value):
                     result.append('Low'+para)
         elif para == 'ReadPosRankSum':
             if value[15] == '-':
-                result.append('No'+para)
+                count+=1
+                #result.append('No'+para)
             elif limists[para][0] =='>':
                 if float(limists[para][1]) >= float(value[15]):
                     count+=1
@@ -667,39 +674,39 @@ def fill_table(annotated_csv, annotated_csv_add, ref_ens):
     df.insert(11, 'Gene_ID', ensg)
     df.insert(10, 'RS_ID', rs)
     df.to_csv(annotated_csv, index=False, sep='\t')
-    df[(True ^ df['FILTER'].isin(['PASS']))].to_csv(annotated_csv_add, index=False, sep='\t')
+    df[(False ^ df['FILTER'].isin(['PASS']))].to_csv(annotated_csv_add, index=False, sep='\t')
 #-annotation main
 def annotationmain(cosmic, clinvar, g1000, 
                    ref_ens,
                    vcf, sample,snp_filter, indel_filter,
                    output, logger_annotation_process, logger_annotation_errors,calling):
     if 'raw_variants_SNP.vcf' in vcf:
-        annotated_csv = output + '/' + sample + '.raw_SNP.annotated.txt'
-        annotated_csv_add = output + '/' + sample + '.raw_SNP.annotated_PASS.txt'
+        annotated_csv = output + '/' + sample + '.raw_SNP.'+calling+'.txt'
+        annotated_csv_add = output + '/' + sample + '.raw_SNP.'+calling+'_PASS.txt'
         non_rs = output + '/' + sample + '.raw_SNP_non_rs.txt'
         non_cos = output + '/' + sample + '.raw_SNP_non_cos.txt'
         stats_file = output + '/' + sample + '.raw_SNP_annotate_stats.txt'
     elif 'raw_variants_indel.vcf' in vcf:
-        annotated_csv = output + '/' + sample + '.raw_indel.annotated.txt'
-        annotated_csv_add = output + '/' + sample + '.raw_indel.annotated_PASS.txt'
+        annotated_csv = output + '/' + sample + '.raw_indel.'+calling+'.txt'
+        annotated_csv_add = output + '/' + sample + '.raw_indel.'+calling+'_PASS.txt'
         non_rs = output + '/' + sample + '.raw_indel_non_rs.txt'
         non_cos = output + '/' + sample + '.raw_indel_non_cos.txt'
         stats_file = output + '/' + sample + '.raw_indel_annotate_stats.txt'
     elif 'filter_SNP.vcf' in vcf:
-        annotated_csv = output + '/' + sample + '.filter_SNP.annotated.txt'
-        annotated_csv_add = output + '/' + sample + '.filter_SNP.annotated_PASS.txt'
+        annotated_csv = output + '/' + sample + '.filter_SNP.'+calling+'.txt'
+        annotated_csv_add = output + '/' + sample + '.filter_SNP.'+calling+'_PASS.txt'
         non_rs = output + '/' + sample + '.filter_SNP_non_rs.txt'
         non_cos = output + '/' + sample + '.filter_SNP_non_cos.txt'
         stats_file = output + '/' + sample + '.filter_SNP_annotate_stats.txt'
     elif 'filter_indel.vcf' in vcf:
-        annotated_csv = output + '/' + sample + '.filter_indel.annotated.txt'
-        annotated_csv_add = output + '/' + sample + '.filter_indel.annotated_PASS.txt'
+        annotated_csv = output + '/' + sample + '.filter_indel.'+calling+'.txt'
+        annotated_csv_add = output + '/' + sample + '.filter_indel.'+calling+'_PASS.txt'
         non_rs = output + '/' + sample + '.filter_indel_non_rs.txt'
         non_cos = output + '/' + sample + '.filter_indel_non_cos.txt'
         stats_file = output + '/' + sample + '.filter_indel_annotate_stats.txt'
     elif 'raw_variants.vcf' in vcf:
-        annotated_csv = output + '/' + sample + '.raw_variants.annotated.txt'
-        annotated_csv_add = output + '/' + sample + '.raw_variants.annotated_PASS.txt'
+        annotated_csv = output + '/' + sample + '.raw_variants.'+calling+'.txt'
+        annotated_csv_add = output + '/' + sample + '.raw_variants.'+calling+'_PASS.txt'
         non_rs = output + '/' + sample + '.raw_variants_non_rs.txt'
         non_cos = output + '/' + sample + '.raw_variants_non_cos.txt'
         stats_file = output + '/' + sample + '.raw_variants_annotate_stats.txt'
