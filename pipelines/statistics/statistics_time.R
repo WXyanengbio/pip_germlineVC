@@ -1,6 +1,6 @@
 # 清理工作环境 clean enviroment object
 rm(list=ls()) 
-option(warn =-1)
+options(warn=-1)
 # 加载依赖关系 Load essential packages
 library(optparse)
 library(reshape2)
@@ -20,8 +20,8 @@ option_list <- list(
 opts <- parse_args(OptionParser(option_list=option_list))
 
 # 显示输入输出确认是否正确
-print(paste("The prefix file is ", opts$prefix_file, sep = ""))
-print(paste("The output file prefix is ", opts$output, sep = ""))
+#print(paste("The prefix file is ", opts$prefix_file, sep = ""))
+#print(paste("The output file prefix is ", opts$output, sep = ""))
 
 
 # 3. 读取输入文件
@@ -42,7 +42,7 @@ if (FALSE){
 # 4. 统计与绘图
 if (TRUE){
   #print(dat[,2])
-  type <- apply(dat,1,function(x){unlist(strsplit(unlist(strsplit(as.character(x),";"))[2]," "))[1]})
+  type <- apply(dat,1,function(x){unlist(strsplit(unlist(strsplit(as.character(x),"--"))[3]," "))[1]})
   cost <- apply(dat,1,function(x){unlist(strsplit(unlist(strsplit(as.character(x),"after "))[2]," "))[1]})
   dat1=data.frame(type,cost=as.numeric(cost))
   dat1$type = factor(dat1$type,levels=as.character(dat1$type))
