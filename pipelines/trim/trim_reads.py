@@ -84,8 +84,7 @@ def trim_read_pairs(read1, read2, trimmed1, trimmed2, min_read_len, common_seq1,
             start_common = r2[1].find(common_seq2)
             if start_common < 12:
                 num_error_reads2 += 1
-                #logger_trim_process.info("Error barcode/common seqs:" + str(start_common) + "\n\t"
-                #                         + '\t'.join(r1) + '\n\t' + '\t'.join(r2) + '\n')
+                logger_trim_process.info("Error barcode/common seqs:" + str(start_common) + "\n\t" + '\t'.join(r1) + '\n\t' + '\t'.join(r2) + '\n')
             else:
                 umi = r2[1][(start_common - 12):start_common]
                 qua = r2[3][(start_common - 12):start_common]
@@ -95,8 +94,7 @@ def trim_read_pairs(read1, read2, trimmed1, trimmed2, min_read_len, common_seq1,
                 pos_trim_r2, r2 = trim_read2(r2, common_seq1)
                 if pos_trim_r1 < min_read_len or pos_trim_r2 < min_read_len:
                     num_short_reads += 1
-                   # logger_trim_process.info("Short read pair: \n\t"
-                    #                         + '\t'.join(r1) + '\n\t' + '\t'.join(r2) + '\n')
+                    logger_trim_process.info("Short read pair: \n\t" + '\t'.join(r1) + '\n\t' + '\t'.join(r2) + '\n')
                 else:
                     #umi = umi + ';' + qua
                     h1 = r1[0].split(' ')[0] + '_' + umi + ' ' + r1[0].split(' ')[1]
@@ -105,9 +103,9 @@ def trim_read_pairs(read1, read2, trimmed1, trimmed2, min_read_len, common_seq1,
                     fout2.write(h2 + r2[1] + r2[2] + r2[3])
     fout1.close()
     fout2.close()
-    print('Total number of reads == ' + str(num_total_reads))
-    print('Number of short reads (<{0}bp) == {1}'.format(min_read_len, num_short_reads))
-    print('Number of error reads == ' + str(num_error_reads1+num_error_reads2))
+    #print('Total number of reads == ' + str(num_total_reads))
+    #print('Number of short reads (<{0}bp) == {1}'.format(min_read_len, num_short_reads))
+    #print('Number of error reads == ' + str(num_error_reads1+num_error_reads2))
 
     stats_out = open(stats_file, 'w')
     stats_out.write('Total number of reads == ' + str(num_total_reads) + '\n')

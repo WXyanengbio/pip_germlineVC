@@ -88,8 +88,7 @@ def read_database(cosmic,clinvar,g1000):
     dict_clin = {}
     clin.readline()
     for db2 in clin.readlines():
-        genename, chr, start, end, geneid, alleleid, rs, pos, ref, alt, af_esp, af_exac, af_tgp, \
-        clndn, clnhgvs, clnsig = db2.strip().split(',')
+        genename, chr, start, end, geneid, alleleid, rs, pos, ref, alt, af_esp, af_exac, af_tgp, clndn, clnhgvs, clnsig = db2.strip().split(',')
         if rs is 'N':
             rs = '-'
         if len(ref) == len(alt):
@@ -158,8 +157,6 @@ def split_variant(line):
         vf = str(round(dp1/(dp0+dp1),4))
         return [[chrom, pos, ref, alt, filter, qual, dp, af,vf, baseqranksum, fs, inbreedingcoeff, mq, mqranksum, qd, readposranksum, sor]]
     elif num_mt is 2:
-        print(alt)
-        print(ad)
         alt1, alt2 = alt.split(',')
         af1, af2 = af.split(',')
         af1 = '0,'+ af1
@@ -173,6 +170,7 @@ def split_variant(line):
         return [[chrom, pos, ref, alt1, filter, qual, dp, af1,vf1, baseqranksum, fs, inbreedingcoeff, mq, mqranksum, qd, readposranksum, sor],
                 [chrom, pos, ref, alt2, filter, qual, dp, af2,vf2, baseqranksum, fs, inbreedingcoeff, mq, mqranksum, qd, readposranksum, sor]
                 ]
+
 def comp_filter(limists,value):
     result=[]
     count = 0
@@ -299,6 +297,33 @@ def read_vcf_filter(snp_filter, indel_filter):
         para, char, value = limit.split(" ")
         indel_limit[para] = [char, value]
     return snp_limit, indel_limit
+
+def define_hgvs(chr, pos, ref, alt):
+    chr_to_version = {'1': '10', '2': '11', '3': '11', '4': '11', '5': '9', '6': '11', '7': '13', '8': '10', '9': '11',
+                      '10': '10', '11': '9', '12': '11', '13': '10', '14': '8', '15': '9', '16': '9', '17': '10',
+                      '18': '9', '19': '9', '20': '10', '21': '8', '22': '10', 'X': '10'}
+    version = chr_to_version[chr]
+    if chr != 'X' and int(chr) < 10:
+        chr = '0' + chr
+    if len(ref) == 1 and len(alt) == 1:
+        hgvs = 'NC_0000' + chr + '.' + version + ':g.' + pos + ref + '>' + alt
+    if len(ref) > 1 and len(alt) == 1:
+        deletion = ref[1:]
+        if len(deletion) == 1:
+            hgvs = 'NC_0000' + chr + '.' + version + ':g.' + str(int(pos)+1) + 'del' + deletion
+        else:
+            hgvs = 'NC_0000' + chr + '.' + version + ':g.' + str(int(pos)+1) + '_' + str(int(pos)+len(deletion)) + 'del' + deletion
+    if len(ref) == 1 and len(alt) > 1:
+        insertion = alt[1:]
+        hgvs = 'NC_0000' + chr + '.' + version + ':g.' + str(int(pos)) + '_' + str(int(pos)+1) + 'ins' + insertion
+    if len(ref) > 1 and len(alt) > 1 and len(ref)>len(alt):
+        deletion = ref[len(alt):]
+        if len(deletion) == 1:
+            hgvs = 'NC_0000' + chr + '.' + version + ':g.' + str(int(pos)+len(alt)) + 'del' + deletion
+        else:
+            hgvs = 'NC_0000' + chr + '.' + version + ':g.' + str(int(pos)+len(alt)) + '_' + str(int(pos)+len(alt)+len(deletion)-1) + 'del' + deletion
+    return hgvs
+
 def annotation(dict_cos,dict_clin,dict_g1000,variant_vcf,annotated_csv,stats_file, snp_filter, indel_filter,sample_name,logger_annotation_process):
     key_list = []
     key = ''
@@ -343,10 +368,11 @@ def annotation(dict_cos,dict_clin,dict_g1000,variant_vcf,annotated_csv,stats_fil
                 if key in key_list:
                     continue
                 if key in dict_clin:
+                    print(dict_clin[key])
                     new = '\t'.join(value) + '\t' + dict_clin[key].replace(',' ,'\t') + '\t'
                     num_in_clinvar += 1
                 else:
-                    new = '\t'.join(value) + '\t'+ '-\t'*5
+                    new = '\t'.join(value) + '\t'+ '-\t'*3+ define_hgvs(chrom, pos, ref, alt) + '\t-\t'
                     unmatch += 1
                 if key in dict_cos:
                     new += dict_cos[key].replace(',' ,'\t') + '\t'
@@ -369,11 +395,11 @@ def annotation(dict_cos,dict_clin,dict_g1000,variant_vcf,annotated_csv,stats_fil
                     output.write(new)
                 key_list.append(key)
     output.close()
-    logger_annotation_process.info('The sample has %s variants.' % len(key_list))
-    logger_annotation_process.info('%s variants in COSMIC database' % num_in_cosmic)
-    logger_annotation_process.info('%s variants in Clinvar database' % num_in_clinvar)
-    logger_annotation_process.info('%s variants in G1000 database\n' % num_in_g1000)
-    logger_annotation_process.info('%s variants unmatch in cosmic and clinvar.' % num_unmatch)
+    logger_annotation_process.info('{0} has {1} variants.'.format(sample_name,key_list))
+    logger_annotation_process.info('{0} has {1} variants in COSMIC database'.format(sample_name,num_in_cosmic))
+    logger_annotation_process.info('{0} has {1} variants in Clinvar database'.format(sample_name,num_in_clinvar))
+    logger_annotation_process.info('{0} has {1} variants in G1000 database'.format(sample_name, num_in_g1000))
+    logger_annotation_process.info('{0} has {1} variants unmatch in cosmic and clinvar.'.format(sample_name,num_unmatch))
     stats_out = open(stats_file,'w')
     stats_out.write('#The sample has %s variants.\n' % len(key_list))
     stats_out.write('#Type\tvariants\n')
@@ -385,52 +411,54 @@ def annotation(dict_cos,dict_clin,dict_g1000,variant_vcf,annotated_csv,stats_fil
     stats_out.close()
 
 #match genename,ENSG and ENST from ensembl.
-def fill_table(annotated_csv, annotated_csv_add, non_rs, non_cos, ref_ens):
-    g2n = {}
-    g2t = {}
+def fill_table(annotated_csv, annotated_csv_add, ref_ens):
     n2g = {}
-    n2t = {}
-    f1 = open(ref_ens,'r')
-    for line in f1.readlines():
-        l1,l2,l3 = line.strip().split(',')
-        g2n[l2] = l1
-        g2t[l2] = l3
-        n2g[l1] = l2
-        n2t[l1] = l3
+    g2n = {}
+    for line in open(ref_ens, 'r').readlines():
+        name, ensg = line.strip().split(',')
+        n2g[name] = ensg
+        g2n[ensg] = name
     #df = pd.read_csv(annotated_csv)
     df = pd.read_table(annotated_csv)
-    subframe = df[['Gene_Name','Gene_ID','Feature_ID','Gene_Name1','RS_ID','RS_ID1']] #n,g,t,n1
+    subframe = df[['Gene_Name','Gene_ID','Gene_Name1','RS_ID','RS_ID1']] #n,g,t,n1
     #for name,id,transcript in subframe.iterrows():
     for num in range(0, len(subframe)):
-        #subframe.iloc[i]['Gene_Name'], subframe.iloc[i]['Gene_ID'], subframe.iloc[i]['Feature_ID']
-        if subframe.iloc[num]['Gene_Name'] is '-' and subframe.iloc[num]['Feature_ID'] is '-' and subframe.iloc[num]['Gene_ID'] is '-' and subframe.iloc[num]['Gene_Name1'] is not '-':
-            subframe.iloc[num]['Gene_Name'] = subframe.iloc[num]['Gene_Name1']
-            subframe.iloc[num]['Gene_ID'] = n2g[subframe.iloc[num]['Gene_Name1']]
-            subframe.iloc[num]['Feature_ID'] = n2t[subframe.iloc[num]['Gene_Name1']]
-        elif subframe.iloc[num]['Gene_Name'] is '-' and subframe.iloc[num]['Feature_ID'] is '-' and subframe.iloc[num]['Gene_ID'] is not '-':
-            subframe.iloc[num]['Gene_Name'] = g2n[subframe.iloc[num]['Gene_ID']]
-            subframe.iloc[num]['Feature_ID'] = g2t[subframe.iloc[num]['Gene_ID']]
-        elif subframe.iloc[num]['Gene_ID'] is '-' and subframe.iloc[num]['Gene_Name'] is not '-':
-            subframe.iloc[num]['Gene_ID'] = n2g[subframe.iloc[num]['Gene_Name']]
-        if subframe.iloc[num]['RS_ID'] is '-' and subframe.iloc[num]['RS_ID1'] is not '-':
-            subframe.iloc[num]['RS_ID'] = subframe.iloc[num]['RS_ID1']
+        if subframe.iloc[num, 0] is '-' and subframe.iloc[num, 1] is '-' and subframe.iloc[num, 2] is not '-':
+            name = subframe.iloc[num, 2]
+            ensg = n2g[name]
+            subframe.iloc[num, 0] = name
+            subframe.iloc[num, 1] = ensg
+        elif subframe.iloc[num, 0] is '-' and subframe.iloc[num, 2] is '-' and subframe.iloc[num, 1] is not '-':
+            ensg = subframe.iloc[num, 1]
+            name = g2n[ensg]
+            subframe.iloc[num, 0] = name
+        elif subframe.iloc[num, 0] is not '-' and subframe.iloc[num, 1] is '-' and subframe.iloc[num, 2] is '-':
+            name = subframe.iloc[num, 0]
+            ensg = n2g[name]
+            subframe.iloc[num, 1] = ensg
+        elif subframe.iloc[num, 0] is '-':
+            name = subframe.iloc[num, 2]
+            subframe.iloc[num, 0] = name
+        elif subframe.iloc[num, 1] is '-':
+            name = subframe.iloc[num, 0]
+            ensg = n2g[name]
+            subframe.iloc[num, 1] = ensg
+        if subframe.iloc[num, 3] is '-' and subframe.iloc[num, 4] is not '-':
+            subframe.iloc[num, 3] = subframe.iloc[num, 4]
     name = subframe['Gene_Name']
     ensg = subframe['Gene_ID']
-    enst = subframe['Feature_ID']
     rs = subframe['RS_ID']
     df.drop(labels=['Gene_Name'], axis=1, inplace=True)
     df.drop(labels=['Gene_ID'], axis=1, inplace=True)
-    df.drop(labels=['Feature_ID'], axis=1, inplace=True)
     df.drop(labels=['Gene_Name1'], axis=1, inplace=True)
     df.drop(labels=['RS_ID'], axis=1, inplace=True)
     df.drop(labels=['RS_ID1'], axis=1, inplace=True)
-    df.insert(7, 'Gene_Name', name)
-    df.insert(8, 'Gene_ID', ensg)
-    df.insert(9, 'Feature_ID', enst)
-    df.insert(7, 'RS_ID', rs)
-    df.to_csv(annotated_csv_add, index=False, sep='\t')
-    df[(True^df['RS_ID'].isin(['-']))].to_csv(non_rs, index=False, sep='\t')
-    df[(True^df['COSMIC_ID'].isin(['-']))].to_csv(non_cos, index=False, sep='\t')
+    df.insert(10, 'Gene_Name', name)
+    df.insert(11, 'Gene_ID', ensg)
+    df.insert(10, 'RS_ID', rs)
+    df.to_csv(annotated_csv, index=False, sep='\t')
+    #df[(True^df['RS_ID'].isin(['-']))].to_csv(non_rs, index=False, sep='\t')
+    #df[(True^df['COSMIC_ID'].isin(['-']))].to_csv(non_cos, index=False, sep='\t')
 
 #-annotation main
 def annotationmain(cosmic, clinvar, g1000, 
@@ -472,9 +500,9 @@ def annotationmain(cosmic, clinvar, g1000,
         logger_annotation_errors.error("%s does not exist!\n", vcf)
         print(vcf + ' does not exist!')
     else:
-        #dict_cos, dict_clin, dict_g1000 = read_database(cosmic,clinvar,g1000)
+        dict_cos, dict_clin, dict_g1000 = read_database(cosmic,clinvar,g1000)
         #--annotation
-        annotation(cosmic, clinvar, g1000,vcf,annotated_csv,stats_file, snp_filter, indel_filter,sample,logger_annotation_process)
+        annotation(dict_cos, dict_clin, dict_g1000,vcf,annotated_csv,stats_file, snp_filter, indel_filter,sample,logger_annotation_process)
         #--add the annotation
-        fill_table(annotated_csv, annotated_csv_add, non_rs, non_cos, ref_ens)
+        fill_table(annotated_csv, annotated_csv_add, ref_ens)
 

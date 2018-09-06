@@ -8,7 +8,7 @@ output: /home/dell/Works/Projects/SampleSheet_180801_4813
 threads: 1
 
 #the subprocess of the script: such as qc, trim, align, post_align, cluster,reformat, variant_call, annotation, statis, all
-tools: post_align
+tools: summary
 
 #the tailname of sample raw read
 datasets_dir: /home/dell/Works/Projects/Datasets

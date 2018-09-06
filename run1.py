@@ -27,7 +27,7 @@ from pipelines.reformat.reformat_sam import reformat_sam
 #import the variant calling funcitons
 from pipelines.variant_call.g_variantcall1 import sam_to_bam , germline_variant_calling
 #import the annotation variant funcitons
-from pipelines.variant_call.annotation_gatk_hc import annotationmain
+from pipelines.variant_call.annotation_gatk_hc import annotationmain, read_vcf_filter
 #import the statistics functions
 from pipelines.statistics.prestatistics_module import qc_raw_reads, statistics_depth_coverage, statistics_sam_bam, statistics_time, merge_statistics_sam_bam
 #import the benchmaking funciton
@@ -176,7 +176,6 @@ parser.add_argument("--known_sites",
                     default ='known_sites/1000G_phase1.snps.high_confidence.hg19.sites.vcf,known_sites/Mills_and_1000G_gold_standard.indels.hg19.sites.vcf,known_sites/dbsnp_138.hg19.vcf',
                     help = "the list of --known-sites , sep by: , "
                    )
-                    
 parser.add_argument("--exome_target_bed",
                     type = str,
                     default = 'genome/target_breast/target_breast_BRCA.bed',
@@ -590,14 +589,15 @@ def main():
         if not os.path.exists(germline_vc_dir):
             os.makedirs(germline_vc_dir)
         logger_germline_vc_process, logger_germline_vc_errors = store_germline_vc_logs(log_dir)
-        sam_to_bam(gatk_dir, samtools_dir,
+        bqsr = 'n'
+        bam_to_variant, bqsr_bam_to_variant =sam_to_bam(gatk_dir, samtools_dir,
                vready_sam, sample,
                germline_vc_dir, memory_size,
                exome_target_bed, 
                total_ref_fa_file, total_ref_fa_dict,
                known_sites,
-               logger_germline_vc_process, logger_germline_vc_errors)
-        germline_variant_calling(gatk_dir, marked_bqsr_bam,
+               logger_germline_vc_process, logger_germline_vc_errors,bqsr)
+        germline_variant_calling(gatk_dir, bam_to_variant,
                              sample, germline_vc_dir, 
                              memory_size, total_ref_fa_file, 
                              exon_interval, erc,
@@ -627,13 +627,14 @@ def main():
         if not os.path.exists(annotation_dir):
             os.makedirs(annotation_dir)
         logger_annotation_process, logger_annotation_errors = store_annotation_logs(log_dir)
+        snp_limit, indel_limit= read_vcf_filter(snp_filter, indel_filter)
         annotationmain(db_cosmic, db_clinvar, db_g1000, 
                    ref_ens,
-                   raw_vcf, sample,
+                   raw_vcf, sample,snp_limit, indel_limit,
                    annotation_dir, logger_annotation_process, logger_annotation_errors)
         annotationmain(db_cosmic, db_clinvar, db_g1000, 
                    ref_ens,
-                   snp_vcf, sample,
+                   snp_vcf, sample,snp_limit, indel_limit,
                    annotation_dir, logger_annotation_process, logger_annotation_errors)
         #annotationmain(db_cosmic, db_clinvar, db_g1000, 
         #           ref_ens,
@@ -641,7 +642,7 @@ def main():
         #           annotation_dir, logger_annotation_process, logger_annotation_errors)
         annotationmain(db_cosmic, db_clinvar, db_g1000, 
                    ref_ens,
-                   indel_vcf, sample,
+                   indel_vcf, sample,snp_limit, indel_limit,
                    annotation_dir, logger_annotation_process, logger_annotation_errors)
         #annotationmain(db_cosmic, db_clinvar, db_g1000, 
         #           ref_ens,

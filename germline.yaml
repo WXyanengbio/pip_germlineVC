@@ -8,7 +8,7 @@ sample_name: 18071001_S1_L001
 #tailname: 
 
 #the subprocess of the script: such as qc, trim, align, post_align, cluster,reformat, variant_call, annotation, statis
-tools: all
+tools: annotation
 
 #the tailname of sample raw read
 datasets_dir: /home/dell/Works/Projects/Datasets
@@ -20,7 +20,7 @@ common_seq1: CAAAACGCAATACTGTACATT
 common_seq2: ATTGGAGTCCT
 
 #Path of output file
-output: /home/dell/Works/Projects/18071001_S1_L001
+output: /home/dell/Works/Projects/18071001_S1_L001_test1
 
 #the install path of fastQC
 fastqc_dir: fastqc
@@ -100,10 +100,10 @@ snp_filter: QD < 5.0 || FS > 60.0 || MQ < 50.0 || SOR > 3.0 || MQRankSum < -2.5 
 indel_filter: QD < 5.0 || FS > 200 || ReadPosRankSum < -3.0 || SOR > 10.0
 
 #add cosmic databases of variants
-db_cosmic: annonDB/COSMIC_variant.csv
+db_cosmic: annonDB/cosmic_breast_93genes_20180820.csv
 
 #add clinvar databases of variants
-db_clinvar: annonDB/breast_cancer_variant_clinvar.csv
+db_clinvar: annonDB/clinvar_breast_93genes_20180729.csv
 
 #add g1000 databases of variants
 db_g1000: annonDB/breast_cancer_variant_1000genomes.csv

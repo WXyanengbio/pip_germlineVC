@@ -36,8 +36,7 @@ def store_pipeline_logs(log_dir):
 
 def store_trim_logs(log_dir):
     formatter_trim_process = logging.Formatter("%(asctime)s;%(message)s")
-    formatter_trim_errors = logging.Formatter(
-        "%(asctime)s;%(levelname)s;                                             %(message)s")
+    formatter_trim_errors = logging.Formatter("%(asctime)s;%(levelname)s;%(message)s")
     logger_trim_process = setup_logger('Running Messages of read trimming',
                                        log_dir + '/trim_process.log',
                                        formatter_trim_process)

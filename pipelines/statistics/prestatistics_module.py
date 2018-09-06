@@ -10,7 +10,6 @@ import itertools
 from itertools import groupby
 import shlex
 import subprocess
-
 #put the info output to the log
 def stdout_err(command):
     command_pope = shlex.split(command)
@@ -169,8 +168,9 @@ def statistics_depth_coverage(samtools_dir, sam_bam, out_dir,sample, module, exo
         #print(sam_bam + ' does not exist!')
     if re.search('.sam$', sam_bam):
         bam = sam_bam.rstrip('.sam') + '.bam'
-        command1 = samtools_dir + ' view -bS ' + sam_bam + ' > ' + bam
-        os.system(command1)
+        command1 = samtools_dir + ' view -bS ' + sam_bam + ' -o ' + bam
+        #os.system(command1)
+        (status, output) = subprocess.getstatusoutput(command1)
         logger_statistics_process.info('{0} has been tranformed to bam.'.format(sam_bam))
         sorted_bam = sam_bam.rstrip('.sam') + '_sorted.bam'
     elif re.search('.bam$', sam_bam):
@@ -178,7 +178,7 @@ def statistics_depth_coverage(samtools_dir, sam_bam, out_dir,sample, module, exo
         sorted_bam = sam_bam.rstrip('.bam') + '_sorted.bam'
     if not os.path.isfile(sorted_bam):
         #print(sorted_bam + ' does not exist!')
-        command2 = samtools_dir + ' sort ' + bam + ' > ' + sorted_bam
+        command2 = samtools_dir + ' sort ' + bam + ' -o ' + sorted_bam
         os.system(command2)
     sorted_bam_index  = sorted_bam +  '.bai'
     if not os.path.isfile(sorted_bam_index):
@@ -188,7 +188,7 @@ def statistics_depth_coverage(samtools_dir, sam_bam, out_dir,sample, module, exo
     #-numbers of reads in target region
     num_reads_in_target_region = out_dir + '/' + sample +'_'+ module + '_numbersReadsInTargetRegion.txt'
     if not os.path.isfile(num_reads_in_target_region):
-        command4 = samtools_dir + ' idxstats ' + sorted_bam + ' > ' + num_reads_in_target_region
+        command4 = samtools_dir + ' idxstats ' + sorted_bam + ' -o ' + num_reads_in_target_region
         os.system(command4)
     #-coverage of reads in target region
     coverage_in_target_region = out_dir + '/' + sample +'_'+ module + '_covergerInTargetRegion.txt'
@@ -209,7 +209,7 @@ def statistics_depth_coverage(samtools_dir, sam_bam, out_dir,sample, module, exo
     if module == 'Align':
         bases_depth_in_region = out_dir + '/' + sample +'_'+ module + '_basesDepthInRegion.txt'
         if not os.path.isfile(bases_depth_in_region):
-            command7 ='{0} depth {1} > {2}'.format(samtools_dir, sorted_bam, bases_depth_in_region)
+            command7 ='{0} depth {1} -o {2}'.format(samtools_dir, sorted_bam, bases_depth_in_region)
             os.system(command7)
     #depth of the bases in target region
     bases_depth_in_target_region = out_dir + '/' + sample +'_'+ module + '_basesDepthInTargetRegion.txt'

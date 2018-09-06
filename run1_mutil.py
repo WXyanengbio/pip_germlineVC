@@ -25,7 +25,7 @@ from pipelines.cluster_barcode.umitools import umitool
 #import the reformat sam function
 from pipelines.reformat.reformat_sam import reformat_sam
 #import the variant calling funcitons
-from pipelines.variant_call.g_variantcall1 import sam_to_bem , germline_variant_calling
+from pipelines.variant_call.g_variantcall1 import sam_to_bam , germline_variant_calling
 #import the annotation variant funcitons
 from pipelines.variant_call.annotation_gatk_hc import annotationmain
 #import the statistics functions
@@ -320,6 +320,9 @@ def main_run_germline_variant_calling(path_sampleID_sub):
     #--statistics the N base in raw reads and set the cutoff of the min read length
     if max(int(qc_result1[9]), int(qc_result2[9])) < min_read_len:
         print("The cutoff of the min read length is the default: {0}".format(min_read_len))
+    elif max(int(qc_result1[9]), int(qc_result2[9]))/min_read_len > 1.25:
+        print("The number of N bases in the reads is bigger than: {0}".format(min_read_len*1.25))
+        print("The cutoff of the min read length is based on the N base in the reads: {0}".format(min_read_len))
     else:
         min_read_len = max(int(qc_result1[9]), int(qc_result2[9]))
         print("The cutoff of the min read length is based on the N base in the reads: {0}".format(min_read_len))
@@ -373,7 +376,7 @@ def main_run_germline_variant_calling(path_sampleID_sub):
 
     logger_bwa_process, logger_bwa_errors = store_align_logs(log_dir)
     
-    returncode = align_reads_bwa(bwa_dir, ref_fa_file, ref_index_name, exome_target_bed, trim_read1, trim_read2, 
+    returncode = align_reads_bwa(bwa_dir, samtools_dir,ref_fa_file, ref_index_name, exome_target_bed, total_ref_fa_file, trim_read1, trim_read2, 
                                                 out_file, num_threads, logger_bwa_process, logger_bwa_errors)
     
     logger_bwa_process.info("Alignment of reads is completed after %.2f min.", (time.time()-time_start)/60)
@@ -484,7 +487,7 @@ def main_run_germline_variant_calling(path_sampleID_sub):
     known_sites = known_sites.replace(',' , ' --known-sites ' + args.datasets_dir + '/'  )
     known_sites = args.datasets_dir + '/' + known_sites
     vready_sam = output_sam
-    sam_to_bem(gatk_dir, samtools_dir,
+    sam_to_bam(gatk_dir, samtools_dir,
                vready_sam, sample,
                germline_vc_dir, memory_size,
                exome_target_bed, 
@@ -520,12 +523,17 @@ def main_run_germline_variant_calling(path_sampleID_sub):
         os.makedirs(annotation_dir)
     
     logger_annotation_process, logger_annotation_errors = store_annotation_logs(log_dir)
-    
+
+    raw_vcf = germline_vc_dir + '/'  + sample + '.raw_variants.vcf'
     snp_vcf = germline_vc_dir + '/'  + sample + '.raw_variants_SNP.vcf'
     filter_snp = germline_vc_dir + '/'  + sample + '.filter_SNP.vcf'
     indel_vcf = germline_vc_dir + '/'  + sample + '.raw_variants_indel.vcf'
     filter_indel = germline_vc_dir + '/'  + sample + '.filter_indel.vcf'
     #annotation
+    annotationmain(db_cosmic, db_clinvar, db_g1000, 
+                   ref_ens,
+                   raw_vcf, sample,
+                   annotation_dir, logger_annotation_process, logger_annotation_errors)
     annotationmain(db_cosmic, db_clinvar, db_g1000, 
                    ref_ens,
                    snp_vcf, sample,
@@ -559,7 +567,8 @@ def main_run_germline_variant_calling(path_sampleID_sub):
         os.makedirs(benchmarking_dir)
 
     logger_benchmark_process, logger_benchmark_errors = store_benchmark_logs(log_dir)
-    
+	
+    hap_py(benchmark_dir,truth_vcf,raw_vcf, confident_region_bed, benchmarking_dir, total_ref_fa_file, exon_interval, num_threads, logger_benchmark_process, logger_benchmark_errors)
     hap_py(benchmark_dir,truth_vcf, filter_snp, confident_region_bed, benchmarking_dir, total_ref_fa_file, exon_interval, num_threads, logger_benchmark_process, logger_benchmark_errors)
     hap_py(benchmark_dir,truth_vcf, filter_indel, confident_region_bed, benchmarking_dir, total_ref_fa_file, exon_interval,num_threads, logger_benchmark_process, logger_benchmark_errors)
     
@@ -662,6 +671,8 @@ if __name__ == '__main__':
     memory_size = memory_size_of_process
     if memory_size > 4:
         memory_size = 4
+        memory_size = '-Xmx' + str(memory_size) + 'G '
+    else:
         memory_size = '-Xmx' + str(memory_size) + 'G '
     print(memory_size)
     gatk_dir = args.gatk_dir

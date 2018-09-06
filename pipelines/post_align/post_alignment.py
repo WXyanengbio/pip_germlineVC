@@ -53,15 +53,14 @@ def filter_alignment_samtools1(samtools_dir, alignment_sam, min_mapq,
     total_count, sec_count, unmap_count, hmapq_count, final_count = [int(x.strip()) for x in stats.readlines()[0:5]]
     stats.close()
     stats_out = open(stats_file, 'w')
-    stats_out.write('Total number of reads == {0}\n'.format(total_count))
+    stats_out.write('Total number of read pairs == {0}\n'.format(total_count))
     stats_out.write('Number of secondary/supplimentary alignments == {0}\n'.format(sec_count))
     stats_out.write('Number of unmapped read pairs == {0}\n'.format(unmap_count))
-    remained = total_count - sec_count - unmap_count
-    stats_out.write('Number of low MAPQ alignments (< {0}) == {1}\n'.format(min_mapq, remained-hmapq_count))
-    stats_out.write('Number of alignments beginning with less than {0} exact matches == {1}\n'.format(
-        max_soft_clip, hmapq_count-final_count))
+    remained = total_count - unmap_count
+    stats_out.write('Threshold MAPQ for filtration == {0}\n'.format(min_mapq))
+    stats_out.write('Number of low MAPQ alignments (MAPQ<{0}) == {1}\n'.format(min_mapq, remained - hmapq_count))
     stats_out.write('Number of alignments passed SAMTools filtration == {0}\n'.format(final_count))
-    stats_out.write('Percent of alignments passed SAMTools filtration == {0}%\n'.format(100*final_count/total_count))
+    stats_out.write('Percent of alignments passed SAMTools filtration == {0}(%)\n'.format(100 * final_count / total_count))
     stats_out.close()
     
     os.system('rm '+stats_file_tmp)
@@ -140,11 +139,8 @@ def filter_alignment_samtools(samtools_dir, alignment_sam, min_mapq,
     stats_out.write('Total number of read pairs == {0}\n'.format(total_count))
     stats_out.write('Number of secondary/supplimentary alignments == {0}\n'.format(sec_count))
     stats_out.write('Number of unmapped read pairs == {0}\n'.format(unmap_count))
-    #remained = total_count - sec_count - unmap_count
     print(rm_sec_count)
     remained = total_count - unmap_count
-    #stats_out.write('Number of read pairs mapped to different target regions == {0}\n'.format(
-    #    remained - same_chr_count))
     stats_out.write('Threshold MAPQ for filtration == {0}\n'.format(min_mapq))
     stats_out.write('Number of low MAPQ alignments (MAPQ<{0}) == {1}\n'.format(min_mapq, same_chr_count - hmapq_count))
     stats_out.write('Number of alignments passed SAMTools filtration == {0}\n'.format(final_count))
@@ -264,6 +260,7 @@ def identify_gs_primers(samtools_dir, alignment_sam, primers_file, max_dist,
     while True:
         if sam_rows[0][0] == '@':
             sam_rows.remove(sam_rows[0])
+            ready.write(sam_rows[0])
         else:
             break
     

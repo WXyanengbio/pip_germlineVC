@@ -1,3 +1,5 @@
+# test software
+softs: vardict
 #GATK
 gatk_dir: gatk
 #samtools+bcftools
@@ -14,7 +16,7 @@ varsan2_dir: /home/dell/Works/Softwares/bioapps/VarScan.v2.3.9.jar
 #--
 vready_bam: /home/dell/Works/Projects/Datasets/truthDB/na12878_target_chr13_chr17_sorted.bam
 sample_name: NA12878_BRCA
-output: /home/dell/Works/Projects/Benchmark_0810
+output: /home/dell/Works/Projects/Benchmark_0811
 memory_size: 4
 exome_target_bed: genome/target_breast/target_breast_BRCA.bed 
 #the install path of benchmark

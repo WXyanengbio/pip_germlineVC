@@ -26,7 +26,7 @@ from pipelines.cluster_barcode.umitools_v1 import umitool
 #import the reformat sam function
 from pipelines.reformat.reformat_sam import reformat_sam
 #import the variant calling funcitons
-from pipelines.variant_call.g_variantcall1_v1 import sam_to_bam, germline_variant_calling, strelka2_call
+from pipelines.variant_call.g_variantcall1_v1 import sam_to_bam, germline_variant_calling, strelka2_call, samtools_call, varsan2_call
 #import the annotation variant funcitons
 from pipelines.variant_call.annotation_gatk_hc_v1 import annotationmain,read_vcf_filter
 #import the statistics functions
@@ -252,7 +252,7 @@ def main_run_germline_variant_calling(path_sampleID_sub):
     bwa_dir = path_sampleID_sub[17]
     samtools_dir = path_sampleID_sub[18]
     umitools_dir = path_sampleID_sub[19]
-    variant_call = path_sampleID_sub[20]
+    gatk_dir = path_sampleID_sub[20]
     ref_index_name = path_sampleID_sub[21]
     ref_fa_file = path_sampleID_sub[22]
     total_ref_fa_file = path_sampleID_sub[23]
@@ -267,6 +267,10 @@ def main_run_germline_variant_calling(path_sampleID_sub):
     calling = path_sampleID_sub[32]
     tabix = path_sampleID_sub[33]
     bgzip = path_sampleID_sub[34]
+    bcftools_dir = path_sampleID_sub[35]
+    varsan2_dir = path_sampleID_sub[36]
+    strelka2_dir = path_sampleID_sub[37]
+    total_ref_chrom_fa_file = path_sampleID_sub[38]
     #---check the output
     out_dir = output  + '/' + sample
     #out_dir1 = output
@@ -311,8 +315,9 @@ def main_run_germline_variant_calling(path_sampleID_sub):
     #--statistics the N base in raw reads and set the cutoff of the min read length
         if max(int(qc_result1[9]), int(qc_result2[9])) < min_read_len:
             print("The cutoff of the min read length is the default: {0}".format(min_read_len))
-        else:
-            min_read_len = max(int(qc_result1[9]), int(qc_result2[9]))
+        elif max(int(qc_result1[9]), int(qc_result2[9])) > 1.25*min_read_len:
+            #min_read_len = max(int(qc_result1[9]), int(qc_result2[9]))
+            print("The sites in raw reads have N base: 1-{0}".format(min_read_len))
             print("The cutoff of the min read length is based on the N base in the reads: {0}".format(min_read_len))
         store_pipeline_logs(logger_pipeline_process,'null',"--{0}--QC of reads is completed after {1} min.\n".format(sample,str('%.3f' % ((time.time()-time_start)/60))))
         store_statistics_logs(logger_statistics_process,'null',"--{0}--QC of reads is completed after {1} min.\n".format(sample,str('%.3f' % ((time.time()-time_start)/60))))
@@ -484,20 +489,34 @@ def main_run_germline_variant_calling(path_sampleID_sub):
                known_sites,
                logger_germline_vc_process, logger_germline_vc_errors,bqsr)
         if calling =='GATK':
-            germline_variant_calling(variant_call, bam_to_variant,
+            germline_variant_calling(gatk_dir, bam_to_variant,
                              sample, germline_vc_dir, 
                              memory_size, total_ref_fa_file, 
                              exon_interval, erc,
                              snp_filter,indel_filter,
                              logger_germline_vc_process, logger_germline_vc_errors)
         elif calling =='strelka2':
-            strelka2_call(variant_call,
+            strelka2_call(strelka2_dir,
                           bgzip,
                           tabix,
                           total_ref_fa_file,
                           germline_vc_dir,
                           sample, bam_to_variant,
                           exome_target_bed,logger_germline_vc_process,logger_germline_vc_errors)
+        elif calling =='samtools':
+            samtools_call(samtools_dir, 
+                          bcftools_dir, 
+                          bam_to_variant, 
+                          sample, 
+                          germline_vc_dir, 
+                          total_ref_fa_file,logger_germline_vc_process,logger_germline_vc_errors)
+        elif calling =='varscan2':
+            varsan2_call(samtools_dir, 
+                         varsan2_dir,
+                         total_ref_fa_file,
+                         germline_vc_dir,
+                         sample, 
+                         bam_to_variant,logger_germline_vc_process,logger_germline_vc_errors)
         store_germline_vc_logs(logger_germline_vc_process,'null','--{0}--Germline variant calling is completed after {1} min.'.format(sample, ('%.2f' % ((time.time() - time_start)/60))))
         store_pipeline_logs(logger_pipeline_process, 'null', '--{0}--variant_calling is completed after {1} min.'.format(sample, ('%.2f' % ((time.time() - time_start)/60))))
         print("--" * 20 + '\n\n')
@@ -522,21 +541,21 @@ def main_run_germline_variant_calling(path_sampleID_sub):
         logger_annotation_process = log_dir
         logger_annotation_errors = log_dir
         snp_limit, indel_limit= read_vcf_filter(snp_filter, indel_filter)
-        print(db_clinvar)
         annotationmain(db_cosmic, db_clinvar, db_g1000, 
                    ref_ens,
                    raw_vcf, sample,snp_limit, indel_limit,
                    annotation_dir, logger_annotation_process, logger_annotation_errors,calling)
-        if calling == 'GATK':
+        if 'GATK' in calling :
+            calling1='GATK'
             annotationmain(db_cosmic, db_clinvar, db_g1000,
                    ref_ens,
                    snp_vcf, sample,snp_limit, indel_limit,
-                   annotation_dir, logger_annotation_process, logger_annotation_errors,calling)
+                   annotation_dir, logger_annotation_process, logger_annotation_errors,calling1)
 
             annotationmain(db_cosmic, db_clinvar, db_g1000,
                    ref_ens,
                    indel_vcf, sample,snp_limit, indel_limit,
-                   annotation_dir, logger_annotation_process, logger_annotation_errors,calling)
+                   annotation_dir, logger_annotation_process, logger_annotation_errors,calling1)
 
         store_annotation_logs(logger_annotation_process,'null', '--{0}--Finish annotation variant  is completed after {1} min.'.format(sample, ('%.2f' % ((time.time() - time_start)/60))))
         store_pipeline_logs(logger_pipeline_process, 'null','--{0}--Annotation variant is completed after {1} min.'.format(sample, ('%.2f' % ((time.time() - time_start)/60))))
@@ -704,6 +723,12 @@ if __name__ == '__main__':
         tabix = file_yaml['tabix']
     if yaml_file != 'null' and 'total_ref_chrom_fa_file' in file_yaml.keys():
         total_ref_chrom_fa_file = args.datasets_dir + '/' + file_yaml['total_ref_chrom_fa_file']
+    #--samtools
+    if yaml_file != 'null' and 'bcftools_dir' in file_yaml.keys():
+        bcftools_dir = file_yaml['bcftools_dir']
+    #varscan2
+    if yaml_file != 'null' and 'varsan2_dir' in file_yaml.keys():
+        varsan2_dir = file_yaml['varsan2_dir']
     #--ref database for variant calling
     if yaml_file != 'null' and 'total_ref_fa_dict' in file_yaml.keys():
         total_ref_fa_dict = args.datasets_dir + '/' + file_yaml['total_ref_fa_dict']
@@ -788,13 +813,14 @@ if __name__ == '__main__':
     print(memory_size)
 
     #--check the variant calling model
-    if calling =='GATK':
-        variant_call = gatk_dir
-        tabix = 'null'
-        bgzip = 'null'
-    elif calling == 'strelka2':
-        variant_call = strelka2_dir
-        total_ref_fa_file = total_ref_chrom_fa_file
+    #if calling =='GATK':
+    #    variant_call = gatk_dir
+    #    tabix = 'null'
+    #    bgzip = 'null'
+    #elif calling == 'strelka2':
+    #    variant_call = strelka2_dir
+    #    total_ref_fa_file = total_ref_chrom_fa_file
+    #elif
     #-----
     #--read the sample list 
     file_list1 = open(file_list,'r')
@@ -803,9 +829,10 @@ if __name__ == '__main__':
         path_sampleID.append([line.strip(), out_dir, fastqc_dir, primers_file, exome_target_bed,
                                       min_read_len, common_seq1, common_seq2, num_threads, edit_dist, min_mapq,
                                       max_soft_clip, max_dist, memory_size, snp_filter, indel_filter, ref_ens,
-                                      bwa_dir, samtools_dir, umitools_dir, variant_call, ref_index_name,
+                                      bwa_dir, samtools_dir, umitools_dir, gatk_dir, ref_index_name,
                                       ref_fa_file, total_ref_fa_file, total_ref_fa_dict, known_sites, erc,db_cosmic, 
-                                      db_clinvar, db_g1000, tools, exome_target,calling,tabix,bgzip
+                                      db_clinvar, db_g1000, tools, exome_target,calling,tabix,bgzip,bcftools_dir,varsan2_dir,
+                                      strelka2_dir,total_ref_chrom_fa_file
                                       ])
     
     pool = multiprocessing.Pool(processes=threads)

@@ -1,7 +1,7 @@
 from __future__ import barry_as_FLUFL
 
 __all__  =  [ 'sample', 'output ' , 'memory_size' , 'gatk_dir ' , 'vready_sam', 'marked_bqsr_bam',
-              'ref_fa_file' ,'ref_fa_dict', 'exome_target_bed' , 'erc' , 'samtools_dir' ,
+              'ref_fa_file' ,'ref_fa_dict', 'exome_target_bed' , 'erc' , 'samtools_dir' ,'bcftools_dir','varsan2_dir',
               'known_sites', 'snp_filter' , 'indel_filter',
               'strelka2_dir','bgzip','tabix','total_ref_chrom_fa_file',
               'logger_g_variantcalling_process', 'logger_g_variantcalling_errors','bqsr']
@@ -247,25 +247,59 @@ def strelka2_call(strelka2_dir,
                   bgzip,
                   tabix,
                   total_ref_chrom_fa_file,
-                  outputdir,
+                  output,
                  sample, bam,
                  exome_target_bed,logger_g_variantcalling_process,logger_g_variantcalling_errors):
-    os.system('cp {0} {1}'.format(exome_target_bed, outputdir))
-    if not os.path.exists(outputdir+'/'+os.path.basename(exome_target_bed)+'.gz'):
-        command1= bgzip + ' '+ outputdir+'/'+os.path.basename(exome_target_bed)
+    os.system('cp {0} {1}'.format(exome_target_bed, output))
+    if not os.path.exists(output+'/'+os.path.basename(exome_target_bed)+'.gz'):
+        command1= bgzip + ' '+ output+'/'+os.path.basename(exome_target_bed)
         store_germline_vc_logs(logger_g_variantcalling_process,'null',command1)
         os.system(command1)
-    if  not os.path.exists(outputdir+'/'+os.path.basename(exome_target_bed)+'.gz.tbi'):
-        command2= tabix + ' '+ outputdir+'/'+ os.path.basename(exome_target_bed) +'.gz'
+    if  not os.path.exists(output+'/'+os.path.basename(exome_target_bed)+'.gz.tbi'):
+        command2= tabix + ' '+ output+'/'+ os.path.basename(exome_target_bed) +'.gz'
         store_germline_vc_logs(logger_g_variantcalling_process,'null',command2)
         os.system(command2)
     command3='python {0} --bam {1} --callRegions {2} --exome --referenceFasta {3} --runDir {4}'.format(
-        strelka2_dir, bam, outputdir+'/'+os.path.basename(exome_target_bed)+'.gz', total_ref_chrom_fa_file, outputdir)
+        strelka2_dir, bam, output+'/'+os.path.basename(exome_target_bed)+'.gz', total_ref_chrom_fa_file, output)
     stdout, stderr = stdout_err(command3)
     store_germline_vc_logs(logger_g_variantcalling_process,'null',stdout)
     store_germline_vc_logs('null',logger_g_variantcalling_errors,stderr)
-    run_py = outputdir+'/'+ 'runWorkflow.py'
+    run_py = output+'/'+ 'runWorkflow.py'
     command4='python {0} -m local -j 1'.format(run_py)
     stdout, stderr = stdout_err(command4)
     store_germline_vc_logs(logger_g_variantcalling_process,'null',stdout)
     store_germline_vc_logs('null',logger_g_variantcalling_errors,stderr)
+
+#-----------------------------samtools
+def samtools_call(samtools_dir, bcftools_dir, bam, sample, output, total_ref_fa_file,logger_germline_vc_process,logger_germline_vc_errors):
+    bcf = output + '/'+ sample + '_raw.bcf'
+    command1 =bcftools_dir +' mpileup -Ob -o '+ bcf+' -f '+ total_ref_fa_file + ' ' + bam
+    os.system(command1)
+    vcf = output + '/'+ sample + '.raw_samtools.vcf'
+    command2 = bcftools_dir + ' call -vmO v -o ' + vcf + ' ' + bcf
+    os.system(command2)
+    #vchk = output + '/'+ sample + '_raw.vchk '
+    #command3 = bcftools_dir + ' stats ' + vcf + ' > ' + vchk
+    #os.system(command3)
+    #command4 = os.path.dirname(bcftools_dir)+'/misc/plot-vcfstats '+ vchk + '-p '+ output + '/plots/'
+    #os.system(command4)
+    #bcftools_filter_vcf=  output + '/'+ sample + '_filter.vcf'
+    #command5 = bcftools_dir + ' filter -O v -o '+  bcftools_filter_vcf + ' -s LOWQUAL -e \'QUAL<30 || FMT/DP <5\' '+  vcf
+    #os.system(command4)
+    #command4 = perl -ne 'print $_ if /DP4=(\d+),(\d+),(\d+),(\d+)/ && ($3+$4)>=10 && ($3+$4)/($1+$2+$3+$4)>=0.8' var.raw.vcf > snp_indel.final.vcf
+    #return vcf
+
+#---------------------------varsan2
+def varsan2_call(samtools_dir, varsan2_dir,total_ref_fa_file,
+                 outputdir,
+                 sample, bam,logger_germline_vc_process,logger_germline_vc_errors):
+    pileup= outputdir+ '/' + sample+ '.mpileup'
+    command1= samtools_dir + ' mpileup -B -f '+ total_ref_fa_file +' ' + bam + ' > ' + pileup
+    os.system(command1)
+    snp= outputdir+ '/' + sample+ '.raw_varscan2.snp.vcf'
+    indel= outputdir+ '/' + sample+ '.raw_varscan2.indel.vcf'
+    command2= 'java -jar ' + varsan2_dir + ' mpileup2snp ' + pileup + ' > ' + snp
+    os.system(command2)
+    #stdout, stderr = stdout_err(command2)
+    command3= 'java -jar ' + varsan2_dir + ' mpileup2indel ' + pileup + ' > ' + indel
+    os.system(command3)
