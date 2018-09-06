@@ -1,8 +1,9 @@
 from __future__ import barry_as_FLUFL
 
-__all__  =  ['read1' , 'read2' , 'trimmed1' ,'un_trimmed1', 'trimmed2' ,'un_trimmed2', 'min_read_len' , 'common_seq1' , 'common_seq2' , 'stats_file' , 'logger_trim_process' , 'logger_trim_errors']
-__version__  =  '1.0'
-__author__  =  'Maggie Ruimin Sun'
+__all__ = ['read1', 'read2', 'trimmed1', 'un_trimmed1', 'trimmed2', 'un_trimmed2', 'min_read_len',
+           'common_seq1', 'common_seq2', 'stats_file', 'logger_trim_process', 'logger_trim_errors']
+__version__ = '1.0'
+__author__ = 'Maggie Ruimin Sun'
 
 import logging
 import os
@@ -16,14 +17,17 @@ import subprocess
 sys.path.append("..")
 from pipelines.log.log_v1 import store_trim_logs
 
-#put the info output to the log
+
+# put the info output to the log
 def stdout_err(command):
     command_pope = shlex.split(command)
-    child = subprocess.Popen(command_pope, stdout=subprocess.PIPE,stderr=subprocess.PIPE,universal_newlines=True)
+    child = subprocess.Popen(command_pope, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
     stdout, stderr = child.communicate()
     child.wait()
     return stdout, stderr
-#----------------------------------------------------------
+
+
+# ----------------------------------------------------------
 def read_fq(file_name, logger_trim_process, logger_trim_errors):
     if not os.path.isfile(file_name):
         logger_trim_errors.error("%s does not exist!\n", file_name)
@@ -80,12 +84,15 @@ def trim_read_pairs(read1, read2, trimmed1, trimmed2, min_read_len, common_seq1,
         num_total_reads += 1
         if r1[0][0] != '@' or r2[0][0] != '@':
             num_error_reads1 += 1
-            store_trim_logs('null', logger_trim_errors,"Error read pair: \n\t" + '\t'.join(r1) + '\n\t' + '\t'.join(r2) + '\n')
+            store_trim_logs('null', logger_trim_errors,
+                            "Error read pair: \n\t" + '\t'.join(r1) + '\n\t' + '\t'.join(r2) + '\n')
         else:
             start_common = r2[1].find(common_seq2)
             if start_common < 12:
                 num_error_reads2 += 1
-                store_trim_logs('null', logger_trim_errors,"Error barcode/common seqs:" + str(start_common) + "\n\t" + '\t'.join(r1) + '\n\t' + '\t'.join(r2) + '\n')
+                store_trim_logs('null', logger_trim_errors,
+                                "Error barcode/common seqs:" + str(start_common)
+                                + "\n\t" + '\t'.join(r1) + '\n\t' + '\t'.join(r2) + '\n')
             else:
                 umi = r2[1][(start_common - 12):start_common]
                 qua = r2[3][(start_common - 12):start_common]
@@ -95,19 +102,15 @@ def trim_read_pairs(read1, read2, trimmed1, trimmed2, min_read_len, common_seq1,
                 pos_trim_r2, r2 = trim_read2(r2, common_seq1)
                 if pos_trim_r1 < min_read_len or pos_trim_r2 < min_read_len:
                     num_short_reads += 1
-                    store_trim_logs('null', logger_trim_errors,"Short read pair: \n\t" + '\t'.join(r1) + '\n\t' + '\t'.join(r2) + '\n')
+                    store_trim_logs('null', logger_trim_errors,
+                                    "Short read pair: \n\t" + '\t'.join(r1) + '\n\t' + '\t'.join(r2) + '\n')
                 else:
-                    #umi = umi + ';' + qua
                     h1 = r1[0].split(' ')[0] + '_' + umi + ' ' + r1[0].split(' ')[1]
                     h2 = r2[0].split(' ')[0] + '_' + umi + ' ' + r2[0].split(' ')[1]
                     fout1.write(h1 + r1[1] + r1[2] + r1[3])
                     fout2.write(h2 + r2[1] + r2[2] + r2[3])
     fout1.close()
     fout2.close()
-    #print('Total number of reads == ' + str(num_total_reads))
-    #print('Number of short reads (<{0}bp) == {1}'.format(min_read_len, num_short_reads))
-    #print('Number of error reads == ' + str(num_error_reads1+num_error_reads2))
-
     stats_out = open(stats_file, 'w')
     stats_out.write('Total number of reads == ' + str(num_total_reads) + '\n')
     stats_out.write('Number of short reads (either read_length <{0}bp) == {1}\n'.format(
@@ -115,6 +118,7 @@ def trim_read_pairs(read1, read2, trimmed1, trimmed2, min_read_len, common_seq1,
     stats_out.write('Number of unproper read pairs (containing incorrect headers) == ' + str(num_error_reads1) + '\n')
     stats_out.write('Number of read pairs without correct common sequences/MTs == ' + str(num_error_reads2) + '\n')
     stats_out.write('The time of trimming is %s minutes.' % str((time.time() - time_start) / 60))
+
 
 def trim_read_pairs_by_trimmomatic(trimmomatic_dir,
                                    read1, read2, 
@@ -131,8 +135,10 @@ def trim_read_pairs_by_trimmomatic(trimmomatic_dir,
         store_trim_logs(logger_trim_process,'null', trimmomatic_dir + ' does not exist!' + '\n')
         store_trim_logs(logger_trim_process,'null', 'Error: cannot find trimmomatic.jar!' + '\n')
         exit()
-    command = 'java -jar {0} PE -threads 1 -phred33 -summary {1} {2} {3} {4} {5} {6} {7} ILLUMINACLIP:{8}:2:30:10 LEADING:5 TRAILING:5 SLIDINGWINDOW:4:20 MINLEN:{9} '.format(
-        trimmomatic_dir, stats_file, read1, read2, trimmed1, un_trimmed1, trimmed2, un_trimmed2, os.path.dirname(trimmomatic_dir) + '/adapters/TruSeq3-PE.fa', min_read_len)
+    command = 'java -jar {0} PE -threads 1 -phred33 -summary {1} {2} {3} {4} {5} {6} {7} ' \
+              'ILLUMINACLIP:{8}:2:30:10 LEADING:5 TRAILING:5 SLIDINGWINDOW:4:20 MINLEN:{9} '.format(
+        trimmomatic_dir, stats_file, read1, read2, trimmed1, un_trimmed1, trimmed2, un_trimmed2,
+        os.path.dirname(trimmomatic_dir) + '/adapters/TruSeq3-PE.fa', min_read_len)
     stdout, stderr = stdout_err(command)
-    store_trim_logs(logger_trim_process,'null',stdout)
-    store_trim_logs('null',logger_trim_errors,stderr)
+    store_trim_logs(logger_trim_process, 'null', stdout)
+    store_trim_logs('null', logger_trim_errors, stderr)

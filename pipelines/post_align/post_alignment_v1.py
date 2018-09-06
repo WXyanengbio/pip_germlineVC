@@ -1,8 +1,9 @@
 from __future__ import barry_as_FLUFL
 
-__all__  =  ['samtools_dir' , 'alignment_sam' , 'min_mapq' , 'max_soft_clip' , 'out_file' , 'stats_file' , 'primers_file' , 'primer_stats_file', 'max_dist' , 'logger_filter_process' , 'logger_filter_errors']
-__version__  =  '1.0'
-__author__  =  'Maggie Ruimin Sun'
+__all__ = ['samtools_dir', 'alignment_sam', 'min_mapq', 'max_soft_clip', 'out_file', 'stats_file',
+           'primers_file', 'primer_stats_file', 'max_dist', 'logger_filter_process', 'logger_filter_errors']
+__version__ = '1.0'
+__author__ = 'Maggie Ruimin Sun'
 
 import os
 import sys
@@ -14,19 +15,20 @@ sys.path.append("..")
 from pipelines.log.log_v1 import store_filter_logs
 time_start = time.time()
 
+
 def filter_alignment_samtools(samtools_dir, alignment_sam, min_mapq,
                               max_soft_clip, out_file, stats_file,
                               logger_filter_process, logger_filter_errors):
     stats_file_tmp = stats_file + '.tmp'
     command_count = '{0} view {1} | cut -f1 | uniq | wc -l >> {2}'.format(
         samtools_dir, alignment_sam, stats_file_tmp)
-    store_filter_logs(logger_filter_process,'null', 'Samtools counts the total number of read pairs.' +'\n')
+    store_filter_logs(logger_filter_process, 'null', 'Samtools counts the total number of read pairs.' + '\n')
     os.system(command_count)
 
     # Count supplimentary alignments
     command_count1 = '{0} view -f 2048 {1} | cut -f1 | uniq | wc -l >> {2}'.format(
         samtools_dir, alignment_sam, stats_file_tmp)
-    store_filter_logs(logger_filter_process,'null', 'Samtools counts the supplimentary alignments.' +'\n')
+    store_filter_logs(logger_filter_process, 'null', 'Samtools counts the supplimentary alignments.' + '\n')
     os.system(command_count1)
 
     out_file_tmp1 = out_file + '_tmp1.sam'
@@ -36,13 +38,13 @@ def filter_alignment_samtools(samtools_dir, alignment_sam, min_mapq,
 
     command_count = '{0} view {1} | cut -f1 | uniq | wc -l >> {2}'.format(
         samtools_dir, out_file_tmp1, stats_file_tmp)
-    store_filter_logs(logger_filter_process,'null', 'Samtools counts the number of read pairs without 2048.' +'\n')
+    store_filter_logs(logger_filter_process,'null', 'Samtools counts the number of read pairs without 2048.' + '\n')
     os.system(command_count)
 
     # Count unmapped reads
     command_count2 = '{0} view -f 8 {1} | cut -f1 | uniq | wc -l >> {2}'.format(
         samtools_dir, out_file_tmp1, stats_file_tmp)
-    store_filter_logs(logger_filter_process,'null', 'Samtools counts the total number of unmapped read pairs' +'\n')
+    store_filter_logs(logger_filter_process, 'null', 'Samtools counts the total number of unmapped read pairs' + '\n')
     os.system(command_count2)
     # Discard all unmapped read pairs
     out_file_tmp2 = out_file + '_tmp2.sam'
@@ -54,8 +56,8 @@ def filter_alignment_samtools(samtools_dir, alignment_sam, min_mapq,
     command_samtools1 = "{0} view -Sh {1} \
     | perl -lane 'print if $F[0] =~ /^@/; print if $F[6] =~ /=/;' > {2}".format(
         samtools_dir, out_file_tmp1, out_file_tmp2)
-    store_filter_logs(logger_filter_process,'null','Samtools discards the secondary/supplimentary/unmapped alignments\
-        and those read pairs mapped to different target regions.' +'\n')
+    store_filter_logs(logger_filter_process, 'null', 'Samtools discards the secondary/supplimentary/unmapped'
+                      + ' alignments and those read pairs mapped to different target regions.' + '\n')
     os.system(command_samtools1)
     command_count3 = "{0} view {1} | cut -f1 | uniq | wc -l >> {2}".format(
         samtools_dir, out_file_tmp2, stats_file_tmp)
@@ -63,18 +65,19 @@ def filter_alignment_samtools(samtools_dir, alignment_sam, min_mapq,
     # Discard alignments with MAPQ < min_mapq
     command_count4 = '{0} view -q {1} {2} | cut -f1 | uniq | wc -l >> {3}'.format(
         samtools_dir, min_mapq, out_file_tmp2, stats_file_tmp)
-    store_filter_logs(logger_filter_process,'null', 'Samtools counts the alignments with higher Maps' +'\n')
+    store_filter_logs(logger_filter_process, 'null', 'Samtools counts the alignments with higher Maps' + '\n')
     os.system(command_count4)
     command_samtools2 = "{0} view -Shq {1} {2} > {3}".format(samtools_dir, min_mapq,
                                                              out_file_tmp2, out_file)
     os.system(command_samtools2)
-    store_filter_logs(logger_filter_process,'null', 'Samtools discards the alignments with lower MapQ and mismatched beginning' +'\n')
+    store_filter_logs(logger_filter_process, 'null',
+                      'Samtools discards the alignments with lower MapQ and mismatched beginning' + '\n')
     command_count5 = '{0} view {1} | cut -f1 | uniq | wc -l >> {2}'.format(samtools_dir, out_file, stats_file_tmp)
     os.system(command_count5)
 
     # Output the alignment statistics.
     stats = open(stats_file_tmp)
-    (total_count, sec_count,rm_sec_count, unmap_count, same_chr_count,
+    (total_count, sec_count, rm_sec_count, unmap_count, same_chr_count,
      hmapq_count, final_count) = [int(x.strip()) for x in stats.readlines()[0:7]]
     stats.close()
     stats_out = open(stats_file, 'w')
@@ -90,6 +93,7 @@ def filter_alignment_samtools(samtools_dir, alignment_sam, min_mapq,
     stats_out.close()
     os.system('rm ' + stats_file_tmp)
     os.system('rm ' + out_file_tmp1 + ' ' + out_file_tmp2)
+
 
 def complement_base(base):
     if base == 'A':
@@ -137,7 +141,7 @@ def identify_gs_primers(samtools_dir, alignment_sam, primers_file, max_dist,
     primers = {}
     primer_pos = {}
     csv = open(primers_file)
-    #csv.readline()
+    # csv.readline()
     for row in csv:
         chrom, strand, seq, start, stop, gene = row.strip().split(',')[0:6]
         if chrom == 'chr':
@@ -174,7 +178,7 @@ def identify_gs_primers(samtools_dir, alignment_sam, primers_file, max_dist,
         primers[key_primer]['stop'] = stop
         primers[key_primer]['length'] = len(seq)
         primers[key_primer]['on-target'] = 0
-        #primers[key_primer]['mis-target'] = []
+        # primers[key_primer]['mis-target'] = []
 
     csv.close()
     num_primers = len(primers)
@@ -247,7 +251,7 @@ def identify_gs_primers(samtools_dir, alignment_sam, primers_file, max_dist,
         off = False
         min_dist = max_dist
         match_start0 = len(seq)
-        if flag == '83': # read 1 is mapped to the reversed strand
+        if flag == '83':  # read 1 is mapped to the reversed strand
             if pos_rv not in primer_pos[chrom]:
                 off = True
                 num_off_target += 1
@@ -308,10 +312,11 @@ def identify_gs_primers(samtools_dir, alignment_sam, primers_file, max_dist,
     
     ratio_off = 100*num_off_target / num_total_alignments
     ratio_on = 100*num_on_target / num_total_alignments
-    #print('Total number of alignments (PE) == ' + str(num_total_alignments))
-    #print('Number of reads mapped in unproper pairs == ' + str(num_unproper_pairs))
-    #print('Number of off-target alignments == {0} ({1}%)({2})'.format(num_off_target, ratio_off, num_off_target_wrong_strand))
-    #print('Number of on-target alignments == {0} ({1}%)'.format(num_on_target, ratio_on))
+    # print('Total number of alignments (PE) == ' + str(num_total_alignments))
+    # print('Number of reads mapped in unproper pairs == ' + str(num_unproper_pairs))
+    # print('Number of off-target alignments == {0} ({1}%)({2})'.format(num_off_target,
+    # ratio_off, num_off_target_wrong_strand))
+    # print('Number of on-target alignments == {0} ({1}%)'.format(num_on_target, ratio_on))
 
     stats_out = open(stats_file, 'a')
     stats_out.write('Number of unproperly-paired alignments == '+str(num_unproper_pairs)+'\n')
@@ -326,7 +331,7 @@ def identify_gs_primers(samtools_dir, alignment_sam, primers_file, max_dist,
         ratio = 100*primers[pr]['on-target'] / float(num_on_target)
         
         st_out.write(','.join([primers[pr]['chromosome'], primers[pr]['strand'], 
-                         primers[pr]['start'],primers[pr]['stop'], 
-                         primers[pr]['seq'], str(primers[pr]['on-target']),
-                         str(ratio)])+'\n')
+                               primers[pr]['start'], primers[pr]['stop'],
+                               primers[pr]['seq'], str(primers[pr]['on-target']),
+                               str(ratio)])+'\n')
     st_out.close()

@@ -1,8 +1,8 @@
 from __future__ import barry_as_FLUFL
 
-__all__  =  ['alignment_sam' , 'output_sam' , 'logger_reformat_process' , 'logger_reformat_errors']
-__version__  =  '1.0'
-__author__  =  'Maggie Ruimin Sun'
+__all__ = ['alignment_sam' , 'output_sam' , 'logger_reformat_process' , 'logger_reformat_errors']
+__version__ = '1.0'
+__author__ = 'Maggie Ruimin Sun'
 
 import logging
 import os
@@ -41,7 +41,9 @@ hg19_chr_length = {
 The numbers of consolidated sequences in R1 and R2 are different, because those
 consolidated sequences with too many N's are removed. 
 """
-def reformat_sam(alignment_sam, output_sam, logger_reformat_process , logger_reformat_errors):
+
+
+def reformat_sam(alignment_sam, output_sam, logger_reformat_process, logger_reformat_errors):
     sam = open(alignment_sam)
     sam.readline()
     sam_out = open(output_sam, 'w')
@@ -54,11 +56,10 @@ def reformat_sam(alignment_sam, output_sam, logger_reformat_process , logger_ref
             sam_out.write(row)
             continue
         qname, flag, rname, pos, mapq, cigar, rmate, pmate = row.strip().split()[0:8]
-        #print(rname)
         chrom, start = rname.split('_')[0:2]
         pos = str(int(pos) + int(start))
         pmate = str(int(pmate) + int(start))
-        if len(qname.split('_'))==2:
+        if len(qname.split('_')) == 2:
             qname, umi = qname.split('_')
             if flag == '99' or flag == '163':
                 qname += ':' + chrom + '-0-' + pos + '-' + umi + ':' + umi
@@ -66,7 +67,7 @@ def reformat_sam(alignment_sam, output_sam, logger_reformat_process , logger_ref
                 qname += ':' + chrom + '-1-' + pos + '-' + umi + ':' + umi
             else:
                 continue  # error flags
-        elif len(qname.split('_'))==1:
+        elif len(qname.split('_')) == 1:
             if flag == '99' or flag == '163':
                 qname += ':' + chrom + '-0-' + pos
             elif flag == '83' or flag == '147':

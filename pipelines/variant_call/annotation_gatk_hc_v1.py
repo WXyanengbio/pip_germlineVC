@@ -514,7 +514,7 @@ def split_variant(line, calling):
             strandfilter, other, r1f, r1r, r2f, r2r, pval = sf
         if int(shet) == 1:
             gt = '0,1'
-        elif int(shom) ==1:
+        elif int(shom) == 1:
             gt = '1,1'
         alt = alt.lstrip('=')
         if alt[0] == '-':
@@ -544,12 +544,12 @@ def read_vcf(variant_vcf, output, sample_name, calling, snp_filter, indel_filter
         for line in indel.readlines():
             var.append(line.strip())
 
-        #output = open(annotated_csv, 'w')
+        # output = open(annotated_csv, 'w')
         output.write('\t'.join(['Sample', 'CHR', 'POS', 'REF', 'ALT', 'FILTER', 'DP', 'VF', 'GT', 'DP_read1',
                                 'DP_read2', 'Fisherexact_var', 'read1F', 'read1R', 'read2F', 'read2R', 'StrandBias',
-                                'Gene_ID','RS_ID', 'CLNDN', 'HGVS', 'CLNSIG', 'COSMIC_ID', 'Mutation_Description',
+                                'Gene_ID', 'RS_ID', 'CLNDN', 'HGVS', 'CLNSIG', 'COSMIC_ID', 'Mutation_Description',
                                 'Feature_ID', 'Gene_Name', 'Gene_CDS_Length', 'Mutation_Zygosity', 'LOH',
-                                'Mutation_Strand','HGVS.c', 'HGVS.p', 'FATHMM_Prediction', 'FATHMM_Score',
+                                'Mutation_Strand', 'HGVS.c', 'HGVS.p', 'FATHMM_Prediction', 'FATHMM_Score',
                                 'Mutation_Somatic_Status',  'Gene_Name1', 'RS_ID1', 'EAS_AF', 'EUR_AF',
                                 'AMR_AF', 'SAS_AF', 'AFR_AF\n']))
         # print(variant_vcf)
@@ -587,7 +587,7 @@ def read_vcf(variant_vcf, output, sample_name, calling, snp_filter, indel_filter
         if not os.path.isfile(os.path.dirname(variant_vcf) + '/variants.vcf'):
             command1 = 'gunzip' + ' -k ' + variant_vcf
             stdout, stderr = stdout_err(command1)
-        #output = open(annotated_csv, 'w')
+        # output = open(annotated_csv, 'w')
         output.write('\t'.join(['Sample', 'CHR', 'POS', 'REF', 'ALT', 'FILTER', 'QUAL', 'DP', 'GT', 'AD', 'VF', 'MQ',
                                 'SB', 'Gene_ID', 'RS_ID', 'CLNDN', 'HGVS', 'CLNSIG', 'COSMIC_ID',
                                 'Mutation_Description',
@@ -625,7 +625,7 @@ def read_vcf(variant_vcf, output, sample_name, calling, snp_filter, indel_filter
                     yield [key, key1, value]
     elif calling == 'GATK':
         var = open(variant_vcf, 'r')
-        #output = open(annotated_csv, 'w')
+        # output = open(annotated_csv, 'w')
         output.write('\t'.join(['Sample', 'CHR', 'POS', 'REF', 'ALT', 'FILTER', 'QUAL', 'DP', 'GT1', 'AD', 'VF', 'AC',
                                 'AN', 'Baseqranksum', 'ClippingRankSum', 'DS', 'END', 'ExcessHet', 'FS',
                                 'InbreedingCoeff', 'MLEAC', 'MLEAF', 'MQ', 'MQRankSum', 'QD', 'RAW_MQ',
@@ -865,7 +865,7 @@ def annotationmain(cosmic, clinvar, g1000,
             non_cos = output + '/' + sample + '.raw_variants_non_cos.txt'
             stats_file = output + '/' + sample + '.raw_variants_' + call + '_stats.txt'
         # - read the annotation database
-        if not os.path.isfile(vcf) and call =='GATK':
+        if not os.path.isfile(vcf) and call == 'GATK':
             store_annotation_logs('null', logger_annotation_errors, vcf + " does not exist!\n")
             # print(vcf + ' does not exist!')
         else:
