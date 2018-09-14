@@ -312,17 +312,23 @@ def main_run_germline_variant_calling(path_sampleID_sub):
                                                          germline_vc_dir, memory_size, exome_target_bed,
                                                          total_ref_fa_file, total_ref_fa_dict, known_sites,
                                                          logger_germline_vc_process, logger_germline_vc_errors, bqsr)
-        if calling == 'GATK':
+        callings = calling.split(',')
+        print(callings)
+        # if calling == 'GATK':
+        if 'GATK' in callings:
             germline_variant_calling(gatk_dir, bam_to_variant, sample, germline_vc_dir, memory_size,
                                      total_ref_fa_file, exon_interval, erc, snp_filter, indel_filter,
                                      logger_germline_vc_process, logger_germline_vc_errors)
-        elif calling == 'strelka2':
-            strelka2_call(strelka2_dir, bgzip, tabix, total_ref_fa_file, germline_vc_dir, sample, bam_to_variant,
+        # elif calling == 'strelka2':
+        if 'strelka2' in callings:
+            strelka2_call(strelka2_dir, bgzip, tabix, total_ref_chrom_fa_file, germline_vc_dir, sample, bam_to_variant,
                           exome_target_bed, logger_germline_vc_process, logger_germline_vc_errors)
-        elif calling == 'samtools':
+        # elif calling == 'samtools':
+        if 'samtools' in callings:
             samtools_call(samtools_dir, bcftools_dir, bam_to_variant, sample, germline_vc_dir,
                           total_ref_fa_file, logger_germline_vc_process, logger_germline_vc_errors)
-        elif calling == 'varscan2':
+        # elif calling == 'varscan2':
+        if 'varscan2' in callings:
             varsan2_call(samtools_dir, varsan2_dir, total_ref_fa_file, germline_vc_dir, sample,
                          bam_to_variant, logger_germline_vc_process, logger_germline_vc_errors)
         store_germline_vc_logs(logger_germline_vc_process, 'null',
@@ -353,14 +359,16 @@ def main_run_germline_variant_calling(path_sampleID_sub):
         logger_annotation_process = log_dir
         logger_annotation_errors = log_dir
         snp_limit, indel_limit = read_vcf_filter(snp_filter, indel_filter)
-        annotationmain(db_cosmic, db_clinvar, db_g1000, ref_ens, raw_vcf, sample, snp_limit, indel_limit,
-                       annotation_dir, logger_annotation_process, logger_annotation_errors, calling)
-        if 'GATK' in calling:
-            calling1 = 'GATK'
+        callings = calling.split(',')
+        for callingsub in callings:
+            annotationmain(db_cosmic, db_clinvar, db_g1000, ref_ens, raw_vcf, sample, snp_limit, indel_limit,
+                       annotation_dir, logger_annotation_process, logger_annotation_errors, callingsub)
+        if 'GATK' in callings:
+            callingsub = 'GATK'
             annotationmain(db_cosmic, db_clinvar, db_g1000, ref_ens, snp_vcf, sample, snp_limit, indel_limit,
-                           annotation_dir, logger_annotation_process, logger_annotation_errors, calling1)
+                           annotation_dir, logger_annotation_process, logger_annotation_errors, callingsub)
             annotationmain(db_cosmic, db_clinvar, db_g1000, ref_ens, indel_vcf, sample, snp_limit, indel_limit,
-                           annotation_dir, logger_annotation_process, logger_annotation_errors, calling1)
+                           annotation_dir, logger_annotation_process, logger_annotation_errors, callingsub)
 
         store_annotation_logs(logger_annotation_process, 'null',
                               '--{0}--Finish annotation variant  is completed after {1} min.'.format(

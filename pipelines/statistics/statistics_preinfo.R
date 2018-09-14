@@ -166,6 +166,8 @@ for(i in 1:nrow(files)){
  files<-read.table(opts$primer_statis)
   if(TRUE){
  primers=c()
+ primersfilecount=c()
+ primersfilepre=c()
  names=c()
 for(i in 1:nrow(files)){
  file<-as.character(files[i,1])
@@ -186,8 +188,10 @@ for(i in 1:nrow(files)){
  primers<-cbind(primers,c(num,meanprimer_mt_depth,x5,x25,x50,x75,x100,mean_primer_read_depth,rx5,rx25,rx50,rx75,rx100))
  name=unlist(strsplit(file,"/"))[length(unlist(strsplit(file,"/")))]
  names<-c(names,gsub('_L001_primer_stats.csv','',name))
+ primersfilecount<-cbind(primersfilecount, unlist(dat[,6]))
+ primersfilepre<-cbind(primersfilepre, unlist(dat[,7]))
  }
-   primers<-as.data.frame(primers)
+ primers<-as.data.frame(primers)
  colnames(primers)<-names
  primers=cbind(Library_name=c("Number of targeted primers","Mean MT depth per primer (mean MDP)","% of primers >= 5% of mean MDP",
                "% of primers >= 25% of mean MDP","% of primers >= 50% of mean MDP",
@@ -196,7 +200,12 @@ for(i in 1:nrow(files)){
               "% of primers >= 25% of mean RDP","% of primers >= 50% of mean RDP",
                          "% of primers >= 75% of mean RDP","% of primers >= mean RDP"),primers)
   }
-
+ primersfilecount<-as.data.frame(primersfilecount)
+ colnames(primersfilecount)<-names
+ primersfilepre<-as.data.frame(primersfilepre)
+ colnames(primersfilepre)<-names
+primersfilecount<-cbind(as.data.frame(dat[,1:5]),primersfilecount)
+primersfilepre<-cbind(as.data.frame(dat[,1:5]),primersfilepre)
 #--------------------------
 fun_exon_statis<-function(posi,depth){
   len=length(posi)
@@ -204,6 +213,7 @@ fun_exon_statis<-function(posi,depth){
   min_depth=min(depth)
   max_depth=max(depth)
   mean_depth=round(total_depth/len,2)
+  #print(min_depth)
   posi_min=posi[which(depth==min_depth)]
   if(length(posi_min)==1){
     posi_mins=posi_min
@@ -283,8 +293,8 @@ if(TRUE){
   region$start=as.numeric(apply(region,1,function(x){unlist(strsplit(as.character(x[1]),"_"))[2]}))
   region$end=as.numeric(apply(region,1,function(x){unlist(strsplit(as.character(x[1]),"_"))[3]}))
   exon<-c()
-
-exon_F=unlist(strsplit(opts$exon,"/",fix))[length(unlist(strsplit(opts$exon,"/")))]
+  # print(file)
+  exon_F=unlist(strsplit(opts$exon,"/",fix))[length(unlist(strsplit(opts$exon,"/")))]
   if(exon_F != 'n'){
     suf_dat = read.csv(opts$exon,header=F)
   for(i in 1:nrow(region)){
@@ -330,16 +340,19 @@ exon_F=unlist(strsplit(opts$exon,"/",fix))[length(unlist(strsplit(opts$exon,"/")
   dat$y1=dat[,3]
   colnames(dat)<-c("chr","posi","depth","y1")
   exon_statis<-c()
-  for(i in 1:nrow(exon)){
+  for(j in 1:nrow(exon)){
   #for(i in 1:2){exon_statis_mes
   #print(which(as.character(exon[i,3])==as.character(dat[,1])))
-  a= which(as.character(exon[i,3])==dat[,1])
+  a = which(as.character(exon[j,3])==dat[,1])
   a_s=dat[a,2]
   #print(exon[i,1:2])
-  b=which(a_s>=as.numeric(exon[i,1]) & a_s<=as.numeric(exon[i,2]))
+  b=which(a_s>=as.numeric(exon[j,1]) & a_s<=as.numeric(exon[j,2]))
   #print(dat$posi[a[b]])
   #print(dat$depth[a[b]])
+  #print(b)
+  if(length(dat$depth[a[b]])>0){
   exon_statis<-rbind(exon_statis,fun_exon_statis(dat$posi[a[b]],dat$depth[a[b]]))
+  }
   dat$y1[a[b]]<-0
   }
   #----
@@ -359,16 +372,18 @@ exon_F=unlist(strsplit(opts$exon,"/",fix))[length(unlist(strsplit(opts$exon,"/")
   brca_statis_x500_ratio=round(brca_statis_x500*100/brca_statis_len,2)
   #---use the total mean
    exon_statis_me<-c()
-  for(i in 1:nrow(exon)){
+  for(k in 1:nrow(exon)){
   #for(i in 1:2){
   #print(which(as.character(exon[i,3])==as.character(dat[,1])))
-  a= which(as.character(exon[i,3])==dat[,1])
+  a= which(as.character(exon[k,3])==dat[,1])
   a_s=dat[a,2]
   #print(exon[i,1:2])
-  b=which(a_s>=as.numeric(exon[i,1]) & a_s<=as.numeric(exon[i,2]))
+  b=which(a_s>=as.numeric(exon[k,1]) & a_s<=as.numeric(exon[k,2]))
   #print(dat$posi[a[b]])
   #print(dat$depth[a[b]])
+  if(length(dat$depth[a[b]])>0){
   exon_statis_me<-rbind(exon_statis_me,fun_exon_statis1(dat$posi[a[b]],dat$depth[a[b]],brca_statis_mean_depth))
+  }
   dat$y1[a[b]]<-0
   }
   #---
@@ -445,3 +460,5 @@ data<-rbind(data,exon_statis_mes)
 colnames(data)<-colnames(qcs)
 data<- as.matrix(data)
 write.table(data, file=opts$output, append = T, quote = F, sep="\t", eol = "\n", na = "NA", dec = ".", row.names = F, col.names = T)
+write.table(primersfilecount, file=gsub('.txt','_primercount.txt',opts$output), append = T, quote = F, sep="\t", eol = "\n", na = "NA", dec = ".", row.names = F, col.names = T)
+write.table(primersfilepre, file=gsub('.txt','_primer.txt',opts$output), append = T, quote = F, sep="\t", eol = "\n", na = "NA", dec = ".", row.names = F, col.names = T)

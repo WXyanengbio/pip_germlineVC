@@ -183,7 +183,7 @@ def statistics_depth_coverage(samtools_dir, sam_bam, out_dir, sample, module, ex
                               logger_statistics_process, logger_statistics_errors):
     if not os.path.isfile(sam_bam):
         store_statistics_logs('null', logger_statistics_errors, sam_bam + " does not exist!\n")
-    sorted_bam = sam_bam.rstrip('.bam') + '_sorted.bam'
+    sorted_bam = sam_bam.rstrip('.sam') + '_sorted.bam'
     bam = sam_bam.rstrip('.sam') + '.bam'
     if not os.path.isfile(sorted_bam):
         # print(sorted_bam + ' does not exist!')
@@ -195,6 +195,10 @@ def statistics_depth_coverage(samtools_dir, sam_bam, out_dir, sample, module, ex
             store_statistics_logs('null', logger_statistics_errors, stderr)
             store_statistics_logs(logger_statistics_process, 'null',
                                   '{0} has been tranformed to bam.\n'.format(sam_bam))
+            command2 = samtools_dir + ' sort ' + bam + ' -o ' + sorted_bam
+            stdout, stderr = stdout_err(command2)
+            store_statistics_logs(logger_statistics_process, 'null', stdout)
+            store_statistics_logs('null', logger_statistics_errors, stderr)
         else:
             command2 = samtools_dir + ' sort ' + bam + ' -o ' + sorted_bam
             stdout, stderr = stdout_err(command2)

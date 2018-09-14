@@ -518,11 +518,11 @@ def split_variant(line, calling):
             gt = '1,1'
         alt = alt.lstrip('=')
         if alt[0] == '-':
-            ref1 = ref + alt[0:]
+            ref1 = ref + alt[1:]
             alt = ref
         elif alt[0] == '+':
             ref1 = ref
-            alt = ref + alt[0:]
+            alt = ref + alt[1:]
         else:
             ref1 = ref
         return[[chrom, pos, ref1, alt, gt, cov, read1, read2, vf, pvalue, strandfilter,
@@ -564,6 +564,8 @@ def read_vcf(variant_vcf, output, sample_name, calling, snp_filter, indel_filter
                     # upper the ref and alt
                     ref = ref.upper()
                     alt = alt.upper()
+                    # ref = sub('[+-]', '', ref)
+                    # alt = sub('[+-]', '', ref)
                     if len(ref) == len(alt) and len(alt) == 1:
                         change = ref + '>' + alt
                         change1 = base_paired[ref] + '>' + base_paired[alt]
@@ -870,18 +872,8 @@ def annotationmain(cosmic, clinvar, g1000,
             # print(vcf + ' does not exist!')
         else:
             # --annotation
-            if call == 'GATK':
-                annotation_v(dict_cos, dict_clin, dict_g1000, vcf, annotated_csv, stats_file, snp_filter,
-                           indel_filter, sample, logger_annotation_process, call)
-            elif call == 'strelka2':
-                annotation_v(dict_cos, dict_clin, dict_g1000, vcf, annotated_csv, stats_file, snp_filter,
-                             indel_filter, sample, logger_annotation_process, call)
-            elif call == 'samtools':
-                annotation_v(dict_cos, dict_clin, dict_g1000, vcf, annotated_csv, stats_file, snp_filter,
-                             indel_filter, sample, logger_annotation_process, call)
-            elif call == 'varscan2':
-                annotation_v(dict_cos, dict_clin, dict_g1000, vcf, annotated_csv, stats_file, snp_filter,
-                             indel_filter, sample, logger_annotation_process, call)
+            annotation_v(dict_cos, dict_clin, dict_g1000, vcf, annotated_csv, stats_file, snp_filter,
+                         indel_filter, sample, logger_annotation_process, call)
             # --add the annotation
             fill_table(annotated_csv, annotated_csv_add, ref_ens)
 

@@ -13,8 +13,8 @@ option_list <- list(
               help="Input depth file by posi to read"),
   make_option(c("-s", "--suffix_file"), type="character",
               help="Input target exon to read"),
-  #make_option(c("-g", "--group_name"), type="character",
-  #            help="set the group of the two input files,such as :before, after"),
+  make_option(c("-t", "--tiff"), type="character", default = FALSE,
+              help="set to plot the depth of based in regions [default %default]"),
   make_option(c("-o", "--output"), type="character", default="output",
               help="output directory or prefix [default %default]")
 )
@@ -23,7 +23,7 @@ opts <- parse_args(OptionParser(option_list=option_list))
 # 显示输入输出确认是否正确
 print(paste("The prefix file is ", opts$prefix_file, sep = ""))
 print(paste("The output file prefix is ", opts$output, sep = ""))
-
+dir.create(opts$output)
 
 # 3. 读取输入文件
 # 需要使用哪种方式，将其设置为TRUE，其它为FALSE即可
@@ -255,8 +255,19 @@ if (TRUE){
   dat$y1<-dat[,3]-dat$y1
   data_exon<-data.frame(chr=exon[,3],exon=exon[,4],text_x=rowSums(cbind(as.numeric(exon[,1]),as.numeric(exon[,2])))/2,
                         text_y=as.numeric(exon_statis_me[2:c(nrow(exon)+1),3]))
+  if(opts$tiff){
+  p = ggplot(dat, aes(x = posi)) + 
+      geom_line(aes(y = depth), colour = 'green') +
+      #geom_line(aes(y = exon), colour = 'red') +
+      geom_area(aes(y = pmin(y1, depth)), fill = 'red',alpha=0.45)+
+      geom_text(data=data_exon,aes(x=text_x,y=text_y,label=exon))+
+      facet_wrap(~chr,scale="free",ncol=4)+
+    xlab("Position of Bases") + ylab("Depth of Bases")+
+    theme_bw()
+  ggsave(file=paste(opts$output,"/",opts$output,".pdf",sep=""), plot=p, width = 30, height = 40,limitsize = FALSE)
 }
-  dir.create(opts$output)
+}
+
   exon_statis_me=cbind(rownames(exon_statis_me),exon_statis_me)
   write.table(exon_statis_me, file=paste(opts$output,"/",opts$output,".exon_statis.txt",sep=""),
               append = T, quote = F, sep="\t", eol = "\n", na = "NA", dec = ".", row.names = F, col.names = T)
