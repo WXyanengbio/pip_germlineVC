@@ -634,9 +634,9 @@ def read_vcf(variant_vcf, output, sample_name, calling, snp_filter, indel_filter
     elif calling == 'GATK':
         var = open(variant_vcf, 'r')
         # output = open(annotated_csv, 'w')
-        output.write('\t'.join(['Sample', 'CHR', 'POS', 'REF', 'ALT', 'FILTER', 'QUAL', 'DP', 'GT1', 'AD', 'VF', 'AC',
-                                'AN', 'Baseqranksum', 'ClippingRankSum', 'DS', 'END', 'ExcessHet', 'FS',
-                                'InbreedingCoeff', 'MLEAC', 'MLEAF', 'MQ', 'MQRankSum', 'QD', 'RAW_MQ',
+        output.write('\t'.join(['Sample', 'CHR', 'POS', 'REF', 'ALT', 'FILTER', 'QUAL', 'DP', 'AD', 'VF', 'AC',
+                                'AN', 'Baseqranksum', 'FS',
+                                'MLEAC', 'MLEAF', 'MQ', 'MQRankSum', 'QD',
                                 'ReadPosRankSum', 'SOR', 'GT', 'GQ', 'PL',
                                 'Gene_ID', 'RS_ID', 'CLNDN', 'HGVS', 'CLNSIG', 'COSMIC_ID',
                                 'Mutation_Description',
@@ -669,9 +669,9 @@ def read_vcf(variant_vcf, output, sample_name, calling, snp_filter, indel_filter
                         filter = comp_filter(indel_filter, value)
                     key = chrom + ',' + pos + ',' + change
                     key1 = chrom + ',' + pos + ',' + change1
-                    value = [sample_name, chrom, pos, ref, alt, filter, qual, dp, af, ad, vf, ac, an, baseqranksum,
-                             clippingranksum, ds, end, excesshet, fs, inbreedingcoeff,
-                             mleac, mleaf, mq, mqranksum, qd, rae_mq, readposranksum, sor, gt, gq, pl]
+                    value = [sample_name, chrom, pos, ref, alt, filter, qual, dp, ad, vf, ac, an, baseqranksum,
+                             fs,
+                             mleac, mleaf, mq, mqranksum, qd, readposranksum, sor, gt, gq, pl]
                     yield [key, key1, value]
     elif calling == 'samtools':
         variant_vcf = os.path.dirname(variant_vcf) + '/' + sample_name + '.raw_samtools.vcf'
@@ -823,7 +823,7 @@ def annotation_v(dict_cos, dict_clin, dict_g1000, variant_vcf, annotated_csv,
 
 
 # match genename,ENSG and ENST from ensembl.
-def fill_table(annotated_csv, annotated_csv_add, ref_ens):
+def fill_table(annotated_csv, annotated_csv_add, ref_ens, call):
     n2g = {}
     g2n = {}
     for line in open(ref_ens, 'r').readlines():
@@ -866,9 +866,22 @@ def fill_table(annotated_csv, annotated_csv_add, ref_ens):
     df.drop(labels=['Gene_Name1'], axis=1, inplace=True)
     df.drop(labels=['RS_ID'], axis=1, inplace=True)
     df.drop(labels=['RS_ID1'], axis=1, inplace=True)
-    df.insert(6, 'Gene_Name', name)
-    df.insert(7, 'Gene_ID', ensg)
-    df.insert(8, 'RS_ID', rs)
+    if call == 'GATK':
+        df.insert(24, 'Gene_Name', name)
+        df.insert(25, 'Gene_ID', ensg)
+        df.insert(26, 'RS_ID', rs)
+    elif call == 'samtools':
+        df.insert(31, 'Gene_Name', name)
+        df.insert(32, 'Gene_ID', ensg)
+        df.insert(33, 'RS_ID', rs)
+    elif call == 'strelka2':
+        df.insert(13, 'Gene_Name', name)
+        df.insert(14, 'Gene_ID', ensg)
+        df.insert(15, 'RS_ID', rs)
+    elif call == 'smcounter':
+        df.insert(15, 'Gene_Name', name)
+        df.insert(16, 'Gene_ID', ensg)
+        df.insert(17, 'RS_ID', rs)
     df.to_csv(annotated_csv, index=False, sep='\t')
     df[(False ^ df['FILTER'].isin(['PASS']))].to_csv(annotated_csv_add, index=False, sep='\t')
 
@@ -920,5 +933,5 @@ def annotationmain(cosmic, clinvar, g1000,
             annotation_v(dict_cos, dict_clin, dict_g1000, vcf, annotated_csv, stats_file, snp_filter,
                          indel_filter, sample, logger_annotation_process, call)
             # --add the annotation
-            fill_table(annotated_csv, annotated_csv_add, ref_ens)
+            fill_table(annotated_csv, annotated_csv_add, ref_ens, call)
 
