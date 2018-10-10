@@ -33,8 +33,8 @@ def umitool(samtools_dir, umitools_dir, filtered_sam, filtered_bam,
     command3 = samtools_dir + ' index ' + sorted_bam
     store_cluster_logs(logger_umi_process, 'null', 'Samtools build index of bam.')
     os.system(command3)
-    command4 = 'python3.6 {0}  dedup -I {1} --output-stats={2} -S {3} --edit-distance-threshold {4} ' \
-               '--paired True'.format(umitools_dir, sorted_bam, umitool_stats, filtered_bam, edit_dist)
+    # --paired 
+    command4 = 'python3.6 {0} -I {1} --output-bam -S {2} --edit-distance-threshold {3} --paired --group-out={4}'.format(umitools_dir, sorted_bam, filtered_bam, edit_dist, umitool_stats)
     store_cluster_logs(logger_umi_process, 'null', 'UMIs-tools cluster bam.')
     (status, output) = subprocess.getstatusoutput(command4)
     store_cluster_logs(logger_umi_process, 'null', output)
