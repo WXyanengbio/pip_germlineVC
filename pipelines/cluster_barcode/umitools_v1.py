@@ -5,6 +5,7 @@ __all__ = ['samtools_dir', 'umitools_dir', 'filtered_sam', 'filtered_bam', 'sort
 __version__ = '1.0'
 __author__ = 'Wang Xian'
 
+
 import os
 import sys
 import shlex
@@ -33,9 +34,11 @@ def umitool(samtools_dir, umitools_dir, filtered_sam, filtered_bam,
     command3 = samtools_dir + ' index ' + sorted_bam
     store_cluster_logs(logger_umi_process, 'null', 'Samtools build index of bam.')
     os.system(command3)
-    # --paired 
+    # --paired
+    # use group to get the modified umitools output
     # command4 = 'python3.6 {0} -I {1} --output-bam -S {2} --edit-distance-threshold {3} --paired --group-out={4}'.format(
     #    umitools_dir, sorted_bam, filtered_bam, edit_dist, umitool_stats)
+    # use dedup to get the modified umitools output(the network modified by Yang)
     command4 = 'python3.6 {0} -I {1} -S {2} --edit-distance-threshold {3} --paired --output-stats={4}'.format(
         umitools_dir, sorted_bam, filtered_bam, edit_dist, umitool_stats)
     store_cluster_logs(logger_umi_process, 'null', 'UMIs-tools cluster bam.')
