@@ -28,7 +28,7 @@ from pipelines.cluster_barcode.umitools_v1 import umitool
 from pipelines.reformat.reformat_sam import reformat_sam
 # import the variant calling funcitons
 from pipelines.variant_call.g_variantcall1_v1 import sam_to_bam, germline_variant_calling, strelka2_call, \
-    samtools_call, varsan2_call
+    samtools_call, varsan2_call, smcounter_call
 # import the annotation variant funcitons
 from pipelines.variant_call.annotation_gatk_hc_v1 import annotationmain, read_vcf_filter
 # import the statistics functions
@@ -85,7 +85,8 @@ def main_run_germline_variant_calling(path_sampleID_sub):
      min_mapq, max_soft_clip, max_dist, memory_size, snp_filter, indel_filter, ref_ens, bwa_dir, samtools_dir,
      umitools_dir, gatk_dir, ref_index_name, ref_fa_file, total_ref_fa_file, total_ref_fa_dict, known_sites,
      erc, db_cosmic, db_clinvar, db_g1000, test_level, exome_target, calling, tabix, bgzip, bcftools_dir,
-     varsan2_dir, strelka2_dir, total_ref_chrom_fa_file, datasets_dir) = path_sampleID_sub[1:40]
+     varsan2_dir, strelka2_dir, total_ref_chrom_fa_file, datasets_dir,smcounter, mtdepth, rpb, ncpu, minbq, minmq, hplen, mismatchthr,
+     mtdrop, maxmt, primerdist, bedtandemrepeats, bedrepeatmaskersubset, bedtools_dir, renew) = path_sampleID_sub[1:55]
     # check the output
     out_dir = output + '/' + sample
     if not os.path.exists(out_dir):
@@ -239,7 +240,8 @@ def main_run_germline_variant_calling(path_sampleID_sub):
     filtered_sam = out_dir + '/' + 'filtered' + '/' + sample + '_filtered.sam'
     filtered_bam = clustered_dir + '/' + sample + '_filtered.bam'
     sorted_bam = clustered_dir + '/' + sample + '_filtered_sorted.bam'
-    umitool_stats = clustered_dir + '/' + sample + '_deduplicated'
+    # umitool_stats = clustered_dir + '/' + sample + '_deduplicated'
+    umitool_stats = clustered_dir + '/' + sample + '_group.tsv'
     umis_sam = clustered_dir + '/' + sample + '_umis.sam'
     if tools in ['all', 'cluster']:
         print("please check the post algin subprocess result--filtered.sam!")
@@ -311,9 +313,8 @@ def main_run_germline_variant_calling(path_sampleID_sub):
         bam_to_variant, bqsr_bam_to_variant = sam_to_bam(gatk_dir, samtools_dir, vready_sam, sample,
                                                          germline_vc_dir, memory_size, exome_target_bed,
                                                          total_ref_fa_file, total_ref_fa_dict, known_sites,
-                                                         logger_germline_vc_process, logger_germline_vc_errors, bqsr)
+                                                         logger_germline_vc_process, logger_germline_vc_errors, bqsr, renew)
         callings = calling.split(',')
-        print(callings)
         # if calling == 'GATK':
         if 'GATK' in callings:
             germline_variant_calling(gatk_dir, bam_to_variant, sample, germline_vc_dir, memory_size,
@@ -322,7 +323,7 @@ def main_run_germline_variant_calling(path_sampleID_sub):
         # elif calling == 'strelka2':
         if 'strelka2' in callings:
             strelka2_call(strelka2_dir, bgzip, tabix, total_ref_chrom_fa_file, germline_vc_dir, sample, bam_to_variant,
-                          exome_target_bed, logger_germline_vc_process, logger_germline_vc_errors)
+                          exome_target_bed, logger_germline_vc_process, logger_germline_vc_errors, renew)
         # elif calling == 'samtools':
         if 'samtools' in callings:
             samtools_call(samtools_dir, bcftools_dir, bam_to_variant, sample, germline_vc_dir,
@@ -331,6 +332,15 @@ def main_run_germline_variant_calling(path_sampleID_sub):
         if 'varscan2' in callings:
             varsan2_call(samtools_dir, varsan2_dir, total_ref_fa_file, germline_vc_dir, sample,
                          bam_to_variant, logger_germline_vc_process, logger_germline_vc_errors)
+        if 'smcounter' in callings:
+            bam_to_variant = bam_to_variant.rstrip(".MarkDuplicates.RG.bam") + '.bam'
+            threshold = 0
+            logfile = germline_vc_dir + '/smcountlog'
+            smcounter_call(smcounter, germline_vc_dir + '/' + sample, bam_to_variant, exome_target_bed, mtdepth,
+                      rpb, ncpu, minbq, minmq, hplen, mismatchthr,
+                      mtdrop, maxmt, primerdist, threshold, total_ref_fa_file,
+                      bedtandemrepeats, bedrepeatmaskersubset, bedtools_dir, logfile,
+                      logger_germline_vc_process, logger_germline_vc_errors)
         store_germline_vc_logs(logger_germline_vc_process, 'null',
                                '--{0}--Germline variant calling is completed after {1} min.'.format(
                                    sample, ('%.2f' % ((time.time() - time_start)/60))))
@@ -523,6 +533,21 @@ if __name__ == '__main__':
     # varscan2
     if 'varsan2_dir' in file_yaml.keys():
         varsan2_dir = file_yaml['varsan2_dir']
+    #smcounter
+    smcounter = file_yaml['smcounter_path']
+    mtdepth = file_yaml['mt_depth']
+    rpb = file_yaml['rpb']
+    ncpu = file_yaml['n_cpu']
+    minbq = file_yaml['min_bq']
+    minmq = file_yaml['min_mq']
+    hplen = file_yaml['hp_len']
+    mismatchthr = file_yaml['mismatch']
+    mtdrop = file_yaml['mt_drop']
+    maxmt = file_yaml['max_mt']
+    primerdist = file_yaml['primerdist']
+    bedtandemrepeats = file_yaml['bed_tandem_repeats']
+    bedrepeatmaskersubset = file_yaml['bed_repeat_masker_subset']
+    bedtools_dir = file_yaml['bedtools_dir']
     # ref database for variant calling
     if 'total_ref_fa_dict' in file_yaml.keys():
         total_ref_fa_dict = datasets_dir + '/' + file_yaml['total_ref_fa_dict']
@@ -578,7 +603,9 @@ if __name__ == '__main__':
             memory_size = '-Xmx' + str(memory_size) + 'G '
         else:
             memory_size = '-Xmx4G '
-    # print(memory_size)
+    # if renew the sam to variant calling
+    renew = file_yaml['renew']
+    
     file_list1 = open(file_list, 'r')
     path_sampleID = []
     for line in file_list1.readlines():
@@ -589,7 +616,9 @@ if __name__ == '__main__':
                               ref_fa_file, total_ref_fa_file, total_ref_fa_dict, known_sites, erc, db_cosmic,
                               db_clinvar, db_g1000, tools, exome_target, calling, tabix, bgzip,
                               bcftools_dir, varsan2_dir,
-                              strelka2_dir, total_ref_chrom_fa_file, datasets_dir])
+                              strelka2_dir, total_ref_chrom_fa_file, datasets_dir, smcounter,
+                              mtdepth, rpb, ncpu, minbq, minmq, hplen, mismatchthr, mtdrop, 
+                              maxmt, primerdist, bedtandemrepeats, bedrepeatmaskersubset, bedtools_dir, renew])
     
     pool = multiprocessing.Pool(processes=threads)
     results = pool.map(main_run_germline_variant_calling, path_sampleID)
