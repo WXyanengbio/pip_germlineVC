@@ -1,10 +1,14 @@
 from __future__ import barry_as_FLUFL
 
-__all__ = ['sample', 'output ', 'memory_size', 'gatk_dir ', 'vready_sam', 'marked_bqsr_bam',
-           'ref_fa_file', 'ref_fa_dict', 'exome_target_bed', 'erc', 'samtools_dir', 'bcftools_dir', 'varsan2_dir',
+__all__ = ['sample', 'output ', 'memory_size',  'vready_sam', 'marked_bam',
+           'gatk_dir ', 'samtools_dir', 'bcftools_dir', 'varsan2_dir',
+           'ref_fa_file', 'ref_fa_dict', 'exome_target_bed', 'exon_interval', 'erc', 
            'known_sites', 'snp_filter', 'indel_filter',
            'strelka2_dir', 'bgzip', 'tabix', 'total_ref_chrom_fa_file',
-           'logger_g_variantcalling_process', 'logger_g_variantcalling_errors', 'bqsr']
+           'logger_g_variantcalling_process', 'logger_g_variantcalling_errors', 'bqsr',
+           'smcounter', 'mtdepth', 'rpb', 'ncpu', 'minbq', 'minmq', 'hplen', 'mismatchthr',
+           'mtdrop', 'maxmt', 'primerdist', 'threshold', 
+           'bedtandemrepeats', 'bedrepeatmaskersubset', 'bedtools_dir', 'logfile', 'renew']
 __version__ = '1.0'
 __author__ = 'Wang Xian'
 
@@ -47,16 +51,17 @@ def check_variant_exit(tmpvcf):
 
 def sam_to_bam(gatk_dir, samtools_dir, vready_sam, sample, output, memory_size, exome_target_bed,
                ref_fa_file, ref_fa_dict, known_sites,
-               logger_g_variantcalling_process, logger_g_variantcalling_errors, bqsr):
+               logger_g_variantcalling_process, logger_g_variantcalling_errors, bqsr, renew):
     # sam to bam By SortSam in GATK
     sortedsam = output + '/' + sample + '_sorted.sam'
-    command_count = '{0} --java-options "{1}" SortSam -SO coordinate -I {2} -O {3} --showHidden true'.format(
-        gatk_dir, memory_size, vready_sam, sortedsam)
-    time_start1 = time.time()
-    stdout, stderr = stdout_err(command_count)
-    store_germline_vc_logs(logger_g_variantcalling_process, 'null', stdout)
-    store_germline_vc_logs('null', logger_g_variantcalling_errors, stderr)
-    store_germline_vc_logs(logger_g_variantcalling_process, 'null',
+    if not os.path.exists(sortedsam) or renew == 'T':
+        command_count = '{0} --java-options "{1}" SortSam -SO coordinate -I {2} -O {3} --showHidden true'.format(
+            gatk_dir, memory_size, vready_sam, sortedsam)
+        time_start1 = time.time()
+        stdout, stderr = stdout_err(command_count)
+        store_germline_vc_logs(logger_g_variantcalling_process, 'null', stdout)
+        store_germline_vc_logs('null', logger_g_variantcalling_errors, stderr)
+        store_germline_vc_logs(logger_g_variantcalling_process, 'null',
                            "--{0}--GATK sort sam--cost {1} min.".format(
                                sample, str('%.3f' % ((time.time()-time_start1)/60))))
     # check the indexs of reference geonome fasta
@@ -72,7 +77,7 @@ def sam_to_bam(gatk_dir, samtools_dir, vready_sam, sample, output, memory_size, 
                                    sample, str('%.3f' % ((time.time()-time_start1)/60))))
     # --VCF.idx
     genome_idx = ref_fa_file + '.idx'
-    if not os.path.exists(genome_idx):
+    if not os.path.exists(genome_idx) or renew == 'T':
         command_count_r2 = samtools_dir + ' faidx ' + ref_fa_file
         time_start1 = time.time()
         os.system(command_count_r2)
@@ -83,21 +88,23 @@ def sam_to_bam(gatk_dir, samtools_dir, vready_sam, sample, output, memory_size, 
     # target bed to exon intervel list
     if os.path.basename(exome_target_bed) != 'all':
         exon_interval = output + '/' + 'target_interval.list'
-        command_count_r3 = '{0} --java-options "{1}" BedToIntervalList -I {2} -O {3} -SD {4} --showHidden true'.format(
-            gatk_dir, memory_size, exome_target_bed, exon_interval, ref_fa_dict)
-        time_start1 = time.time()
-        stdout, stderr = stdout_err(command_count_r3)
-        store_germline_vc_logs(logger_g_variantcalling_process, 'null', stdout)
-        store_germline_vc_logs('null', logger_g_variantcalling_errors, stderr)
-        store_germline_vc_logs(logger_g_variantcalling_process, 'null',
+        if not os.path.exists(exon_interval) or renew == 'T':
+            command_count_r3 = '{0} --java-options "{1}" BedToIntervalList -I {2} -O {3} -SD {4} --showHidden true'.format(
+              gatk_dir, memory_size, exome_target_bed, exon_interval, ref_fa_dict)
+            time_start1 = time.time()
+            stdout, stderr = stdout_err(command_count_r3)
+            store_germline_vc_logs(logger_g_variantcalling_process, 'null', stdout)
+            store_germline_vc_logs('null', logger_g_variantcalling_errors, stderr)
+            store_germline_vc_logs(logger_g_variantcalling_process, 'null',
                                '--{0}--GATK target bed to exon intervel list----cost {1} min.'.format(
                                    sample, str('%.3f' % ((time.time()-time_start1)/60))))
     # --sam to bem
     bam = output + '/' + sample + '_sorted.bam'
-    command_count_r4 = samtools_dir+' view -bS ' + sortedsam + ' > ' + bam
-    time_start1 = time.time()
-    os.system(command_count_r4)
-    store_germline_vc_logs(logger_g_variantcalling_process, 'null',
+    if not os.path.exists(sortedsam) or renew == 'T':
+        command_count_r4 = samtools_dir +' view -bS ' + sortedsam + ' > ' + bam
+        time_start1 = time.time()
+        os.system(command_count_r4)
+        store_germline_vc_logs(logger_g_variantcalling_process, 'null',
                            '--{0}--Samtools transform sam to bam----cost {1} min.'.format(
                                sample, str('%.3f' % ((time.time()-time_start1)/60))))
     # statistics of coverages
@@ -113,41 +120,45 @@ def sam_to_bam(gatk_dir, samtools_dir, vready_sam, sample, output, memory_size, 
                                '--{0}--GATK count the coverage----cost {1} min.'.format(
                                    sample, str('%.3f' % ((time.time()-time_start1)/60))))
     # build index of bam By samtools
-    command_count1 = '{0} index {1}'.format(samtools_dir, bam)
-    time_start1 = time.time()
-    os.system(command_count1)
-    store_germline_vc_logs(logger_g_variantcalling_process, 'null',
+    bamindex = output + '/' + sample + '_sorted.bam.bai'
+    if not os.path.exists(bamindex) or renew == 'T':
+        command_count1 = '{0} index {1}'.format(samtools_dir, bam)
+        time_start1 = time.time()
+        os.system(command_count1)
+        store_germline_vc_logs(logger_g_variantcalling_process, 'null',
                            '--{0}--Samtools build the index of bam----cost {1} min.'.format(
                                sample, str('%.3f' % ((time.time()-time_start1)/60))))
     # MarkDuplicates
     mark_bam = output + '/' + sample + '_sorted.MarkDuplicates.bam'
     bam_metrics = output + '/' + sample + '_sorted.MarkDuplicates.metrics'
-    command_count2 = ' '.join([gatk_dir,
+    if not os.path.exists(mark_bam) or renew == 'T':
+        command_count2 = ' '.join([gatk_dir,
                                '--java-options "{0}" MarkDuplicates'.format(memory_size),
                                '-I', bam, '-O', mark_bam, '-M', bam_metrics,
                                '--REMOVE_SEQUENCING_DUPLICATES false'])
-    time_start1 = time.time()
-    stdout, stderr = stdout_err(command_count2)
-    store_germline_vc_logs(logger_g_variantcalling_process, 'null', stdout)
-    store_germline_vc_logs('null', logger_g_variantcalling_errors, stderr)
-    store_germline_vc_logs(logger_g_variantcalling_process, 'null',
+        time_start1 = time.time()
+        stdout, stderr = stdout_err(command_count2)
+        store_germline_vc_logs(logger_g_variantcalling_process, 'null', stdout)
+        store_germline_vc_logs('null', logger_g_variantcalling_errors, stderr)
+        store_germline_vc_logs(logger_g_variantcalling_process, 'null',
                            "--{0}--GATK marks the duplicates----cost {1} min.".format(
                                sample, str('%.3f' % ((time.time()-time_start1)/60))))
     # add row 'RG' in head
     mark_rg_bam = output + '/' + sample + '_sorted.MarkDuplicates.RG.bam'
-    command_count3 = ' '.join([gatk_dir,
+    if not os.path.exists(mark_rg_bam) or renew == 'T':
+        command_count3 = ' '.join([gatk_dir,
                                '--java-options "{0}" AddOrReplaceReadGroups'.format(memory_size),
                                '-I', mark_bam, '-O', mark_rg_bam, '-LB lib1 -PL illumina -PU unit1',
                                '-SM', bam_metrics,
                                '--showHidden true'])
-    stdout, stderr = stdout_err(command_count3)
-    store_germline_vc_logs(logger_g_variantcalling_process, 'null', stdout)
-    store_germline_vc_logs('null', logger_g_variantcalling_errors, stderr)
+        stdout, stderr = stdout_err(command_count3)
+        store_germline_vc_logs(logger_g_variantcalling_process, 'null', stdout)
+        store_germline_vc_logs('null', logger_g_variantcalling_errors, stderr)
     # build the index of the marked_fixed bam
-    command_count4 = '{0} index {1}'.format(samtools_dir, mark_rg_bam)
-    time_start1 = time.time()
-    os.system(command_count4)
-    store_germline_vc_logs(logger_g_variantcalling_process, 'null',
+        command_count4 = '{0} index {1}'.format(samtools_dir, mark_rg_bam)
+        time_start1 = time.time()
+        os.system(command_count4)
+        store_germline_vc_logs(logger_g_variantcalling_process, 'null',
                            "--{0}--Samtools build the index of  marked bam----cost {1} min.".format(
                                sample, str('%.3f' % ((time.time()-time_start1)/60))))
     # Base(Quality Score) Recalibration
@@ -237,7 +248,7 @@ def sam_to_bam(gatk_dir, samtools_dir, vready_sam, sample, output, memory_size, 
     return mark_rg_bam, bgsr_bam
 
 
-def germline_variant_calling(gatk_dir, marked_BQSR_bam,
+def germline_variant_calling(gatk_dir, marked_bam,
                              sample, output,
                              memory_size, ref_fa_file,
                              exon_interval, erc,
@@ -247,14 +258,14 @@ def germline_variant_calling(gatk_dir, marked_BQSR_bam,
         command_count = ' '.join([gatk_dir,
                                   '--java-options "{0}" HaplotypeCaller'.format(memory_size),
                                   '-R', ref_fa_file,
-                                  '-I', marked_BQSR_bam,
+                                  '-I', marked_bam,
                                   '-L', exon_interval,
                                   '--minimum-mapping-quality 20 --showHidden true'])
     else:
         command_count = ' '.join([gatk_dir,
                                   '--java-options "{0}" HaplotypeCaller'.format(memory_size),
                                   '-R', ref_fa_file,
-                                  '-I', marked_BQSR_bam,
+                                  '-I', marked_bam,
                                   '--minimum-mapping-quality 20 --showHidden true'])
     store_germline_vc_logs(logger_g_variantcalling_process, 'null',
                            'Begin to confirm the options parameters of running HaplotypeCaller.')
@@ -327,19 +338,19 @@ def germline_variant_calling(gatk_dir, marked_BQSR_bam,
                                sample, str('%.3f' % ((time.time()-time_start1)/60))))
 
 
-def strelka2_call(strelka2_dir, bgzip, tabix, total_ref_chrom_fa_file, output, sample, bam,
-                  exome_target_bed, logger_g_variantcalling_process, logger_g_variantcalling_errors):
+def strelka2_call(strelka2_dir, bgzip, tabix, total_ref_chrom_fa_file, output, sample, marked_bam,
+                  exome_target_bed, logger_g_variantcalling_process, logger_g_variantcalling_errors, renew):
     os.system('cp {0} {1}'.format(exome_target_bed, output))
-    if not os.path.exists(output+'/'+os.path.basename(exome_target_bed)+'.gz'):
+    if not os.path.exists(output+'/'+os.path.basename(exome_target_bed)+'.gz') or renew == 'T':
         command1 = bgzip + ' ' + output+'/'+os.path.basename(exome_target_bed)
         store_germline_vc_logs(logger_g_variantcalling_process, 'null', command1)
         os.system(command1)
-    if not os.path.exists(output+'/'+os.path.basename(exome_target_bed)+'.gz.tbi'):
+    if not os.path.exists(output+'/'+os.path.basename(exome_target_bed)+'.gz.tbi') or renew == 'T':
         command2 = tabix + ' ' + output+'/' + os.path.basename(exome_target_bed) + '.gz'
         store_germline_vc_logs(logger_g_variantcalling_process, 'null', command2)
         os.system(command2)
     command3 = 'python {0} --bam {1} --callRegions {2} --exome --referenceFasta {3} --runDir {4}'.format(
-        strelka2_dir, bam, output+'/'+os.path.basename(exome_target_bed)+'.gz', total_ref_chrom_fa_file, output)
+        strelka2_dir, marked_bam, output+'/'+os.path.basename(exome_target_bed)+'.gz', total_ref_chrom_fa_file, output)
     stdout, stderr = stdout_err(command3)
     store_germline_vc_logs(logger_g_variantcalling_process, 'null', stdout)
     store_germline_vc_logs('null', logger_g_variantcalling_errors, stderr)
@@ -350,25 +361,53 @@ def strelka2_call(strelka2_dir, bgzip, tabix, total_ref_chrom_fa_file, output, s
     store_germline_vc_logs('null', logger_g_variantcalling_errors, stderr)
 
 
-def samtools_call(samtools_dir, bcftools_dir, bam, sample, output,
-                  total_ref_fa_file, logger_germline_vc_process, logger_germline_vc_errors):
+def samtools_call(samtools_dir, bcftools_dir, marked_bam, sample, output,
+                  ref_fa_file, logger_g_variantcalling_process, logger_g_variantcalling_errors):
     bcf = output + '/' + sample + '_raw.bcf'
-    command1 = bcftools_dir + ' mpileup -Ob -o ' + bcf + ' -f ' + total_ref_fa_file + ' ' + bam
+    command1 = bcftools_dir + ' mpileup -Ob -o ' + bcf + ' -f ' + ref_fa_file + ' ' + marked_bam
     os.system(command1)
     vcf = output + '/' + sample + '.raw_samtools.vcf'
     command2 = bcftools_dir + ' call -vmO v -o ' + vcf + ' ' + bcf
     os.system(command2)
 
 
-def varsan2_call(samtools_dir, varsan2_dir, total_ref_fa_file, outputdir,
-                 sample, bam, logger_germline_vc_process, logger_germline_vc_errors):
-    pileup = outputdir + '/' + sample + '.mpileup'
-    command1 = samtools_dir + ' mpileup -B -f ' + total_ref_fa_file + ' ' + bam + ' > ' + pileup
+def varsan2_call(samtools_dir, varsan2_dir, ref_fa_file, output,
+                 sample, marked_bam, logger_g_variantcalling_process, logger_g_variantcalling_errors):
+    pileup = output + '/' + sample + '.mpileup'
+    command1 = samtools_dir + ' mpileup -B -f ' + ref_fa_file + ' ' + marked_bam + ' > ' + pileup
     os.system(command1)
-    snp = outputdir + '/' + sample + '.raw_varscan2.snp.vcf'
-    indel = outputdir + '/' + sample + '.raw_varscan2.indel.vcf'
+    snp = output + '/' + sample + '.raw_varscan2.snp.vcf'
+    indel = output + '/' + sample + '.raw_varscan2.indel.vcf'
     command2 = 'java -jar ' + varsan2_dir + ' mpileup2snp ' + pileup + ' > ' + snp
     os.system(command2)
     # stdout, stderr = stdout_err(command2)
     command3 = 'java -jar ' + varsan2_dir + ' mpileup2indel ' + pileup + ' > ' + indel
     os.system(command3)
+
+def smcounter_call(smcounter, output, marked_bam, exome_target_bed, mtdepth, rpb, ncpu, minbq, minmq, hplen, mismatchthr,
+              mtdrop, maxmt, primerdist, threshold, ref_fa_file,
+              bedtandemrepeats, bedrepeatmaskersubset, bedtools_dir, logfile,
+              logger_g_variantcalling_process, logger_g_variantcalling_errors):
+    cmd = 'python2.7 ' + smcounter + \
+          ' --outPrefix ' + output + \
+          ' --bamFile ' + marked_bam + \
+          ' --bedTarget ' + exome_target_bed + \
+          ' --mtDepth ' + str(mtdepth) + \
+          ' --rpb ' + str(rpb) + \
+          ' --nCPU ' + str(ncpu) + \
+          ' --minBQ ' + str(minbq) + \
+          ' --minMQ ' + str(minmq) + \
+          ' --hpLen ' + str(hplen) + \
+          ' --mismatchThr ' + str(mismatchthr) + \
+          ' --mtDrop ' + str(mtdrop) + \
+          ' --maxMT ' + str(maxmt) + \
+          ' --primerDist ' + str(primerdist) + \
+          ' --threshold ' + str(threshold) + \
+          ' --refGenome ' + ref_fa_file + \
+          ' --bedTandemRepeats ' + bedtandemrepeats + \
+          ' --bedRepeatMaskerSubset ' + bedrepeatmaskersubset + \
+          ' --bedtoolsPath ' + bedtools_dir + \
+          ' --runPath ./ ' + \
+          ' --logFile ' + logfile
+    #if not os.path.exists(output + '.smCounter.cut.txt'):
+    os.system(cmd)
