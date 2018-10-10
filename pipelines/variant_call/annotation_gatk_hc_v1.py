@@ -527,6 +527,12 @@ def split_variant(line, calling):
             ref1 = ref
         return[[chrom, pos, ref1, alt, gt, cov, read1, read2, vf, pvalue, strandfilter,
                 r1f, r1r, r2f, r2r, pval]]
+    elif calling == 'smcounter':
+        # get the values of samtools vcf parameters form format and detail
+        chrom, pos, ref, alt, type, dp, mt, umt, pi, thr, vmt, vmf, vsm, filter= line.strip().split('\t')
+        if filter == 'LSM':
+            filter = 'PASS'
+        return[[chrom, pos, ref, alt, type, dp, mt, umt, pi, thr, vmt, vmf, vsm, filter]]
 
 
 def read_vcf(variant_vcf, output, sample_name, calling, snp_filter, indel_filter):
@@ -708,6 +714,45 @@ def read_vcf(variant_vcf, output, sample_name, calling, snp_filter, indel_filter
                     value = [sample_name, chrom, pos, ref, alt, filter, qual, dp, vf, indel, idv, imf, vdb, rpb,
                              mqb, bqb, mqsb, sgb, mq0f, icb, hob,
                              ac, an, dp4, mq, ref_f, ref_r, alt_f, alt_r, gt, pl]
+                    yield [key, key1, value]
+    elif calling == 'smcounter':
+        variant_vcf = os.path.dirname(variant_vcf) + '/' + sample_name + '.smCounter.cut.txt'
+        var = open(variant_vcf, 'r')
+        output.write('\t'.join(['Sample', 'CHR', 'POS', 'REF', 'ALT', 'FILTER', 'TYPE', 'DP', 'MT', 'UMT', 
+                                'PI', 'THR', 'VMT', 'VMF', 'VSM','Gene_ID',
+                                'RS_ID', 'CLNDN', 'HGVS', 'CLNSIG', 'COSMIC_ID', 'Mutation_Description',
+                                'Feature_ID', 'Gene_Name', 'Gene_CDS_Length', 'Mutation_Zygosity', 'LOH',
+                                'Mutation_Strand',
+                                'HGVS.c', 'HGVS.p', 'FATHMM_Prediction', 'FATHMM_Score', 'Mutation_Somatic_Status',
+                                'Gene_Name1', 'RS_ID1', 'EAS_AF', 'EUR_AF', 'AMR_AF', 'SAS_AF', 'AFR_AF\n']))
+        # print(variant_vcf)
+        for line in var:
+            if not line.startswith('CHROM'):
+                for spl in split_variant(line, calling):
+                    (chrom, pos, ref, alt, type, dp, mt, umt, pi, thr, vmt, vmf, vsm, filter) = spl
+                    chrom = chrom[3:]
+                    value = [chrom, pos, ref, alt, filter, type, dp, mt, umt, pi, thr, vmt, vmf, vsm]
+                    # print(value)
+                    if len(ref) == len(alt) and len(alt) == 1:
+                        change = ref + '>' + alt
+                        change1 = base_paired[ref] + '>' + base_paired[alt]
+                        if filter == 'PASS':
+                            filter = comp_filter_strelka(snp_filter, value)
+                    elif len(ref) > len(alt) and len(alt) == 1:
+                        change = 'del' + ref[1:]
+                        if filter == 'PASS':
+                            filter = comp_filter_strelka(indel_filter, value)
+                    elif len(ref) < len(alt) and len(ref) == 1:
+                        change = 'ins' + alt[1:]
+                        if filter == 'PASS':
+                            filter = comp_filter_strelka(indel_filter, value)
+                    else:
+                        change = 'del' + ref + 'ins' + alt
+                        if filter == 'PASS':
+                            filter = comp_filter_strelka(indel_filter, value)
+                    key = chrom + ',' + pos + ',' + change
+                    key1 = chrom + ',' + pos + ',' + change1
+                    value = [sample_name, chrom, pos, ref, alt, filter, type, dp, mt, umt, pi, thr, vmt, vmf, vsm]
                     yield [key, key1, value]
 
 
