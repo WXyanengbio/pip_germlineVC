@@ -109,7 +109,8 @@ def main_run_germline_variant_calling(path_sampleID_sub):
     read1 = source + '/' + sample + '_R1_001.fastq.gz'
     read2 = source + '/' + sample + '_R2_001.fastq.gz'
 
-    if tools in ['all', 'qc']:
+    #if tools in ['all', 'qc']:
+    if 'qc' in tools or 'all' in tools:
         print("Test QC module!\n")
     # qc_dir
         qc_dir = out_dir + '/' + 'QC'
@@ -144,7 +145,8 @@ def main_run_germline_variant_calling(path_sampleID_sub):
     trimmed1 = undetermined_dir + '/' + sample + '_R1_undetermined.fastq'
     trimmed2 = undetermined_dir + '/' + sample + '_R2_undetermined.fastq'
     stats_file = undetermined_dir + '/' + sample + '_basic_stats.txt'
-    if tools in ['all', 'trim']:
+    # if tools in ['all', 'trim']:
+    if 'trim' in tools or 'all' in tools:
         print("please check the QC subprocess result--the min read length!")
         print("The cutoff of the min read length is the default: {0}".format(min_read_len))
         print("Test trim module!\n\n\n")
@@ -177,7 +179,8 @@ def main_run_germline_variant_calling(path_sampleID_sub):
     trim_read2 = out_dir + '/' + 'undetermined' + '/' + sample + '_R2_undetermined.fastq'
 
     out_file = aligned_dir + '/' + sample + '_aligned.sam'
-    if tools in ['all', 'align']:
+    # if tools in ['all', 'align']:
+    if 'align' in tools or 'all' in tools:
         print("please check the Trim subprocess result--undetermined.fastq!")
         print("Test align module!\n")
         if not os.path.exists(aligned_dir):
@@ -209,7 +212,8 @@ def main_run_germline_variant_calling(path_sampleID_sub):
     primer_stats_file = filtered_dir + '/' + sample + '_primer_stats.csv'
     out_file2 = filtered_dir + '/' + sample + '_filtered.sam'
 
-    if tools in ['all', 'post_align']:
+    # if tools in ['all', 'post_align']:
+    if 'post_align' in tools or 'all' in tools:
         print("please check the Algin subprocess result--aligned.sam!")
         print("Test post align module!\n")
         if not os.path.exists(filtered_dir):
@@ -243,7 +247,8 @@ def main_run_germline_variant_calling(path_sampleID_sub):
     # umitool_stats = clustered_dir + '/' + sample + '_deduplicated'
     umitool_stats = clustered_dir + '/' + sample + '_group.tsv'
     umis_sam = clustered_dir + '/' + sample + '_umis.sam'
-    if tools in ['all', 'cluster']:
+    #if tools in ['all', 'cluster']:
+    if 'cluster' in tools or 'all' in tools:
         print("please check the post algin subprocess result--filtered.sam!")
         print("Test cluster module!\n")
         if not os.path.exists(clustered_dir):
@@ -269,7 +274,8 @@ def main_run_germline_variant_calling(path_sampleID_sub):
     reformated_dir = out_dir + '/' + 'reformated'
     alignment_sam = out_dir + '/' + 'clustered' + '/' + sample + '_umis.sam'
     output_sam = reformated_dir + '/' + sample + '_vcready.sam'
-    if tools in ['all', 'reformat']:
+    # if tools in ['all', 'reformat']:
+    if 'reformat' in tools or 'all' in tools:
         print("please check the cluster subprocess result--umis.sam!")
         print("Test reformat module!\n")
         if not os.path.exists(reformated_dir):
@@ -301,7 +307,8 @@ def main_run_germline_variant_calling(path_sampleID_sub):
         exon_interval = germline_vc_dir + '/' + 'target_interval.list'
     else:
         exon_interval = 'all'
-    if tools in ['all', 'variant_call']:
+    # if tools in ['all', 'variant_call']:
+    if 'variant_call' in tools or 'all' in tools:
         print("please check the reformat subprocess result--vcready.sam!")
         print("Test variant_call module!\n")
         if not os.path.exists(germline_vc_dir):
@@ -360,7 +367,8 @@ def main_run_germline_variant_calling(path_sampleID_sub):
     snp_vcf = germline_vc_dir + '/' + sample + '.raw_variants_SNP.vcf'
     indel_vcf = germline_vc_dir + '/' + sample + '.raw_variants_indel.vcf'
     # annotation
-    if tools in ['all', 'annotation']:
+    # if tools in ['all', 'annotation']:
+    if 'annotation' in tools or 'all' in tools:
         print("please check the variant_call subprocess result--VCF!")
         print("Test annotation module!\n")
     # Annotation dir
@@ -402,7 +410,8 @@ def main_run_germline_variant_calling(path_sampleID_sub):
     statistics_trim_dir = statistics_dir + '/' + 'trim_QC'
     if not os.path.exists(statistics_trim_dir):
         os.makedirs(statistics_trim_dir)
-    if tools in ['all', 'statis']:
+    # if tools in ['all', 'statis']:
+    if 'statis' in tools or 'all' in tools:
         print("please check the others subprocess results!")
         print("Test statistics module!\n")
         if tools == 'statis':
@@ -639,7 +648,8 @@ if __name__ == '__main__':
     store_pipeline_logs(logger_pipeline_process_run, 'null',
                         'All samples are completed after {0} min.\n'.format(
                             ('%.2f' % ((time.time() - time_start_run)/60))))
-    if tools in ['all', 'statis', 'summary']:
+    # if tools in ['all', 'statis', 'summary']:
+    if 'statis' in tools or 'all' in tools or 'summary' in tools:
         print("please check the others subprocess results!")
         print("Test statistics module!\n")
         # -merge the statis info
