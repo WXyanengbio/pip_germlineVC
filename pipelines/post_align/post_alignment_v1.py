@@ -198,13 +198,13 @@ def identify_gs_primers(samtools_dir, alignment_sam, primers_file, max_dist,
     
     sam = open(alignment_sam)
     ready = open(out_file, 'w')
-    off_sam = open(alignment_sam+'.off', 'w')
+    off_sam = open(alignment_sam + '.off', 'w')
     proper_pair = True
     sam_rows = sam.readlines()
     while True:
         if sam_rows[0][0] == '@':
-            sam_rows.remove(sam_rows[0])
             ready.write(sam_rows[0])
+            sam_rows.remove(sam_rows[0])
         else:
             break
     
