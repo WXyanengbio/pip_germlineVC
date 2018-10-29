@@ -19,7 +19,7 @@ from pipelines.log.log_v1 import store_pipeline_logs, store_trim_logs, store_fil
 # import the trim function
 from pipelines.trim.trim_reads_v1 import trim_read_pairs
 # import the align function
-from pipelines.align.align_reads_v1 import align_reads_bwa
+from pipelines.align.align_reads_v1 import align_reads_bwa, align_reads_bwa_based_all
 # import the post-align functions
 from pipelines.post_align.post_alignment_v1 import filter_alignment_samtools, identify_gs_primers
 # import the barcode clusering function
@@ -189,7 +189,7 @@ def main_run_germline_variant_calling(path_sampleID_sub):
         logger_bwa_errors = log_dir
         align_reads_bwa(bwa_dir, samtools_dir, ref_fa_file, ref_index_name,
                         exome_target_bed, total_ref_fa_file, trim_read1, trim_read2,
-                        out_file, num_threads, logger_bwa_process, logger_bwa_errors)
+                        out_file, num_threads, logger_bwa_process, logger_bwa_errors, renew)
         store_align_logs(logger_bwa_process, 'null',
                          "--{0}--Alignment of reads is completed after {1} min.".format(
                              sample, str('%.3f' % ((time.time()-time_start)/60))))

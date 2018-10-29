@@ -15,6 +15,13 @@ import subprocess
 sys.path.append("..")
 from pipelines.log.log_v1 import store_align_logs
 
+#put the info output to the log
+def stdout_err(command):
+    command_pope = shlex.split(command)
+    child = subprocess.Popen(command_pope, stdout=subprocess.PIPE,stderr=subprocess.PIPE,universal_newlines=True)
+    stdout, stderr = child.communicate()
+    child.wait()
+    return stdout, stderr
 
 # samtools faidx to get target reference fasta based on the bed
 def samtools_faidx(bed_dict, logger_bwa_process, logger_bwa_errors):
@@ -79,7 +86,7 @@ def align_reads_bwa(bwa_dir, samtools_dir,
                     ref_fa_file, ref_index_name, exome_target_bed, total_ref_fa_file,
                     read1, read2, 
                     out_file, num_threads, logger_bwa_process, 
-                    logger_bwa_errors): 
+                    logger_bwa_errors, renew): 
     if not os.path.isfile(read1):
         store_align_logs('null', logger_bwa_errors, read1 + ' does not exist!' + '\n')
         return 1
@@ -91,7 +98,9 @@ def align_reads_bwa(bwa_dir, samtools_dir,
         if not os.path.isfile(ref_index_name + extension):
             genome_indexed = False
             break
-    if not genome_indexed:
+    if not genome_indexed or renew == 'T':
+        command = '{0} faidx {1}'.format(samtools_dir, ref_fa_file_bed)
+        stdout, stderr = stdout_err(command)
         bwa_index_command = '{0} index -p {1} {2}'.format(
             bwa_dir, ref_index_name, ref_fa_file_bed)
         (status, output) = subprocess.getstatusoutput(bwa_index_command)
