@@ -36,12 +36,12 @@ def umitool(samtools_dir, umitools_dir, filtered_sam, filtered_bam,
     os.system(command3)
     # --paired
     # use group to get the modified umitools output
-    # command4 = 'python3.6 {0} -I {1} --output-bam -S {2} --edit-distance-threshold {3} --paired --group-out={4}'.format(
+    #command4 = 'python3.6 {0} -I {1} --output-bam -S {2} --edit-distance-threshold {3} --group-out={4}'.format(
     #    umitools_dir, sorted_bam, filtered_bam, edit_dist, umitool_stats)
     # use dedup to get the modified umitools output(the network modified by Yang)
-    command4 = 'python3.6 {0} -I {1} -S {2} --edit-distance-threshold {3} --paired --output-stats={4}'.format(
+    command4 = 'python3.6 {0} -I {1} -S {2} --edit-distance-threshold {3} --output-stats={4} --read-length'.format(
         umitools_dir, sorted_bam, filtered_bam, edit_dist, umitool_stats)
-    store_cluster_logs(logger_umi_process, 'null', 'UMIs-tools cluster bam.')
+    #store_cluster_logs(logger_umi_process, 'null', 'UMIs-tools cluster bam.')
     (status, output) = subprocess.getstatusoutput(command4)
     store_cluster_logs(logger_umi_process, 'null', output)
     command5 = samtools_dir + ' view -h ' + filtered_bam + ' -o ' + umis_sam
