@@ -52,18 +52,6 @@ def check_variant_exit(tmpvcf):
 def sam_to_bam(gatk_dir, samtools_dir, vready_sam, sample, output, memory_size, exome_target_bed,
                ref_fa_file, ref_fa_dict, known_sites,
                logger_g_variantcalling_process, logger_g_variantcalling_errors, bqsr, renew):
-    # sam to bam By SortSam in GATK
-    sortedsam = output + '/' + sample + '_sorted.sam'
-    if not os.path.exists(sortedsam) or renew == 'T':
-        command_count = '{0} --java-options "{1}" SortSam -SO coordinate -I {2} -O {3} --showHidden true'.format(
-            gatk_dir, memory_size, vready_sam, sortedsam)
-        time_start1 = time.time()
-        stdout, stderr = stdout_err(command_count)
-        store_germline_vc_logs(logger_g_variantcalling_process, 'null', stdout)
-        store_germline_vc_logs('null', logger_g_variantcalling_errors, stderr)
-        store_germline_vc_logs(logger_g_variantcalling_process, 'null',
-                           "--{0}--GATK sort sam--cost {1} min.".format(
-                               sample, str('%.3f' % ((time.time()-time_start1)/60))))
     # check the indexs of reference geonome fasta
     if not os.path.exists(ref_fa_dict):
         command_count_r1 = '{0} --java-options "{1}" CreateSequenceDictionary -R {2} -O {3} --showHidden true'.format(
@@ -98,20 +86,29 @@ def sam_to_bam(gatk_dir, samtools_dir, vready_sam, sample, output, memory_size, 
             store_germline_vc_logs(logger_g_variantcalling_process, 'null',
                                '--{0}--GATK target bed to exon intervel list----cost {1} min.'.format(
                                    sample, str('%.3f' % ((time.time()-time_start1)/60))))
-    # --sam to bem
-    bam = output + '/' + sample + '_sorted.bam'
-    if not os.path.exists(sortedsam) or renew == 'T':
-        command_count_r4 = samtools_dir +' view -bS ' + sortedsam + ' > ' + bam
+    # --sam to bam
+    bam = output + '/' + sample + '.bam'
+    if not os.path.exists(bam) or renew == 'T':
+        command_count_r4 = samtools_dir +' view -bS ' + vready_sam + ' > ' + bam
         time_start1 = time.time()
         os.system(command_count_r4)
         store_germline_vc_logs(logger_g_variantcalling_process, 'null',
                            '--{0}--Samtools transform sam to bam----cost {1} min.'.format(
                                sample, str('%.3f' % ((time.time()-time_start1)/60))))
+    # bam to sortedbam By SortSam in GATK
+    sortedbam = output + '/' + sample + '_sorted.bam'
+    if not os.path.exists(sortedbam) or renew == 'T':
+        command_count_r4 = samtools_dir +' sort ' + bam + ' > ' + sortedbam
+        time_start1 = time.time()
+        os.system(command_count_r4)
+        store_germline_vc_logs(logger_g_variantcalling_process, 'null',
+                           '--{0}--Samtools sort bam----cost {1} min.'.format(
+                               sample, str('%.3f' % ((time.time()-time_start1)/60))))
     # statistics of coverages
     if os.path.basename(exome_target_bed) != 'all':
         cov_file = output + '/' + sample + '.cov.txt'
         command_count_1 = '{0} CollectHsMetrics -BI {1} -TI {2} -I {3} -O {4} --showHidden true'.format(
-            gatk_dir, exon_interval, exon_interval, bam, cov_file)
+            gatk_dir, exon_interval, exon_interval, sortedbam, cov_file)
         time_start1 = time.time()
         stdout, stderr = stdout_err(command_count_1)
         store_germline_vc_logs(logger_g_variantcalling_process, 'null', stdout)
@@ -122,7 +119,7 @@ def sam_to_bam(gatk_dir, samtools_dir, vready_sam, sample, output, memory_size, 
     # build index of bam By samtools
     bamindex = output + '/' + sample + '_sorted.bam.bai'
     if not os.path.exists(bamindex) or renew == 'T':
-        command_count1 = '{0} index {1}'.format(samtools_dir, bam)
+        command_count1 = '{0} index {1}'.format(samtools_dir, sortedbam)
         time_start1 = time.time()
         os.system(command_count1)
         store_germline_vc_logs(logger_g_variantcalling_process, 'null',
@@ -134,7 +131,7 @@ def sam_to_bam(gatk_dir, samtools_dir, vready_sam, sample, output, memory_size, 
     if not os.path.exists(mark_bam) or renew == 'T':
         command_count2 = ' '.join([gatk_dir,
                                '--java-options "{0}" MarkDuplicates'.format(memory_size),
-                               '-I', bam, '-O', mark_bam, '-M', bam_metrics,
+                               '-I', sortedbam, '-O', mark_bam, '-M', bam_metrics,
                                '--REMOVE_SEQUENCING_DUPLICATES false'])
         time_start1 = time.time()
         stdout, stderr = stdout_err(command_count2)
