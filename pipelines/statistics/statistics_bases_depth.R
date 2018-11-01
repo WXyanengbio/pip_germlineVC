@@ -19,13 +19,7 @@ option_list <- list(
 )
 opts <- parse_args(OptionParser(option_list=option_list))
 
-# 显示输入输出确认是否正确
-#print(paste("The prefix file is ", opts$prefix_file, sep = ""))
-#print(paste("The output file prefix is ", opts$output, sep = ""))
 
-
-# 3. 读取输入文件
-# 需要使用哪种方式，将其设置为TRUE，其它为FALSE即可
 
 # 从文件中读取
 if (TRUE){

@@ -10,42 +10,31 @@ library(splines)
 option_list <- list(
   make_option(c("-p", "--prefix_file"), type="character", 
               help="Input table file to read"),
- # make_option(c("-s", "--suffix_file"), type="character",
- #             help="Input table file to read"),
-  #make_option(c("-g", "--group_name"), type="character",
-  #            help="set the group of the two input files,such as :before, after"),
   make_option(c("-o", "--output"), type="character", default="output",
               help="output directory or prefix [default %default]")
 )
 opts <- parse_args(OptionParser(option_list=option_list))
 
-# 显示输入输出确认是否正确
-#print(paste("The prefix file is ", opts$prefix_file, sep = ""))
-#print(paste("The output file prefix is ", opts$output, sep = ""))
-
-
-# 3. 读取输入文件
-# 需要使用哪种方式，将其设置为TRUE，其它为FALSE即可
 
 # 从文件中读取
 if (TRUE){
   dat = read.table(opts$prefix_file, sep="\t",stringsAsFactors = F)
- # suf_dat = read.table(opts$suffix_file, sep="\t")
-  #group_name= unlist(strsplit(opts$group_name,","))
-}
-#print(pre_dat)
-# 弹出窗口选择文件
-if (FALSE){
-  dat = read.table(file.choose(), header=T, row.names = NULL, sep="\t")
 }
 
-# 4. 统计与绘图
+# 统计与绘图
 if (TRUE){
   #print(dat[,2])
   type <- apply(dat,1,function(x){unlist(strsplit(unlist(strsplit(as.character(x),"--"))[3]," "))[1]})
+  uniquetype = unique(type)
   cost <- apply(dat,1,function(x){unlist(strsplit(unlist(strsplit(as.character(x),"after "))[2]," "))[1]})
-  dat1=data.frame(type,cost=as.numeric(cost))
+  lines=c()
+  for(i in 1:length(uniquetype)){
+  lines=c(lines, max(which(uniquetype[i]==type)))
+  }
+  print(lines)
+  dat1=data.frame(type=type[lines],cost=as.numeric(cost[lines]))
   dat1$type = factor(dat1$type,levels=as.character(dat1$type))
+  dat1[nrow(dat1),2]=sum(dat1[-c(nrow(dat1)),2])
   dat1$ratio = paste(round(100*dat1$cost/dat1[nrow(dat1),2],2),"%",sep="")
   #colnames(dat)<-c("depth","bases","totalbases","ratio")
   p<- ggplot(data=dat1, aes(x=type, y= cost)) +
