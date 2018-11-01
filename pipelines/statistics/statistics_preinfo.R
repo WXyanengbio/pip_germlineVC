@@ -1,13 +1,13 @@
 # 清理工作环境 clean enviroment object
-rm(list=ls()) 
+rm(list=ls())
 options(warn=-1)
+
 # 加载依赖关系 Load essential packages
 library(optparse)
 library(reshape2)
 library(ggplot2)
 library(splines)
-library(data.table)
-
+suppressMessages(library('data.table'))
 
 
 option_list <- list(

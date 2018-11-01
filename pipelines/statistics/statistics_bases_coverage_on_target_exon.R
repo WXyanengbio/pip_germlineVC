@@ -21,8 +21,8 @@ option_list <- list(
 opts <- parse_args(OptionParser(option_list=option_list))
 
 # 显示输入输出确认是否正确
-print(paste("The prefix file is ", opts$prefix_file, sep = ""))
-print(paste("The output file prefix is ", opts$output, sep = ""))
+#print(paste("The prefix file is ", opts$prefix_file, sep = ""))
+#print(paste("The output file prefix is ", opts$output, sep = ""))
 dir.create(opts$output)
 
 # 3. 读取输入文件
