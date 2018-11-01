@@ -491,7 +491,7 @@ def split_variant(line, calling):
         indel, idv, imf, dp, vdb, rpb, mqb, bqb, mqsb, sgb, mq0f, icb, hob, ac, an, dp4, mq = get_info(info, calling)
         gt, pl = detail.split(':')
         ref_f, ref_r, alt_f, alt_r = dp4.split(',')
-        vf = str(round((float(alt_f)+float(alt_r))/(float(alt_f)+float(alt_r)+float(ref_f)+float(ref_r)), 4))
+        vf = str(round((float(alt_f)+float(alt_r))/float(dp), 4))
         num_mt = len(alt.split(','))
         if num_mt == 1:
             return[[chrom, pos, ref, alt, qual, filter, vf, indel, idv, imf, dp, vdb, rpb, mqb, bqb, mqsb, sgb,
