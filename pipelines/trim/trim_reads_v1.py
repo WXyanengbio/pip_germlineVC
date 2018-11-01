@@ -18,6 +18,14 @@ sys.path.append("..")
 from pipelines.log.log_v1 import store_trim_logs
 
 
+base_paired = {'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C'}
+#--
+def reverse_complement(seq):
+    revseqlist = reversed(seq)
+    revcomseqlist = [base_paired[k] for k in revseqlist]
+    revcomseq = ''.join(revcomseqlist)
+    return revcomseq
+
 # put the info output to the log
 def stdout_err(command):
     command_pope = shlex.split(command)
@@ -51,7 +59,8 @@ def read_fq(file_name, logger_trim_process, logger_trim_errors):
 def trim_read1(r1, common_seq2, mt_barcode):
     l1 = len(r1[1].strip())
     r1_end3 = r1[1].strip()[(l1 - 23):]
-    trim_seq = common_seq2 + mt_barcode
+    #trim_seq = common_seq2 + mt_barcode
+    trim_seq = reverse_complement(common_seq2 + mt_barcode)
     for i in range(23):
         if r1_end3[i:] == trim_seq[0:(23 - i)]:
             break
@@ -78,7 +87,7 @@ def trim_read_pairs(read1, read2, trimmed1, trimmed2, min_read_len, common_seq1,
     num_error_reads2 = 0
     fout1 = open(trimmed1, 'w')
     fout2 = open(trimmed2, 'w')
-
+    fout_umi = open(trimmed2 + '.umi.fq', 'w')
     for r1, r2 in zip(read_fq(read1, logger_trim_process, logger_trim_errors),
                       read_fq(read2, logger_trim_process, logger_trim_errors)):
         num_total_reads += 1
@@ -109,8 +118,14 @@ def trim_read_pairs(read1, read2, trimmed1, trimmed2, min_read_len, common_seq1,
                     h2 = r2[0].split(' ')[0] + '_' + umi + ' ' + r2[0].split(' ')[1]
                     fout1.write(h1 + r1[1] + r1[2] + r1[3])
                     fout2.write(h2 + r2[1] + r2[2] + r2[3])
+                    #quanum = list(map(ord, qua))
+                    #quanum = [i - 33 for i in quanum]
+                    #quanumstr = '\t'.join(list(map(str, quanum)))
+                    #fout_umi.write(''.join([r1[0].split(' ')[0], '_', umi, '\t', umi, '\t', quanumstr, '\n']))
+                    fout_umi.write(h2 + umi + '\n' +  '+\n' + qua + '\n')
     fout1.close()
     fout2.close()
+    fout_umi.close()
     stats_out = open(stats_file, 'w')
     stats_out.write('Total number of reads == ' + str(num_total_reads) + '\n')
     stats_out.write('Number of short reads (either read_length <{0}bp) == {1}\n'.format(
