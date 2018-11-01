@@ -180,12 +180,12 @@ def qc_raw_reads(fastQC_dir, out_dir, sample, module, read1, read2,
 
 # -get the depth and coverage of the mapping result
 def statistics_depth_coverage(samtools_dir, sam_bam, out_dir, sample, module, exome_target_bed,
-                              logger_statistics_process, logger_statistics_errors):
+                              logger_statistics_process, logger_statistics_errors, renew):
     if not os.path.isfile(sam_bam):
         store_statistics_logs('null', logger_statistics_errors, sam_bam + " does not exist!\n")
     sorted_bam = sam_bam.rstrip('.sam') + '_sorted.bam'
     bam = sam_bam.rstrip('.sam') + '.bam'
-    if not os.path.isfile(sorted_bam):
+    if not os.path.isfile(sorted_bam) or renew is 'T':
         # print(sorted_bam + ' does not exist!')
         if not os.path.isfile(bam):
             bam = sam_bam.rstrip('.sam') + '.bam'
@@ -205,7 +205,7 @@ def statistics_depth_coverage(samtools_dir, sam_bam, out_dir, sample, module, ex
             store_statistics_logs(logger_statistics_process, 'null', stdout)
             store_statistics_logs('null', logger_statistics_errors, stderr)
     sorted_bam_index = sorted_bam + '.bai'
-    if not os.path.isfile(sorted_bam_index):
+    if not os.path.isfile(sorted_bam_index) or renew is 'T':
         # print(sorted_bam_index + ' does not exist!')
         command3 = samtools_dir + ' index ' + sorted_bam
         stdout, stderr = stdout_err(command3)
@@ -213,14 +213,14 @@ def statistics_depth_coverage(samtools_dir, sam_bam, out_dir, sample, module, ex
         store_statistics_logs('null', logger_statistics_errors, stderr)
     # -numbers of reads in target region
     num_reads_in_target_region = out_dir + '/' + sample + '_' + module + '_numbersReadsInTargetRegion.txt'
-    if not os.path.isfile(num_reads_in_target_region):
+    if not os.path.isfile(num_reads_in_target_region) or renew is 'T':
         command4 = samtools_dir + ' idxstats ' + sorted_bam + ' -o ' + num_reads_in_target_region
         stdout, stderr = stdout_err(command4)
         store_statistics_logs(logger_statistics_process, 'null', stdout)
         store_statistics_logs('null', logger_statistics_errors, stderr)
     # -coverage of reads in target region
     coverage_in_target_region = out_dir + '/' + sample + '_' + module + '_covergerInTargetRegion.txt'
-    if not os.path.isfile(coverage_in_target_region):
+    if not os.path.isfile(coverage_in_target_region) or renew is 'T':
         command5 = '{0} mpileup {1} | perl -alne \'{2}\' > {3}'.format(
             samtools_dir, sorted_bam,
             '{$pos{$F[0]}++;$depth{$F[0]}+=$F[3]} END{print "$_\t$pos{$_}\t$depth{$_}" foreach sort keys %pos}',
@@ -229,7 +229,7 @@ def statistics_depth_coverage(samtools_dir, sam_bam, out_dir, sample, module, ex
     # -
     # -statistics and plot of  the depth and coverage in target region
     statistics_plot = out_dir + '/' + sample + '_' + module + '_depth_coverageInTargetRegion'
-    if not os.path.isfile(statistics_plot):
+    if not os.path.isfile(statistics_plot) or renew is 'T':
         scriptdir = os.path.dirname(os.path.abspath(__file__))
         command6 = 'Rscript ' + scriptdir + '/statistics_depth_coverage.R' + ' -p ' \
                    + num_reads_in_target_region + ' -s ' + coverage_in_target_region\
@@ -240,12 +240,12 @@ def statistics_depth_coverage(samtools_dir, sam_bam, out_dir, sample, module, ex
     # - statistics of the depth of the baes in region
     if module == 'Align':
         bases_depth_in_region = out_dir + '/' + sample + '_' + module + '_basesDepthInRegion.txt'
-        if not os.path.isfile(bases_depth_in_region):
+        if not os.path.isfile(bases_depth_in_region) or renew is 'T':
             command7 = '{0} depth {1} > {2}'.format(samtools_dir, sorted_bam, bases_depth_in_region)
             os.system(command7)
     # depth of the bases in target region
     bases_depth_in_target_region = out_dir + '/' + sample + '_' + module + '_basesDepthInTargetRegion.txt'
-    if not os.path.isfile(bases_depth_in_target_region):
+    if not os.path.isfile(bases_depth_in_target_region) or renew is 'T':
         command7 = '{0} mpileup {1} | perl -alne \'{2}\' > {3}'.format(
             samtools_dir, sorted_bam, '{$depth{$F[3]}++}END{print "$_\t$depth{$_}" foreach sort{$a <=> $b}keys %depth}',
             bases_depth_in_target_region)
@@ -263,13 +263,13 @@ def statistics_depth_coverage(samtools_dir, sam_bam, out_dir, sample, module, ex
 
 # --get the mapping result
 def statistics_sam_bam(samtools_dir, sam_bam, out_dir, sample, module,
-                       logger_statistics_process, logger_statistics_errors):
+                       logger_statistics_process, logger_statistics_errors, renew):
     # -statistics of
     if not os.path.isfile(sam_bam):
         store_statistics_logs('null', logger_statistics_errors, sam_bam + " does not exist!\n")
         # print(sam_bam + ' does not exist!')
     align_statistics = out_dir + '/' + sample + '_' + module + '_statistics.txt'
-    if not os.path.isfile(align_statistics):
+    if not os.path.isfile(align_statistics) or renew is 'T':
         command = samtools_dir + ' stats ' + sam_bam + ' | grep ^SN | cut -f 2-3  > ' + align_statistics
         os.system(command)
     return align_statistics
