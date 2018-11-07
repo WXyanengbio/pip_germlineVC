@@ -18,7 +18,7 @@
 
    1.1.3 R
        R == 3.4.4
-       packages = ggplot2 , optagrse , reshape2 , splines
+       packages = ggplot2 , optparse , reshape2 , splines, data.table
        
    1.1.4 Git
        Git == 2.7.4
