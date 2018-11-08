@@ -71,6 +71,11 @@
    1.2.6 Strelka2
        wget -c https://github.com/Illumina/strelka/releases/download/v2.9.6/strelka-2.9.6.release_src.tar.bz2
        tar xvjf strelka-2.9.6.release_src.tar.bz2
+       cd strelka-2.9.6.release_src
+       mkdir build
+       cd build
+       ../configure --prefix=$PWD
+       make
        # bed文件需要gz格式和其tbi索引文件
        wget -c https://sourceforge.net/projects/samtools/files/tabix/tabix-0.2.6.tar.bz2
        tar xvjf  tabix-0.2.6.tar.bz2 
