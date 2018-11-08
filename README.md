@@ -12,14 +12,14 @@
        sudo make install
        #python3.6 -m pip install pkg --user
        packages == Cython, Pandas, Numpy, Scipy, pysam, bx-python, setuptools, future, regex, matplotlib, pyyaml, yaml
-      
+
    1.1.2 Java
        java == 1.8
 
    1.1.3 R
        R == 3.4.4
        packages = ggplot2 , optparse , reshape2 , splines, data.table
-       
+
    1.1.4 Git
        Git == 2.7.4
        git-lfs == 2.4.2
@@ -28,20 +28,21 @@
 
    1.1.5 CMAKE
        cmake > 2.8
-       
+
    1.1.6 GCC/G++
        GCC/G++ >= 4.8+
-   
+
    1.1.7 Boost
        Boost >= 1.55
-   
+
    1.1.8 zlib1g-dev
        sudo apt-get zlib1g-dev
 
-   1.2 Bioinformation softwares 
+   1.2 Bioinformation softwares
+
    1.2.1 BWA (alignment via Burrows-Wheeler transformation)
        bwa == 0.7.12-r1039
-       
+
    1.2.2 samtools
        samtools == 1.7
         autoheader     # If using configure, generate the header template...
@@ -52,19 +53,32 @@
 
    1.2.3 GATK
        GATK == 4.0.5
-       
+
    1.2.4 UMI-tools
        git clone https://github.com/CGATOxford/UMI-tools.git
        cd UMI-tools-master
        python3.6 setup.py install --user
-        
-   1.2.5 hay.py--benchmarking
-       git clone https://github.com/sequencing/hap.py
-       mkdir hap.py-build
-       cd hap.py-build
-       cmake ../hap.py
+
+   1.2.5 bcftools
+       git clone git://github.com/samtools/htslib.git 
+       git clone git://github.com/samtools/bcftools.git 
+       cd bcftools 
+       # The following is optional: 
+       autoheader && autoconf
+       ./configure --enable-libgsl --enable-perl-filters 
        make
 
+   1.2.6 Strelka2
+       wget -c https://github.com/Illumina/strelka/releases/download/v2.9.6/strelka-2.9.6.release_src.tar.bz2
+       tar xvjf strelka-2.9.6.release_src.tar.bz2
+       # bed文件需要gz格式和其tbi索引文件
+       wget -c https://sourceforge.net/projects/samtools/files/tabix/tabix-0.2.6.tar.bz2
+       tar xvjf  tabix-0.2.6.tar.bz2 
+
+   1.2.7 VarScan2
+       wget -c https://sourceforge.net/projects/varscan/files/VarScan.v2.3.9.jar
+
+   1.2.8 smCounter
 
 ## 2. Datasets
    2.1 reference genome
