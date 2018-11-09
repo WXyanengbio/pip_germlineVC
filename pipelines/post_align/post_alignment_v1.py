@@ -335,3 +335,4 @@ def identify_gs_primers(samtools_dir, alignment_sam, primers_file, max_dist,
                                primers[pr]['seq'], str(primers[pr]['on-target']),
                                str(ratio)])+'\n')
     st_out.close()
+    os.system('rm ' + alignment_sam)
