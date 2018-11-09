@@ -179,8 +179,11 @@ def qc_raw_reads(fastQC_dir, out_dir, sample, module, read1, read2,
 
 
 # -get the depth and coverage of the mapping result
-def statistics_depth_coverage(samtools_dir, sam_bam, out_dir, sample, module, exome_target_bed,
+def statistics_depth_coverage(samtools_dir, sam_bam, out_dir, sample, module, exome_target, exome_target_bed,
                               logger_statistics_process, logger_statistics_errors, renew):
+    # get the path
+    scriptdir = os.path.dirname(os.path.abspath(__file__))
+
     if not os.path.isfile(sam_bam):
         store_statistics_logs('null', logger_statistics_errors, sam_bam + " does not exist!\n")
     sorted_bam = sam_bam.rstrip('.sam') + '_sorted.bam'
@@ -199,11 +202,12 @@ def statistics_depth_coverage(samtools_dir, sam_bam, out_dir, sample, module, ex
             stdout, stderr = stdout_err(command2)
             store_statistics_logs(logger_statistics_process, 'null', stdout)
             store_statistics_logs('null', logger_statistics_errors, stderr)
-        else:
-            command2 = samtools_dir + ' sort ' + bam + ' -o ' + sorted_bam
-            stdout, stderr = stdout_err(command2)
-            store_statistics_logs(logger_statistics_process, 'null', stdout)
-            store_statistics_logs('null', logger_statistics_errors, stderr)
+            os.system('rm -rf {0}'.format(bam))
+        #else:
+        #    command2 = samtools_dir + ' sort ' + bam + ' -o ' + sorted_bam
+        #    stdout, stderr = stdout_err(command2)
+        #    store_statistics_logs(logger_statistics_process, 'null', stdout)
+        #    store_statistics_logs('null', logger_statistics_errors, stderr)
     sorted_bam_index = sorted_bam + '.bai'
     if not os.path.isfile(sorted_bam_index) or renew is 'T':
         # print(sorted_bam_index + ' does not exist!')
@@ -229,8 +233,8 @@ def statistics_depth_coverage(samtools_dir, sam_bam, out_dir, sample, module, ex
     # -
     # -statistics and plot of  the depth and coverage in target region
     statistics_plot = out_dir + '/' + sample + '_' + module + '_depth_coverageInTargetRegion'
-    if not os.path.isfile(statistics_plot) or renew is 'T':
-        scriptdir = os.path.dirname(os.path.abspath(__file__))
+    if not os.path.isfile(statistics_plot + '.pdf') or renew is 'T':
+        # scriptdir = os.path.dirname(os.path.abspath(__file__))
         command6 = 'Rscript ' + scriptdir + '/statistics_depth_coverage.R' + ' -p ' \
                    + num_reads_in_target_region + ' -s ' + coverage_in_target_region\
                    + ' -r ' + exome_target_bed + ' -o ' + statistics_plot
@@ -238,11 +242,17 @@ def statistics_depth_coverage(samtools_dir, sam_bam, out_dir, sample, module, ex
         store_statistics_logs(logger_statistics_process, 'null', stdout)
         store_statistics_logs('null', logger_statistics_errors, stderr)
     # - statistics of the depth of the baes in region
-    if module == 'Align':
+    if module == 'Fliter':
         bases_depth_in_region = out_dir + '/' + sample + '_' + module + '_basesDepthInRegion.txt'
         if not os.path.isfile(bases_depth_in_region) or renew is 'T':
             command7 = '{0} depth {1} > {2}'.format(samtools_dir, sorted_bam, bases_depth_in_region)
             os.system(command7)
+        # statistics of the depth of exon region
+        statistics_plot1 = out_dir + '/' + sample + '_' + module + '_basesDepthInTargetExon'
+        command7 = ''.join(['Rscript ',  scriptdir, '/statistics_bases_coverage_on_target_exon.R', ' -p ',
+                           bases_depth_in_region, ' -s ', exome_target, ' -t True ',
+                           ' -o ', statistics_plot1])
+        os.system(command7)
     # depth of the bases in target region
     bases_depth_in_target_region = out_dir + '/' + sample + '_' + module + '_basesDepthInTargetRegion.txt'
     if not os.path.isfile(bases_depth_in_target_region) or renew is 'T':
@@ -250,16 +260,28 @@ def statistics_depth_coverage(samtools_dir, sam_bam, out_dir, sample, module, ex
             samtools_dir, sorted_bam, '{$depth{$F[3]}++}END{print "$_\t$depth{$_}" foreach sort{$a <=> $b}keys %depth}',
             bases_depth_in_target_region)
         os.system(command7)
-    # -statistics and plot of  the depth and coverage in target region
-    statistics_plot1 = out_dir + '/' + sample + '_' + module + '_basesDepthInTargetRegion'
-    scriptdir = os.path.dirname(os.path.abspath(__file__))
+    # -statistics and plot of the depth and coverage in target region
+    statistics_plot2 = out_dir + '/' + sample + '_' + module + '_basesDepthInTargetRegion'
     command8 = 'Rscript ' + scriptdir + '/statistics_bases_depth.R' + ' -p ' \
-               + bases_depth_in_target_region + ' -o ' + statistics_plot1
+               + bases_depth_in_target_region + ' -o ' + statistics_plot2
     stdout, stderr = stdout_err(command8)
     store_statistics_logs(logger_statistics_process, 'null', stdout)
     store_statistics_logs('null', logger_statistics_errors, stderr)
     return sorted_bam
 
+
+
+# -get the depth and coverage of MT
+def statistics_mtdepth_coverage(germline_vc_dir, out_dir, sample, exome_target,
+                                logger_statistics_process, logger_statistics_errors):
+    scriptdir = os.path.dirname(os.path.abspath(__file__))
+    mtdp = germline_vc_dir + '/' + sample + ".smCounter.all.txt"
+    if os.path.isfile(mtdp):
+        statistics_plot1 = out_dir + '/' + sample + '_bases_MTDepthInTargetExon'
+        command7 = ''.join(['Rscript ',  scriptdir, '/statistics_basesMT_coverage_on_target_exon.R', ' -p ',
+                           mtdp, ' -s ', exome_target, ' -t True ',
+                           ' -o ', statistics_plot1])
+        os.system(command7)
 
 # --get the mapping result
 def statistics_sam_bam(samtools_dir, sam_bam, out_dir, sample, module,
@@ -301,9 +323,9 @@ def merge_statistics_sam_bam(logger_statistics_process, logger_statistics_errors
 
 
 def merge_statistics(sample_preinfo, exome_target, qc, trim_qc,
-                     trim_statis, filter_statis, primer_statis, umi_statis, align_base):
+                     trim_statis, filter_statis, primer_statis, umi_statis, align_base, mt_depth):
     scriptdir = os.path.dirname(os.path.abspath(__file__))
-    command = 'Rscript {0}/statistics_preinfo.R -q {1} -t {2} -c {3} -f {4} -p {5} ' \
-              '-u {6} -a {7} -e {8} -o {9}'.format(scriptdir, qc, trim_qc, trim_statis, filter_statis,
-                                                   primer_statis, umi_statis, align_base, exome_target, sample_preinfo)
+    command = 'Rscript {0}/statistics_preinfo_v1.R -q {1} -t {2} -c {3} -f {4} -p {5} ' \
+              '-u {6}  -a {7} -m {8} -e {9} -o {10}'.format(scriptdir, qc, trim_qc, trim_statis, filter_statis,
+                                                   primer_statis, umi_statis, align_base, mt_depth, exome_target, sample_preinfo)
     os.system(command)
