@@ -33,7 +33,7 @@ from pipelines.variant_call.g_variantcall1_v1 import sam_to_bam, germline_varian
 from pipelines.variant_call.annotation_gatk_hc_v1 import annotationmain, read_vcf_filter
 # import the statistics functions
 from pipelines.statistics.prestatistics_module_v1 import qc_raw_reads, statistics_depth_coverage, statistics_sam_bam,\
-    statistics_time, merge_statistics_sam_bam, merge_statistics
+    statistics_time, merge_statistics_sam_bam, merge_statistics, statistics_mtdepth_coverage
 # import the benchmaking funciton
 # from pipelines.benchmark.hap_benchmark import hap_py
 
@@ -244,8 +244,8 @@ def main_run_germline_variant_calling(path_sampleID_sub):
     filtered_sam = out_dir + '/' + 'filtered' + '/' + sample + '_filtered.sam'
     filtered_bam = clustered_dir + '/' + sample + '_filtered.bam'
     sorted_bam = clustered_dir + '/' + sample + '_filtered_sorted.bam'
-    # umitool_stats = clustered_dir + '/' + sample + '_deduplicated'
-    umitool_stats = clustered_dir + '/' + sample + '_group.tsv'
+    umitool_stats = clustered_dir + '/' + sample + '_deduplicated'
+    #umitool_stats = clustered_dir + '/' + sample + '_group.tsv'
     umis_sam = clustered_dir + '/' + sample + '_umis.sam'
     #if tools in ['all', 'cluster']:
     if 'cluster' in tools or 'all' in tools:
@@ -426,7 +426,7 @@ def main_run_germline_variant_calling(path_sampleID_sub):
     # statistics the align
         module1 = "Align"
         align_sorted_bam = statistics_depth_coverage(samtools_dir, out_file, statistics_dir, sample, module1,
-                                                     exome_target_bed, logger_statistics_process,
+                                                     exome_target, exome_target_bed, logger_statistics_process,
                                                      logger_statistics_errors, renew)
         align_statistics = statistics_sam_bam(samtools_dir, align_sorted_bam, statistics_dir, sample, module1,
                                               logger_statistics_process,
@@ -435,17 +435,20 @@ def main_run_germline_variant_calling(path_sampleID_sub):
     # cluster module would build the filter sorted bam, but it has been changed UMIs-tools
         module2 = "Fliter"
         filtered_sorted_bam = statistics_depth_coverage(samtools_dir, filtered_sam, statistics_dir, sample, module2,
-                                                        exome_target_bed, logger_statistics_process,
+                                                        exome_target, exome_target_bed, logger_statistics_process,
                                                         logger_statistics_errors, renew)
         fliter_statistics = statistics_sam_bam(samtools_dir, filtered_sorted_bam, statistics_dir, sample, module2,
                                                logger_statistics_process, logger_statistics_errors, renew)
     # statistics the umi-tools
         module3 = "Cluster_reformat"
         cr_sorted_bam = statistics_depth_coverage(samtools_dir, vready_sam, statistics_dir, sample, module3,
-                                                  exome_target_bed, logger_statistics_process,
+                                                  exome_target, exome_target_bed, logger_statistics_process,
                                                   logger_statistics_errors, renew)
         cr_statistics = statistics_sam_bam(samtools_dir, cr_sorted_bam, statistics_dir, sample, module3,
                                            logger_statistics_process, logger_statistics_errors, renew)
+    # staistics the bases MT depth
+        statistics_mtdepth_coverage(germline_vc_dir, statistics_dir, sample, exome_target,
+                                    logger_statistics_process, logger_statistics_errors)
     # merge the sorted bam
         merge_statistics_sam_bam(logger_statistics_process, logger_statistics_errors, statistics_dir, sample,
                                  ','.join([module1, module2, module3]), align_statistics,
@@ -636,7 +639,7 @@ if __name__ == '__main__':
     pool.join()
     
     # if tools in ['all', 'statis', 'summary']:
-    if 'statis' in tools or 'all' in tools or 'summary' in tools:
+    if 'all' in tools or 'summary' in tools:
         print("please check the others subprocess results!")
         print("Test statistics module!\n")
         # -merge the statis info
@@ -648,6 +651,7 @@ if __name__ == '__main__':
         primer_statis = out_dir + '/primer.basic_stats.txt'
         umi_statis = out_dir + '/umis.basic_stats.txt'
         align_base = out_dir + '/basesDepthInRegion.stats.txt'
+        mt_depth = out_dir + '/bases_MT_DepthInRegion.stats.txt'
         
         for line in range(0, len(path_sampleID)):
             parameters = path_sampleID[line][0]
@@ -659,7 +663,8 @@ if __name__ == '__main__':
                 os.system('ls {0}/{1}/filtered/*_align_stats.txt > {2}'.format(out_dir, sample, filter_statis))
                 os.system('ls {0}/{1}/filtered/*_primer_stats.csv > {2}'.format(out_dir, sample, primer_statis))
                 os.system('ls {0}/{1}/clustered/*_deduplicated_per_umi.tsv > {2}'.format(out_dir, sample, umi_statis))
-                os.system('ls {0}/{1}/statistics/*_Align_basesDepthInRegion.txt > {2}'.format(out_dir, sample, align_base))
+                os.system('ls {0}/{1}/statistics/*_Fliter_basesDepthInRegion.txt > {2}'.format(out_dir, sample, align_base))
+                os.system('ls {0}/{1}/statistics/*_MT_DepthInRegion.txt > {2}'.format(out_dir, sample, mt_depth))
             else:
                 os.system('ls {0}/{1}/QC/*QC.statistics.txt >> {2}'.format(out_dir, sample, qc))
                 os.system('ls {0}/{1}/statistics/trim_QC/*Trim.statistics.txt >> {2}'.format(out_dir, sample, trim_qc))
@@ -667,10 +672,11 @@ if __name__ == '__main__':
                 os.system('ls {0}/{1}/filtered/*_align_stats.txt >> {2}'.format(out_dir, sample, filter_statis))
                 os.system('ls {0}/{1}/filtered/*_primer_stats.csv >> {2}'.format(out_dir, sample, primer_statis))
                 os.system('ls {0}/{1}/clustered/*_deduplicated_per_umi.tsv >> {2}'.format(out_dir, sample, umi_statis))
-                os.system('ls {0}/{1}/statistics/*_Align_basesDepthInRegion.txt >> {2}'.format(out_dir, sample, align_base))
+                os.system('ls {0}/{1}/statistics/*_Fliter_basesDepthInRegion.txt > {2}'.format(out_dir, sample, align_base))
+                os.system('ls {0}/{1}/statistics/*_MT_DepthInRegion.txt >> {2}'.format(out_dir, sample, mt_depth))
         
         merge_statistics(sample_preinfo, exome_target, qc, trim_qc, trim_statis,
-                         filter_statis, primer_statis, umi_statis, align_base)
+                         filter_statis, primer_statis, umi_statis, align_base, mt_depth)
 
     print("All process done.")
     print("Return results: ")
