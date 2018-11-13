@@ -156,8 +156,9 @@ def getinfo(fastqc, logger_statistics_process, logger_statistics_errors):
 # --QC reads by fastQC
 def qc_raw_reads(fastQC_dir, out_dir, sample, module, read1, read2,
                  logger_statistics_process, logger_statistics_errors):
-    qc_read = out_dir + '/' + os.path.basename(read1).split(".fastq")[0] + '_fastqc.zip'
-    if not os.path.isfile(qc_read):
+    qc_read1 = out_dir + '/' + os.path.basename(read1).split(".fastq")[0] + '_fastqc.zip'
+    qc_read2 = out_dir + '/' + os.path.basename(read2).split(".fastq")[0] + '_fastqc.zip'
+    if not (os.path.isfile(qc_read1) and os.path.isfile(qc_read2)):
         command1 = '{0} {1} {2} -o {3}'.format(fastQC_dir, read1, read2, out_dir)
         stdout, stderr = stdout_err(command1)
         store_statistics_logs(logger_statistics_process, 'null', stdout)
@@ -203,11 +204,11 @@ def statistics_depth_coverage(samtools_dir, sam_bam, out_dir, sample, module, ex
             store_statistics_logs(logger_statistics_process, 'null', stdout)
             store_statistics_logs('null', logger_statistics_errors, stderr)
             os.system('rm -rf {0}'.format(bam))
-        #else:
-        #    command2 = samtools_dir + ' sort ' + bam + ' -o ' + sorted_bam
-        #    stdout, stderr = stdout_err(command2)
-        #    store_statistics_logs(logger_statistics_process, 'null', stdout)
-        #    store_statistics_logs('null', logger_statistics_errors, stderr)
+        else:
+            command2 = samtools_dir + ' sort ' + bam + ' -o ' + sorted_bam
+            stdout, stderr = stdout_err(command2)
+            store_statistics_logs(logger_statistics_process, 'null', stdout)
+            store_statistics_logs('null', logger_statistics_errors, stderr)
     sorted_bam_index = sorted_bam + '.bai'
     if not os.path.isfile(sorted_bam_index) or renew is 'T':
         # print(sorted_bam_index + ' does not exist!')
@@ -249,6 +250,8 @@ def statistics_depth_coverage(samtools_dir, sam_bam, out_dir, sample, module, ex
             os.system(command7)
         # statistics of the depth of exon region
         statistics_plot1 = out_dir + '/' + sample + '_' + module + '_basesDepthInTargetExon'
+        if os.path.isfile(statistics_plot1 + '.exon_statis.txt'):
+            os.system('rm {0}'.format(statistics_plot1 + '.exon_statis.txt'))
         command7 = ''.join(['Rscript ',  scriptdir, '/statistics_bases_coverage_on_target_exon.R', ' -p ',
                            bases_depth_in_region, ' -s ', exome_target, ' -t True ',
                            ' -o ', statistics_plot1])
@@ -278,6 +281,8 @@ def statistics_mtdepth_coverage(germline_vc_dir, out_dir, sample, exome_target,
     mtdp = germline_vc_dir + '/' + sample + ".smCounter.all.txt"
     if os.path.isfile(mtdp):
         statistics_plot1 = out_dir + '/' + sample + '_bases_MTDepthInTargetExon'
+        if os.path.isfile(statistics_plot1 + '.txt'):
+            os.system('rm {0}'.format(statistics_plot1 + '.txt'))
         command7 = ''.join(['Rscript ',  scriptdir, '/statistics_basesMT_coverage_on_target_exon.R', ' -p ',
                            mtdp, ' -s ', exome_target, ' -t True ',
                            ' -o ', statistics_plot1])
@@ -328,4 +333,7 @@ def merge_statistics(sample_preinfo, exome_target, qc, trim_qc,
     command = 'Rscript {0}/statistics_preinfo_v1.R -q {1} -t {2} -c {3} -f {4} -p {5} ' \
               '-u {6}  -a {7} -m {8} -e {9} -o {10}'.format(scriptdir, qc, trim_qc, trim_statis, filter_statis,
                                                    primer_statis, umi_statis, align_base, mt_depth, exome_target, sample_preinfo)
+    os.system('rm ' + sample_preinfo)
+    os.system('rm ' + sample_preinfo.rstrip(".txt") + "_primercount.txt")
+    os.system('rm ' + sample_preinfo.rstrip(".txt") + "_primer.txt")
     os.system(command)

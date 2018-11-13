@@ -384,7 +384,7 @@ def varsan2_call(samtools_dir, varsan2_dir, ref_fa_file, output,
 def smcounter_call(smcounter, output, marked_bam, exome_target_bed, mtdepth, rpb, ncpu, minbq, minmq, hplen, mismatchthr,
               mtdrop, maxmt, primerdist, threshold, ref_fa_file,
               bedtandemrepeats, bedrepeatmaskersubset, bedtools_dir, logfile,
-              logger_g_variantcalling_process, logger_g_variantcalling_errors):
+              logger_g_variantcalling_process, logger_g_variantcalling_errors, renew):
     cmd = 'python2.7 ' + smcounter + \
           ' --outPrefix ' + output + \
           ' --bamFile ' + marked_bam + \
@@ -406,5 +406,5 @@ def smcounter_call(smcounter, output, marked_bam, exome_target_bed, mtdepth, rpb
           ' --bedtoolsPath ' + bedtools_dir + \
           ' --runPath ./ ' + \
           ' --logFile ' + logfile
-    #if not os.path.exists(output + '.smCounter.cut.txt'):
-    os.system(cmd)
+    if not os.path.exists(output + '.smCounter.cut.txt') or renew is 'T':
+        os.system(cmd)

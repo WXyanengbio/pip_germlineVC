@@ -130,6 +130,10 @@ def trim_read_pairs(read1, read2, trimmed1, trimmed2, min_read_len, common_seq1,
                         h2 = r2[0].split(' ')[0] + '_' + umi + ' ' + r2[0].split(' ')[1]
                         fout1.write(h1 + r1[1] + r1[2] + r1[3])
                         fout2.write(h2 + r2[1] + r2[2] + r2[3])
+                    #h1 = r1[0].split(' ')[0] + '_' + umi + ' ' + r1[0].split(' ')[1]
+                    #h2 = r2[0].split(' ')[0] + '_' + umi + ' ' + r2[0].split(' ')[1]
+                    #fout1.write(h1 + r1[1] + r1[2] + r1[3])
+                    #fout2.write(h2 + r2[1] + r2[2] + r2[3])
                     #quanum = list(map(ord, qua))
                     #quanum = [i - 33 for i in quanum]
                     #quanumstr = '\t'.join(list(map(str, quanum)))

@@ -1,12 +1,12 @@
 # 清理工作环境 clean enviroment object
 rm(list=ls()) 
-
+options(warn=-1)
 # 加载依赖关系 Load essential packages
 library(optparse)
 library(reshape2)
 library(ggplot2)
 library(splines)
-library(data.table)
+suppressMessages(library('data.table'))
 
 option_list <- list(
   make_option(c("-p", "--prefix_file"), type="character", 
@@ -23,7 +23,7 @@ opts <- parse_args(OptionParser(option_list=option_list))
 # 显示输入输出确认是否正确
 #print(paste("The prefix file is ", opts$prefix_file, sep = ""))
 #print(paste("The output file prefix is ", opts$output, sep = ""))
-dir.create(opts$output)
+#dir.create(opts$output)
 
 # 3. 读取输入文件
 # 需要使用哪种方式，将其设置为TRUE，其它为FALSE即可
@@ -35,8 +35,8 @@ if (TRUE){
   suf_dat = read.csv(opts$suffix_file,header=F)
   #group_name= unlist(strsplit(opts$group_name,","))
 }
-print(head(suf_dat))
-print(head(suf_dat[1,2]))
+#print(head(suf_dat))
+#print(head(suf_dat[1,2]))
 #----
 fun_exon_statis<-function(posi,depth){
   len=length(posi)
@@ -183,16 +183,15 @@ if (TRUE){
   dat$y1=dat[,3]
   colnames(dat)<-c("chr","posi","depth","y1")
   exon_statis<-c()
+  exonlist<-c()
   for(i in 1:nrow(exon)){
-  #for(i in 1:2){
-  #print(which(as.character(exon[i,3])==as.character(dat[,1])))
   a= which(as.character(exon[i,3])==dat[,1])
   a_s=dat[a,2]
-  #print(exon[i,1:2])
   b=which(a_s>=as.numeric(exon[i,1]) & a_s<=as.numeric(exon[i,2]))
-  #print(dat$posi[a[b]])
-  #print(dat$depth[a[b]])
+  if(length(dat$depth[a[b]])>0){
   exon_statis<-rbind(exon_statis,fun_exon_statis(dat$posi[a[b]],dat$depth[a[b]]))
+   exonlist<-c(exonlist, i)
+  }
   dat$y1[a[b]]<-0
   }
   #----
@@ -212,16 +211,14 @@ if (TRUE){
   brca_statis_x500_ratio=round(brca_statis_x500/brca_statis_len,4)
   #---use the total mean
    exon_statis_me<-c()
+
   for(i in 1:nrow(exon)){
-  #for(i in 1:2){
-  #print(which(as.character(exon[i,3])==as.character(dat[,1])))
   a= which(as.character(exon[i,3])==dat[,1])
   a_s=dat[a,2]
-  #print(exon[i,1:2])
   b=which(a_s>=as.numeric(exon[i,1]) & a_s<=as.numeric(exon[i,2]))
-  #print(dat$posi[a[b]])
-  #print(dat$depth[a[b]])
+  if(length(dat$depth[a[b]])>0){
   exon_statis_me<-rbind(exon_statis_me,fun_exon_statis1(dat$posi[a[b]],dat$depth[a[b]],brca_statis_mean_depth))
+  }
   dat$y1[a[b]]<-0
   }
   #---
@@ -245,7 +242,7 @@ if (TRUE){
                       brca_statis_x200,brca_statis_x500,
                       x5_men,x10_men,x20_men,x30_men,x40_men,x50_men,
                       x60_men,x70_men,x80_men,x90_men,x100_men),exon_statis_me)
-  rownames(exon_statis_me)<-c('BRCA',exon[,4])
+  rownames(exon_statis_me)<-c('BRCA',as.character(exon[exonlist,4]))
   colnames(exon_statis_me)<-c("exon_lenth","total_depth","mean_depth","min_depth",
                            "max_depth","min_depth_posi_on_region","x50_ratio","x100_ratio","x200_ratio","x500_ratio",
                            "x50","x100","x200","x500","x5_men","x10_men","x20_men","x30_men","x40_men","x50_men",
@@ -253,6 +250,7 @@ if (TRUE){
   
   #----
   dat$y1<-dat[,3]-dat$y1
+  exon <- exon[exonlist, ]
   data_exon<-data.frame(chr=exon[,3],exon=exon[,4],text_x=rowSums(cbind(as.numeric(exon[,1]),as.numeric(exon[,2])))/2,
                         text_y=as.numeric(exon_statis_me[2:c(nrow(exon)+1),3]))
   if(opts$tiff){
@@ -264,10 +262,10 @@ if (TRUE){
       facet_wrap(~chr,scale="free",ncol=4)+
     xlab("Position of Bases") + ylab("Depth of Bases")+
     theme_bw()
-  ggsave(file=paste(opts$output,"/",opts$output,".pdf",sep=""), plot=p, width = 30, height = 40,limitsize = FALSE)
+  ggsave(file=paste(opts$output,".pdf",sep=""), plot=p, width = 30, height = 40,limitsize = FALSE)
+  # ggsave(file=paste(opts$output,"/",opts$output,".pdf",sep=""), plot=p, width = 30, height = 40,limitsize = FALSE)
 }
 }
 
   exon_statis_me=cbind(rownames(exon_statis_me),exon_statis_me)
-  write.table(exon_statis_me, file=paste(opts$output,"/",opts$output,".exon_statis.txt",sep=""),
-              append = T, quote = F, sep="\t", eol = "\n", na = "NA", dec = ".", row.names = F, col.names = T)
+  write.table(exon_statis_me, file=paste(opts$output,".exon_statis.txt",sep=""), append = T, quote = F, sep="\t", eol = "\n", na = "NA", dec = ".", row.names = F, col.names = T)

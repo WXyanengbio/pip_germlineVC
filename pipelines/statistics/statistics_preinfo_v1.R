@@ -343,7 +343,6 @@ if(TRUE){
     }
   }
   #---
-  #---
   dat$y1=dat[,3]
   colnames(dat)<-c("chr","posi","depth","y1")
   exon_statis<-c()
@@ -449,15 +448,16 @@ if(TRUE){
                                         "% of target bases >= mean BD"),
                          exon_statis_mes)
 }
+print(exon_statis_mes)
 #-----------
- files<-read.table(opts$mt_depth)
+files<-read.table(opts$mt_depth)
 if(TRUE){
  exon_statis_mtdp=c()
- names=c()
  for(i in 1:nrow(files)){
   file<-as.character(files[i,1])
-  dat = read.table(file,sep="\t")
-  exon_statis_mtdp<-cbind(exon_statis_mtdp, dat[,1])
+  dat = read.table(file, sep="\t")
+  dat =dat[-1,]
+  exon_statis_mtdp<-cbind(exon_statis_mtdp, as.character(dat[,2]))
 }
  exon_statis_mtdp<-cbind(Library_name=c("Mean MT depth per targeted base (mean MDB)",
                                          "Minimun MDB",
@@ -467,6 +467,7 @@ if(TRUE){
                                          "% of target bases with MT depth >= 20% of MDB",
                                          "% of target bases with MT depth >= 30% of MDB"),
                           exon_statis_mtdp)
+}
 colnames(qcs)<- colnames(qcs)
 colnames(trims)<-colnames(qcs)
 colnames(umis)<-colnames(qcs)

@@ -347,7 +347,7 @@ def main_run_germline_variant_calling(path_sampleID_sub):
                       rpb, ncpu, minbq, minmq, hplen, mismatchthr,
                       mtdrop, maxmt, primerdist, threshold, total_ref_fa_file,
                       bedtandemrepeats, bedrepeatmaskersubset, bedtools_dir, logfile,
-                      logger_germline_vc_process, logger_germline_vc_errors)
+                      logger_germline_vc_process, logger_germline_vc_errors, renew)
         store_germline_vc_logs(logger_germline_vc_process, 'null',
                                '--{0}--Germline variant calling is completed after {1} min.'.format(
                                    sample, ('%.2f' % ((time.time() - time_start)/60))))
@@ -664,7 +664,7 @@ if __name__ == '__main__':
                 os.system('ls {0}/{1}/filtered/*_primer_stats.csv > {2}'.format(out_dir, sample, primer_statis))
                 os.system('ls {0}/{1}/clustered/*_deduplicated_per_umi.tsv > {2}'.format(out_dir, sample, umi_statis))
                 os.system('ls {0}/{1}/statistics/*_Fliter_basesDepthInRegion.txt > {2}'.format(out_dir, sample, align_base))
-                os.system('ls {0}/{1}/statistics/*_MT_DepthInRegion.txt > {2}'.format(out_dir, sample, mt_depth))
+                os.system('ls {0}/{1}/statistics/*MTDepthInTargetExon.txt > {2}'.format(out_dir, sample, mt_depth))
             else:
                 os.system('ls {0}/{1}/QC/*QC.statistics.txt >> {2}'.format(out_dir, sample, qc))
                 os.system('ls {0}/{1}/statistics/trim_QC/*Trim.statistics.txt >> {2}'.format(out_dir, sample, trim_qc))
@@ -672,8 +672,8 @@ if __name__ == '__main__':
                 os.system('ls {0}/{1}/filtered/*_align_stats.txt >> {2}'.format(out_dir, sample, filter_statis))
                 os.system('ls {0}/{1}/filtered/*_primer_stats.csv >> {2}'.format(out_dir, sample, primer_statis))
                 os.system('ls {0}/{1}/clustered/*_deduplicated_per_umi.tsv >> {2}'.format(out_dir, sample, umi_statis))
-                os.system('ls {0}/{1}/statistics/*_Fliter_basesDepthInRegion.txt > {2}'.format(out_dir, sample, align_base))
-                os.system('ls {0}/{1}/statistics/*_MT_DepthInRegion.txt >> {2}'.format(out_dir, sample, mt_depth))
+                os.system('ls {0}/{1}/statistics/*_Fliter_basesDepthInRegion.txt >> {2}'.format(out_dir, sample, align_base))
+                os.system('ls {0}/{1}/statistics/*MTDepthInTargetExon.txt >> {2}'.format(out_dir, sample, mt_depth))
         
         merge_statistics(sample_preinfo, exome_target, qc, trim_qc, trim_statis,
                          filter_statis, primer_statis, umi_statis, align_base, mt_depth)
