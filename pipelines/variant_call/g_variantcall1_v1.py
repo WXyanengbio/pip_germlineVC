@@ -249,7 +249,6 @@ def germline_variant_calling(gatk_dir, marked_bam,
                              sample, output,
                              memory_size, ref_fa_file,
                              exon_interval, erc,
-                             snp_filter, indel_filter,
                              logger_g_variantcalling_process, logger_g_variantcalling_errors):
     if exon_interval != 'all':
         command_count = ' '.join([gatk_dir,
