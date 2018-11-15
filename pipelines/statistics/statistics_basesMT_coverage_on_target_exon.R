@@ -22,7 +22,6 @@ if (TRUE){
   dat = fread(opts$prefix_file)
   region = fread(opts$suffix_file)
 }
-  
   dat1 = dat[,c('POS','DP','MT','UMT','UFR')]
   a_s=dat1[,1]
   dat1$y1<- dat1$UMT
@@ -31,13 +30,13 @@ if (TRUE){
   for(i in 1:nrow(region)){ 
   b1=intersect(which(a_s>=as.numeric(region[i,2])), which(a_s<=as.numeric(region[i,3])))
   dat1$y1[b1]<-0
-  dat1$exon[b1] <- as.character(region[,1])[i]
+  dat1$exon[b1] <- as.character(region[i,1])
   }
   dat_exon1 = dat1[which(dat1$y1==0),]
   for(i in 1:nrow(dat_exon1)){
     if(is.na(dat_exon1[i,4])){
      dat_exon1[i,4]<-0
-  }
+    }
   }
   dat_exon1$y2 = dat_exon1$UMT-dat_exon1$y1
   meanMT = mean(dat_exon1$UMT)
