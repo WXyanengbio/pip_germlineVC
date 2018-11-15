@@ -438,7 +438,6 @@ def split_variant_strelka(line):
     elif num_mt is 3:
         return 0
 
-
 # split mutation. such as, ref:CTTT  alt:C,CT
 def split_variant(line, calling):
     if calling == 'GATK':
@@ -733,27 +732,28 @@ def read_vcf(variant_vcf, output, sample_name, calling, snp_filter, indel_filter
                     chrom = chrom[3:]
                     value = [chrom, pos, ref, alt, filter, type, dp, mt, umt, pi, thr, vmt, vmf, vsm]
                     # print(value)
-                    if len(ref) == len(alt) and len(alt) == 1:
-                        change = ref + '>' + alt
-                        change1 = base_paired[ref] + '>' + base_paired[alt]
-                        if filter == 'PASS':
-                            filter = comp_filter_strelka(snp_filter, value)
-                    elif len(ref) > len(alt) and len(alt) == 1:
-                        change = 'del' + ref[1:]
-                        if filter == 'PASS':
-                            filter = comp_filter_strelka(indel_filter, value)
-                    elif len(ref) < len(alt) and len(ref) == 1:
-                        change = 'ins' + alt[1:]
-                        if filter == 'PASS':
-                            filter = comp_filter_strelka(indel_filter, value)
-                    else:
-                        change = 'del' + ref + 'ins' + alt
-                        if filter == 'PASS':
-                            filter = comp_filter_strelka(indel_filter, value)
-                    key = chrom + ',' + pos + ',' + change
-                    key1 = chrom + ',' + pos + ',' + change1
-                    value = [sample_name, chrom, pos, ref, alt, filter, type, dp, mt, umt, pi, thr, vmt, vmf, vsm]
-                    yield [key, key1, value]
+                    if float(vmf) >=0.15:
+                        if len(ref) == len(alt) and len(alt) == 1:
+                            change = ref + '>' + alt
+                            change1 = base_paired[ref] + '>' + base_paired[alt]
+                            if filter == 'PASS':
+                                filter = comp_filter_strelka(snp_filter, value)
+                        elif len(ref) > len(alt) and len(alt) == 1:
+                            change = 'del' + ref[1:]
+                            if filter == 'PASS':
+                                filter = comp_filter_strelka(indel_filter, value)
+                        elif len(ref) < len(alt) and len(ref) == 1:
+                            change = 'ins' + alt[1:]
+                            if filter == 'PASS':
+                                filter = comp_filter_strelka(indel_filter, value)
+                        else:
+                            change = 'del' + ref + 'ins' + alt
+                            if filter == 'PASS':
+                                filter = comp_filter_strelka(indel_filter, value)
+                        key = chrom + ',' + pos + ',' + change
+                        key1 = chrom + ',' + pos + ',' + change1
+                        value = [sample_name, chrom, pos, ref, alt, filter, type, dp, mt, umt, pi, thr, vmt, vmf, vsm]
+                        yield [key, key1, value]
 
 
 def annotation_v(dict_cos, dict_clin, dict_g1000, variant_vcf, annotated_csv,
