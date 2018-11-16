@@ -742,8 +742,13 @@ def annotation_v(dict_cos, dict_clin, dict_g1000, variant_vcf, annotated_csv,
         hgvs = define_hgvs(value[1], value[2], value[3], value[4])
         ann = download_mysql_data(cursor, hgvs)
         # print(value)
-        if not ann:
-            annsub = [i for i in ann if not i else '-']
+        if ann:
+            annsub = []
+            for i in ann:
+                if i:
+                    annsub.append(i)
+                else:
+                    annsub.append("-")
             gene = ann[0]
             hgvs = ann[5]
             if ann[6] is not '-':
