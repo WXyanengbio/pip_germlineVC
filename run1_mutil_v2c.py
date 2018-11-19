@@ -386,17 +386,8 @@ def main_run_germline_variant_calling(path_sampleID_sub):
                 snp_filter = 'DP < 20'
                 indel_filter = 'DP < 20'
             snp_limit, indel_limit = read_vcf_filter(snp_filter, indel_filter)
-            annotationmain(db_cosmic, db_clinvar, db_g1000, ref_ens, raw_vcf, sample, snp_limit, indel_limit,
+            annotationmain(ref_ens, raw_vcf, sample, snp_limit, indel_limit,
                        annotation_dir, logger_annotation_process, logger_annotation_errors, callingsub)
-        # if 'GATK' in callings:
-        #    callingsub = 'GATK'
-        #    snp_filter = 'DP < 20 || QD < 2.0 || FS > 60.0 || MQ < 40.0 || SOR > 3.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0'
-        #    indel_filter = 'DP < 20 || QD < 2.0 || FS > 200 || ReadPosRankSum < -3.0 || SOR > 10.0'
-        #    snp_limit, indel_limit = read_vcf_filter(snp_filter, indel_filter)
-        #    annotationmain(db_cosmic, db_clinvar, db_g1000, ref_ens, snp_vcf, sample, snp_limit, indel_limit,
-        #                   annotation_dir, logger_annotation_process, logger_annotation_errors, callingsub)
-        #    annotationmain(db_cosmic, db_clinvar, db_g1000, ref_ens, indel_vcf, sample, snp_limit, indel_limit,
-        #                   annotation_dir, logger_annotation_process, logger_annotation_errors, callingsub)
 
         store_annotation_logs(logger_annotation_process, 'null',
                               '--{0}--Finish annotation variant  is completed after {1} min.'.format(

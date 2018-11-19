@@ -522,13 +522,11 @@ def read_vcf(variant_vcf, output, sample_name, calling, snp_filter, indel_filter
             var.append(line.strip())
         for line in indel.readlines():
             var.append(line.strip())
-
-        # output = open(annotated_csv, 'w')
         output.write('\t'.join(['Sample', 'CHR', 'POS', 'REF', 'ALT', 'FILTER', 'DP', 'VF', 'GT', 'DP_read1',
                                 'DP_read2', 'Fisherexact_var', 'read1F', 'read1R', 'read2F', 'read2R', 'StrandBias',
                                 "GENE", "HGVS", "RS", "CLNDN_CLINVAR ", "AF_1000GENOMES", "EAS_AF_1000GENOMES", "AF_EXAC" ,
                                 "AN_EAS_EXAC", "AF_CNGB ", "COSMID_COSMIC", "FEATURE_ID_COSMIC", "CDS",
-                                "HGVS_C,,HGVS_P", "MUTATION_DESCRIPTION_CLINVAR", "MUTATION_DESCRIPTION_COSMIC", 
+                                "HGVS_C","HGVS_P", "MUTATION_DESCRIPTION_CLINVAR", "MUTATION_DESCRIPTION_COSMIC", 
                                 "MUTATION_DESCRIPTION_EVS", "SIGNIFICANCE_CLINVAR", "SIGNIFICANCE_UTAHDB",
                                 "FATHMM_PREDICT_COSMIC", "FATHMM_SCORE_COSMIC", "POLYPHEN2_PREDICT_EVS", 'public\n']))
         # print(variant_vcf)
@@ -539,30 +537,27 @@ def read_vcf(variant_vcf, output, sample_name, calling, snp_filter, indel_filter
                      r1f, r1r, r2f, r2r, pval) = spl
                     chrom = chrom[3:]
                     value = [chrom, pos, ref, alt, filter, dp, vf]
-                    # print(value)
-                    # upper the ref and alt
                     ref = ref.upper()
                     alt = alt.upper()
-                    # ref = sub('[+-]', '', ref)
-                    # alt = sub('[+-]', '', ref)
-                    if len(ref) == len(alt) and len(alt) == 1:
-                        change = ref + '>' + alt
-                        change1 = base_paired[ref] + '>' + base_paired[alt]
-                        filter = comp_filter_varscan(snp_filter, value)
-                    elif (len(ref) > len(alt)) and (len(alt) == 1):
-                        change = 'del' + ref[1:]
-                        filter = comp_filter_varscan(indel_filter, value)
-                    elif len(ref) < len(alt) and len(ref) == 1:
-                        change = 'ins' + alt[1:]
-                        filter = comp_filter_varscan(indel_filter, value)
-                    else:
-                        change = 'del' + ref + 'ins' + alt
-                        filter = comp_filter_varscan(indel_filter, value)
-                    key = chrom + ',' + pos + ',' + change
-                    key1 = chrom + ',' + pos + ',' + change1
-                    value = [sample_name, chrom, pos, ref, alt, filter, dp, vf, gt, read1, read2, pvalue,
-                             r1f, r1r, r2f, r2r, pval]
-                    yield [key, key1, value]
+                    muts = mutnormalize(pos, ref, alt)
+                    for mut in muts:
+                        pos, ref, alt = mut[0:3]
+                        if len(ref) == len(alt) and len(alt) == 1:
+                            change = ref + '>' + alt
+                            change1 = base_paired[ref] + '>' + base_paired[alt]
+                            filter = comp_filter_varscan(snp_filter, value)
+                        elif (len(ref) > len(alt)) and (len(alt) == 1):
+                            change = 'del' + ref[1:]
+                            filter = comp_filter_varscan(indel_filter, value)
+                        elif len(ref) < len(alt) and len(ref) == 1:
+                            change = 'ins' + alt[1:]
+                            filter = comp_filter_varscan(indel_filter, value)
+                        else:
+                            change = 'del' + ref + 'ins' + alt
+                            filter = comp_filter_varscan(indel_filter, value)
+                        value = [sample_name, chrom, pos, ref, alt, filter, dp, vf, gt, read1, read2, pvalue,
+                                 r1f, r1r, r2f, r2r, pval]
+                        yield [value]
     elif calling == 'strelka2':
         variant_vcf = os.path.dirname(variant_vcf) + '/results/variants/variants.vcf.gz'
         if not os.path.isfile(os.path.dirname(variant_vcf) + '/variants.vcf'):
@@ -573,7 +568,7 @@ def read_vcf(variant_vcf, output, sample_name, calling, snp_filter, indel_filter
                                 'SB', 
                                 "GENE", "HGVS", "RS", "CLNDN_CLINVAR ", "AF_1000GENOMES", "EAS_AF_1000GENOMES", "AF_EXAC" ,
                                 "AN_EAS_EXAC", "AF_CNGB ", "COSMID_COSMIC", "FEATURE_ID_COSMIC", "CDS",
-                                "HGVS_C,,HGVS_P", "MUTATION_DESCRIPTION_CLINVAR", "MUTATION_DESCRIPTION_COSMIC", 
+                                "HGVS_C","HGVS_P", "MUTATION_DESCRIPTION_CLINVAR", "MUTATION_DESCRIPTION_COSMIC", 
                                 "MUTATION_DESCRIPTION_EVS", "SIGNIFICANCE_CLINVAR", "SIGNIFICANCE_UTAHDB",
                                 "FATHMM_PREDICT_COSMIC", "FATHMM_SCORE_COSMIC", "POLYPHEN2_PREDICT_EVS", 'public\n']))
         var = open(os.path.dirname(variant_vcf) + '/variants.vcf', 'r')
@@ -583,135 +578,15 @@ def read_vcf(variant_vcf, output, sample_name, calling, snp_filter, indel_filter
                     chrom, pos, ref, alt, filter, qual, dp, af, ad, vf, mq, sb = spl
                     chrom = chrom[3:]
                     value = [chrom, pos, ref, alt, filter, qual, dp, af, ad, vf, mq, sb]
-                    if len(ref) == len(alt) and len(alt) == 1:
-                        change = ref + '>' + alt
-                        change1 = base_paired[ref] + '>' + base_paired[alt]
-                        if filter == 'PASS':
-                            filter = comp_filter_strelka(snp_filter, value)
-                    elif (len(ref) > len(alt)) and (len(alt) == 1):
-                        change = 'del' + ref[1:]
-                        if filter == 'PASS':
-                            filter = comp_filter_strelka(indel_filter, value)
-                    elif len(ref) < len(alt) and len(ref) == 1:
-                        change = 'ins' + alt[1:]
-                        if filter == 'PASS':
-                            filter = comp_filter_strelka(indel_filter, value)
-                    else:
-                        change = 'del' + ref + 'ins' + alt
-                        if filter == 'PASS':
-                            filter = comp_filter_strelka(indel_filter, value)
-                    key = chrom + ',' + pos + ',' + change
-                    key1 = chrom + ',' + pos + ',' + change1
-                    value = [sample_name, chrom, pos, ref, alt, filter, qual, dp, af, ad, vf, mq, sb]
-                    yield [key, key1, value]
-    elif calling == 'GATK':
-        var = open(variant_vcf, 'r')
-        # output = open(annotated_csv, 'w')
-        output.write('\t'.join(['Sample', 'CHR', 'POS', 'REF', 'ALT', 'FILTER', 'QUAL', 'DP', 'AD', 'VF', 'AC',
-                                'AN', 'Baseqranksum', 'FS',
-                                'MLEAC', 'MLEAF', 'MQ', 'MQRankSum', 'QD',
-                                'ReadPosRankSum', 'SOR', 'GT', 'GQ', 'PL',
-                                "GENE", "HGVS", "RS", "CLNDN_CLINVAR ", "AF_1000GENOMES", "EAS_AF_1000GENOMES", "AF_EXAC" ,
-                                "AN_EAS_EXAC", "AF_CNGB ", "COSMID_COSMIC", "FEATURE_ID_COSMIC", "CDS",
-                                "HGVS_C,,HGVS_P", "MUTATION_DESCRIPTION_CLINVAR", "MUTATION_DESCRIPTION_COSMIC", 
-                                "MUTATION_DESCRIPTION_EVS", "SIGNIFICANCE_CLINVAR", "SIGNIFICANCE_UTAHDB",
-                                "FATHMM_PREDICT_COSMIC", "FATHMM_SCORE_COSMIC", "POLYPHEN2_PREDICT_EVS", 'public\n']))
-        for line in var:
-            if not line.startswith('#'):
-                for spl in split_variant(line, calling):
-                    (chrom, pos, ref, alt, filter, qual, dp, af, ad, vf, ac, an, baseqranksum, clippingranksum,
-                     ds, end, excesshet, fs, inbreedingcoeff,
-                     mleac, mleaf, mq, mqranksum, qd, rae_mq, readposranksum, sor, gt, gq, pl) = spl
-                    chrom = chrom[3:]
-                    value = [chrom, pos, ref, alt, filter, qual, dp, ad, vf, baseqranksum, fs, inbreedingcoeff,
-                             mq, mqranksum, qd, readposranksum, sor]
-                    # print(value)
-                    if len(ref) == len(alt) and len(alt) == 1:
-                        change = ref + '>' + alt
-                        change1 = base_paired[ref] + '>' + base_paired[alt]
-                        filter = comp_filter(snp_filter, value)
-                    elif len(ref) > len(alt) and len(alt) == 1:
-                        change = 'del' + ref[1:]
-                        filter = comp_filter(indel_filter, value)
-                    elif len(ref) < len(alt) and len(ref) == 1:
-                        change = 'ins' + alt[1:]
-                        filter = comp_filter(indel_filter, value)
-                    else:
-                        change = 'del' + ref + 'ins' + alt
-                        filter = comp_filter(indel_filter, value)
-                    key = chrom + ',' + pos + ',' + change
-                    key1 = chrom + ',' + pos + ',' + change1
-                    value = [sample_name, chrom, pos, ref, alt, filter, qual, dp, ad, vf, ac, an, baseqranksum,
-                             fs,
-                             mleac, mleaf, mq, mqranksum, qd, readposranksum, sor, gt, gq, pl]
-                    yield [key, key1, value]
-    elif calling == 'samtools':
-        variant_vcf = os.path.dirname(variant_vcf) + '/' + sample_name + '.raw_samtools.vcf'
-        var = open(variant_vcf, 'r')
-        output.write('\t'.join(['Sample', 'CHR', 'POS', 'REF', 'ALT', 'FILTER', 'QUAL', 'DP', 'VF', 'INDEL', 'IDV',
-                                'IMF', 'VDB', 'RPB', 'MQB', 'BQB', 'MQSB', 'SGB', 'MQ0F', 'ICB', 'HOB',
-                                'AC', 'AN', 'DP4', 'MQ', 'ref_f', 'ref_r', 'alt_f', 'alt_r', 'GT', 'PL',
-                                "GENE", "HGVS", "RS", "CLNDN_CLINVAR ", "AF_1000GENOMES", "EAS_AF_1000GENOMES", "AF_EXAC" ,
-                                "AN_EAS_EXAC", "AF_CNGB ", "COSMID_COSMIC", "FEATURE_ID_COSMIC", "CDS",
-                                "HGVS_C,,HGVS_P", "MUTATION_DESCRIPTION_CLINVAR", "MUTATION_DESCRIPTION_COSMIC", 
-                                "MUTATION_DESCRIPTION_EVS", "SIGNIFICANCE_CLINVAR", "SIGNIFICANCE_UTAHDB",
-                                "FATHMM_PREDICT_COSMIC", "FATHMM_SCORE_COSMIC", "POLYPHEN2_PREDICT_EVS", 'public\n']))
-        # print(variant_vcf)
-        for line in var:
-            if not line.startswith('#'):
-                for spl in split_variant(line, calling):
-                    (chrom, pos, ref, alt, qual, filter, vf, indel, idv, imf, dp, vdb, rpb, mqb, bqb, mqsb,
-                     sgb, mq0f, icb, hob, ac, an, dp4, mq, ref_f, ref_r, alt_f, alt_r, gt, pl) = spl
-                    chrom = chrom[3:]
-                    value = [chrom, pos, ref, alt, filter, qual, dp, vf, indel, idv, mq, vdb]
-                    # print(value)
-                    # upper the ref and alt
-                    ref = ref.upper()
-                    alt = alt.upper()
-                    if len(ref) == len(alt) and len(alt) == 1:
-                        change = ref + '>' + alt
-                        change1 = base_paired[ref] + '>' + base_paired[alt]
-                        filter = comp_filter_strelka(snp_filter, value)
-                    elif len(ref) > len(alt) and len(alt) == 1:
-                        change = 'del' + ref[1:]
-                        filter = comp_filter_strelka(indel_filter, value)
-                    elif len(ref) < len(alt) and len(ref) == 1:
-                        change = 'ins' + alt[1:]
-                        filter = comp_filter_strelka(indel_filter, value)
-                    else:
-                        change = 'del' + ref + 'ins' + alt
-                        filter = comp_filter_strelka(indel_filter, value)
-                    key = chrom + ',' + pos + ',' + change
-                    key1 = chrom + ',' + pos + ',' + change1
-                    value = [sample_name, chrom, pos, ref, alt, filter, qual, dp, vf, indel, idv, imf, vdb, rpb,
-                             mqb, bqb, mqsb, sgb, mq0f, icb, hob,
-                             ac, an, dp4, mq, ref_f, ref_r, alt_f, alt_r, gt, pl]
-                    yield [key, key1, value]
-    elif calling == 'smcounter':
-        variant_vcf = os.path.dirname(variant_vcf) + '/' + sample_name + '.smCounter.cut.txt'
-        var = open(variant_vcf, 'r')
-        output.write('\t'.join(['Sample', 'CHR', 'POS', 'REF', 'ALT', 'FILTER', 'TYPE', 'DP', 'MT', 'UMT', 
-                                'PI', 'THR', 'VMT', 'VMF', 'VSM',
-                                "GENE", "HGVS", "RS", "CLNDN_CLINVAR ", "AF_1000GENOMES", "EAS_AF_1000GENOMES", "AF_EXAC" ,
-                                "AN_EAS_EXAC", "AF_CNGB ", "COSMID_COSMIC", "FEATURE_ID_COSMIC", "CDS",
-                                "HGVS_C,,HGVS_P", "MUTATION_DESCRIPTION_CLINVAR", "MUTATION_DESCRIPTION_COSMIC", 
-                                "MUTATION_DESCRIPTION_EVS", "SIGNIFICANCE_CLINVAR", "SIGNIFICANCE_UTAHDB",
-                                "FATHMM_PREDICT_COSMIC", "FATHMM_SCORE_COSMIC", "POLYPHEN2_PREDICT_EVS", 'public\n']))
-        # print(variant_vcf)
-        for line in var:
-            if not line.startswith('CHROM'):
-                for spl in split_variant(line, calling):
-                    (chrom, pos, ref, alt, type, dp, mt, umt, pi, thr, vmt, vmf, vsm, filter) = spl
-                    chrom = chrom[3:]
-                    value = [chrom, pos, ref, alt, filter, type, dp, mt, umt, pi, thr, vmt, vmf, vsm]
-                    # print(value)
-                    if float(vmf) >=0.15:
+                    muts = mutnormalize(pos, ref, alt)
+                    for mut in muts:
+                        pos, ref, alt = mut[0:3]
                         if len(ref) == len(alt) and len(alt) == 1:
                             change = ref + '>' + alt
                             change1 = base_paired[ref] + '>' + base_paired[alt]
                             if filter == 'PASS':
                                 filter = comp_filter_strelka(snp_filter, value)
-                        elif len(ref) > len(alt) and len(alt) == 1:
+                        elif (len(ref) > len(alt)) and (len(alt) == 1):
                             change = 'del' + ref[1:]
                             if filter == 'PASS':
                                 filter = comp_filter_strelka(indel_filter, value)
@@ -723,25 +598,143 @@ def read_vcf(variant_vcf, output, sample_name, calling, snp_filter, indel_filter
                             change = 'del' + ref + 'ins' + alt
                             if filter == 'PASS':
                                 filter = comp_filter_strelka(indel_filter, value)
-                        key = chrom + ',' + pos + ',' + change
-                        key1 = chrom + ',' + pos + ',' + change1
-                        value = [sample_name, chrom, pos, ref, alt, filter, type, dp, mt, umt, pi, thr, vmt, vmf, vsm]
-                        yield [key, key1, value]
+                        value = [sample_name, chrom, pos, ref, alt, filter, qual, dp, af, ad, vf, mq, sb]
+                        yield [value]
+    elif calling == 'GATK':
+        var = open(variant_vcf, 'r')
+        # output = open(annotated_csv, 'w')
+        output.write('\t'.join(['Sample', 'CHR', 'POS', 'REF', 'ALT', 'FILTER', 'QUAL', 'DP', 'AD', 'VF', 'AC',
+                                'AN', 'Baseqranksum', 'FS',
+                                'MLEAC', 'MLEAF', 'MQ', 'MQRankSum', 'QD',
+                                'ReadPosRankSum', 'SOR', 'GT', 'GQ', 'PL',
+                                "GENE", "HGVS", "RS", "CLNDN_CLINVAR ", "AF_1000GENOMES", "EAS_AF_1000GENOMES", "AF_EXAC" ,
+                                "AN_EAS_EXAC", "AF_CNGB ", "COSMID_COSMIC", "FEATURE_ID_COSMIC", "CDS",
+                                "HGVS_C","HGVS_P", "MUTATION_DESCRIPTION_CLINVAR", "MUTATION_DESCRIPTION_COSMIC", 
+                                "MUTATION_DESCRIPTION_EVS", "SIGNIFICANCE_CLINVAR", "SIGNIFICANCE_UTAHDB",
+                                "FATHMM_PREDICT_COSMIC", "FATHMM_SCORE_COSMIC", "POLYPHEN2_PREDICT_EVS", 'public\n']))
+        for line in var:
+            if not line.startswith('#'):
+                for spl in split_variant(line, calling):
+                    (chrom, pos, ref, alt, filter, qual, dp, af, ad, vf, ac, an, baseqranksum, clippingranksum,
+                     ds, end, excesshet, fs, inbreedingcoeff,
+                     mleac, mleaf, mq, mqranksum, qd, rae_mq, readposranksum, sor, gt, gq, pl) = spl
+                    chrom = chrom[3:]
+                    value = [chrom, pos, ref, alt, filter, qual, dp, ad, vf, baseqranksum, fs, inbreedingcoeff,
+                             mq, mqranksum, qd, readposranksum, sor]
+                    muts = mutnormalize(pos, ref, alt)
+                    for mut in muts:
+                        pos, ref, alt = mut[0:3]
+                        if len(ref) == len(alt) and len(alt) == 1:
+                            change = ref + '>' + alt
+                            change1 = base_paired[ref] + '>' + base_paired[alt]
+                            filter = comp_filter(snp_filter, value)
+                        elif len(ref) > len(alt) and len(alt) == 1:
+                            change = 'del' + ref[1:]
+                            filter = comp_filter(indel_filter, value)
+                        elif len(ref) < len(alt) and len(ref) == 1:
+                            change = 'ins' + alt[1:]
+                            filter = comp_filter(indel_filter, value)
+                        else:
+                            change = 'del' + ref + 'ins' + alt
+                            filter = comp_filter(indel_filter, value)
+                        value = [sample_name, chrom, pos, ref, alt, filter, qual, dp, ad, vf, 
+                                 ac, an, baseqranksum, fs,
+                                 mleac, mleaf, mq, mqranksum, qd, readposranksum, sor, gt, gq, pl]
+                        yield [value]
+    elif calling == 'samtools':
+        variant_vcf = os.path.dirname(variant_vcf) + '/' + sample_name + '.raw_samtools.vcf'
+        var = open(variant_vcf, 'r')
+        output.write('\t'.join(['Sample', 'CHR', 'POS', 'REF', 'ALT', 'FILTER', 'QUAL', 'DP', 'VF', 'INDEL', 'IDV',
+                                'IMF', 'VDB', 'RPB', 'MQB', 'BQB', 'MQSB', 'SGB', 'MQ0F', 'ICB', 'HOB',
+                                'AC', 'AN', 'DP4', 'MQ', 'ref_f', 'ref_r', 'alt_f', 'alt_r', 'GT', 'PL',
+                                "GENE", "HGVS", "RS", "CLNDN_CLINVAR ", "AF_1000GENOMES", "EAS_AF_1000GENOMES", "AF_EXAC" ,
+                                "AN_EAS_EXAC", "AF_CNGB ", "COSMID_COSMIC", "FEATURE_ID_COSMIC", "CDS",
+                                "HGVS_C","HGVS_P", "MUTATION_DESCRIPTION_CLINVAR", "MUTATION_DESCRIPTION_COSMIC", 
+                                "MUTATION_DESCRIPTION_EVS", "SIGNIFICANCE_CLINVAR", "SIGNIFICANCE_UTAHDB",
+                                "FATHMM_PREDICT_COSMIC", "FATHMM_SCORE_COSMIC", "POLYPHEN2_PREDICT_EVS", 'public\n']))
+        for line in var:
+            if not line.startswith('#'):
+                for spl in split_variant(line, calling):
+                    (chrom, pos, ref, alt, qual, filter, vf, indel, idv, imf, dp, vdb, rpb, mqb, bqb, mqsb,
+                     sgb, mq0f, icb, hob, ac, an, dp4, mq, ref_f, ref_r, alt_f, alt_r, gt, pl) = spl
+                    chrom = chrom[3:]
+                    value = [chrom, pos, ref, alt, filter, qual, dp, vf, indel, idv, mq, vdb]
+                    ref = ref.upper()
+                    alt = alt.upper()
+                    muts = mutnormalize(pos, ref, alt)
+                    for mut in muts:
+                        pos, ref, alt = mut[0:3]
+                        if len(ref) == len(alt) and len(alt) == 1:
+                            change = ref + '>' + alt
+                            change1 = base_paired[ref] + '>' + base_paired[alt]
+                            filter = comp_filter_strelka(snp_filter, value)
+                        elif len(ref) > len(alt) and len(alt) == 1:
+                            change = 'del' + ref[1:]
+                            filter = comp_filter_strelka(indel_filter, value)
+                        elif len(ref) < len(alt) and len(ref) == 1:
+                            change = 'ins' + alt[1:]
+                            filter = comp_filter_strelka(indel_filter, value)
+                        else:
+                            change = 'del' + ref + 'ins' + alt
+                            filter = comp_filter_strelka(indel_filter, value)
+                        value = [sample_name, chrom, pos, ref, alt, filter, qual, 
+                                 dp, vf, indel, idv, imf, vdb, rpb,
+                                 mqb, bqb, mqsb, sgb, mq0f, icb, hob,
+                                 ac, an, dp4, mq, ref_f, ref_r, alt_f, alt_r, gt, pl]
+                        yield [value]
+    elif calling == 'smcounter':
+        variant_vcf = os.path.dirname(variant_vcf) + '/' + sample_name + '.smCounter.cut.txt'
+        var = open(variant_vcf, 'r')
+        output.write('\t'.join(['Sample', 'CHR', 'POS', 'REF', 'ALT', 'FILTER', 'TYPE', 'DP', 'MT', 'UMT', 
+                                'PI', 'THR', 'VMT', 'VMF', 'VSM',
+                                "GENE", "HGVS", "RS", "CLNDN_CLINVAR ", "AF_1000GENOMES", "EAS_AF_1000GENOMES", "AF_EXAC" ,
+                                "AN_EAS_EXAC", "AF_CNGB ", "COSMID_COSMIC", "FEATURE_ID_COSMIC", "CDS",
+                                "HGVS_C","HGVS_P", "MUTATION_DESCRIPTION_CLINVAR", "MUTATION_DESCRIPTION_COSMIC", 
+                                "MUTATION_DESCRIPTION_EVS", "SIGNIFICANCE_CLINVAR", "SIGNIFICANCE_UTAHDB",
+                                "FATHMM_PREDICT_COSMIC", "FATHMM_SCORE_COSMIC", "POLYPHEN2_PREDICT_EVS", 'public\n']))
+        for line in var:
+            if not line.startswith('CHROM'):
+                for spl in split_variant(line, calling):
+                    (chrom, pos, ref, alt, type, dp, mt, umt, pi, thr, vmt, vmf, vsm, filter) = spl
+                    chrom = chrom[3:]
+                    value = [chrom, pos, ref, alt, filter, type, dp, mt, umt, pi, thr, vmt, vmf, vsm]
+                    muts = mutnormalize(pos, ref, alt)
+                    for mut in muts:
+                        pos, ref, alt = mut[0:3]
+                        if float(vmf) >=0.15:
+                            if len(ref) == len(alt) and len(alt) == 1:
+                                change = ref + '>' + alt
+                                change1 = base_paired[ref] + '>' + base_paired[alt]
+                                if filter == 'PASS':
+                                    filter = comp_filter_strelka(snp_filter, value)
+                            elif len(ref) > len(alt) and len(alt) == 1:
+                                change = 'del' + ref[1:]
+                                if filter == 'PASS':
+                                    filter = comp_filter_strelka(indel_filter, value)
+                            elif len(ref) < len(alt) and len(ref) == 1:
+                                change = 'ins' + alt[1:]
+                                if filter == 'PASS':
+                                    filter = comp_filter_strelka(indel_filter, value)
+                            else:
+                                change = 'del' + ref + 'ins' + alt
+                                if filter == 'PASS':
+                                    filter = comp_filter_strelka(indel_filter, value)
+                            value = [sample_name, chrom, pos, ref, alt, filter, type, dp, mt, umt, pi, thr, vmt, vmf, vsm]
+                            yield [value]
 
 
-def annotation_v(dict_cos, dict_clin, dict_g1000, variant_vcf, annotated_csv,
+def annotation_v(variant_vcf, annotated_csv,
                  stats_file, snp_filter, indel_filter, sample_name, logger_annotation_process, calling):
     output = open(annotated_csv, 'w')
     # connect to mysql
-    connect, cursor = login_mysql('localhost', 'root', 'admin', 'annotation')
+    connect, cursor = login_mysql('localhost', 'root', 'rtdlMQL', 'mutations')
     for keys in zip(read_vcf(variant_vcf, output, sample_name, calling, snp_filter, indel_filter)):
         # print(keys)
-        key = keys[0][0]
-        key1 = keys[0][1]
-        value = keys[0][2]
+        value = keys[0][0]
         hgvs = define_hgvs(value[1], value[2], value[3], value[4])
+        print(hgvs)
         ann = download_mysql_data(cursor, hgvs)
-        # print(value)
+        print(ann)
         if ann:
             annsub = []
             for i in ann:
@@ -749,45 +742,54 @@ def annotation_v(dict_cos, dict_clin, dict_g1000, variant_vcf, annotated_csv,
                     annsub.append(i)
                 else:
                     annsub.append("-")
-            gene = ann[0]
-            hgvs = ann[5]
-            if ann[6] is not '-':
-                rs = ann[6]
+            gene = annsub[0]
+            hgvs = annsub[5]
+            if annsub[6] is not '-':
+                rs = annsub[6]
             else:
-                rs = ann[7]
-            clndn_clinvar, af_1000genomes, eas_af_1000genomes == ann[8:11]
-            af_exac , an_eas_exac, af_cngb = ann[15:18]
-            cosmid_cosmic, feature_id_cosmic  = ann[19:21]
-            if ann[21] is not '-':
-                cds = ann[21]
+                rs = annsub[7]
+            clndn_clinvar, af_1000genomes, eas_af_1000genomes = annsub[8:11]
+            af_exac , an_eas_exac, af_cngb = annsub[15:18]
+            cosmid_cosmic, feature_id_cosmic  = annsub[19:21]
+            if annsub[21] is not '-':
+                cds = annsub[21]
             else:
-                cds = ann[22]
-            if ann[23] is not '-':
-                hgvs_c = ann[23]
+                cds = annsub[22]
+            if annsub[23] is not '-':
+                hgvs_c = annsub[23]
             else:
-                hgvs_c = ann[24]
-            if ann[25] is not '-':
-                hgvs_p = ann[25]
+                hgvs_c = annsub[24]
+            if annsub[25] is not '-':
+                hgvs_p = annsub[25]
             else:
-                hgvs_p = ann[26]
+                hgvs_p = annsub[26]
             (mutation_description_clinvar, mutation_description_cosmic, mutation_description_evs, 
              significance_clinvar, significance_utahdb, fathmm_predict_cosmic, fathmm_score_cosmic,
-             polyphen2_predict_evs) = ann[27:35]
-            if ann[35] is not '-':
-                public = "https://www.ncbi.nlm.nih.gov/pubmed/" + ann[25]
+             polyphen2_predict_evs) = annsub[27:35]
+            if annsub[35] is not '-':
+                public = "https://www.ncbi.nlm.nih.gov/pubmed/" + annsub[25]
             else:
                 public = '-'
-            if ann[36] is not '-':
-                public  += ';' + ann[36]
-            if ann[37] is not '-':
-                public  += ';' + ann[37]
-            new = '\t'.join(value + [gene, hgvs,rs, clndn_clinvar , af_1000genomes, eas_af_1000genomes, af_exac ,
+            if annsub[36] is not '-':
+                if public is not '-':
+                    public += ';' + annsub[36]
+                else:
+                    public = annsub[36]
+            if annsub[37] is not '-':
+                if public is not '-':
+                    public += ';' + annsub[37]
+                else:
+                    public = annsub[37]
+            new = '\t'.join(value + [gene, hgvs, rs, clndn_clinvar , af_1000genomes, eas_af_1000genomes, af_exac ,
                                      an_eas_exac, af_cngb , cosmid_cosmic, feature_id_cosmic, cds,
                                      hgvs_c, hgvs_p, mutation_description_clinvar, 
                                      mutation_description_cosmic, mutation_description_evs, 
                                      significance_clinvar, significance_utahdb,
                                      fathmm_predict_cosmic, fathmm_score_cosmic, 
                                      polyphen2_predict_evs, public]) + '\n'
+        else:
+            new = '\t'.join(value) + '\t' + '-\t'*22 + '-\n' 
+        output.write(new)
     output.close()
     cursor.close()
     connect.commit()
@@ -805,75 +807,17 @@ def annotation_v(dict_cos, dict_clin, dict_g1000, variant_vcf, annotated_csv,
 
 # match genename,ENSG and ENST from ensembl.
 def fill_table(annotated_csv, annotated_csv_add, ref_ens, call):
-    n2g = {}
-    g2n = {}
-    for line in open(ref_ens, 'r').readlines():
-        name, ensg = line.strip().split(',')
-        n2g[name] = ensg
-        g2n[ensg] = name
     # df = pd.read_csv(annotated_csv)
     df = pd.read_table(annotated_csv)
-    # n,g,t,n1
-    subframe = df[['Gene_Name', 'Gene_ID', 'Gene_Name1', 'RS_ID', 'RS_ID1']]
-    # for name,id,transcript in subframe.iterrows():
-    for num in range(0, len(subframe)):
-        if subframe.iloc[num, 0] is '-' and subframe.iloc[num, 1] is '-' and subframe.iloc[num, 2] is not '-':
-            name = subframe.iloc[num, 2]
-            ensg = n2g[name]
-            subframe.iloc[num, 0] = name
-            subframe.iloc[num, 1] = ensg
-        elif subframe.iloc[num, 0] is '-' and subframe.iloc[num, 2] is '-' and subframe.iloc[num, 1] is not '-':
-            ensg = subframe.iloc[num, 1]
-            name = g2n[ensg]
-            subframe.iloc[num, 0] = name
-        elif subframe.iloc[num, 0] is not '-' and subframe.iloc[num, 1] is '-' and subframe.iloc[num, 2] is '-':
-            name = subframe.iloc[num, 0]
-            ensg = n2g[name]
-            subframe.iloc[num, 1] = ensg
-        elif subframe.iloc[num, 0] is '-':
-            name = subframe.iloc[num, 2]
-            subframe.iloc[num, 0] = name
-        elif subframe.iloc[num, 1] is '-':
-            name = subframe.iloc[num, 0]
-            ensg = n2g[name]
-            subframe.iloc[num, 1] = ensg
-        if subframe.iloc[num, 3] is '-' and subframe.iloc[num, 4] is not '-':
-            subframe.iloc[num, 3] = subframe.iloc[num, 4]
-    name = subframe['Gene_Name']
-    ensg = subframe['Gene_ID']
-    rs = subframe['RS_ID']
-    df.drop(labels=['Gene_Name'], axis=1, inplace=True)
-    df.drop(labels=['Gene_ID'], axis=1, inplace=True)
-    df.drop(labels=['Gene_Name1'], axis=1, inplace=True)
-    df.drop(labels=['RS_ID'], axis=1, inplace=True)
-    df.drop(labels=['RS_ID1'], axis=1, inplace=True)
-    if call == 'GATK':
-        df.insert(24, 'Gene_Name', name)
-        df.insert(25, 'Gene_ID', ensg)
-        df.insert(26, 'RS_ID', rs)
-    elif call == 'samtools':
-        df.insert(31, 'Gene_Name', name)
-        df.insert(32, 'Gene_ID', ensg)
-        df.insert(33, 'RS_ID', rs)
-    elif call == 'strelka2':
-        df.insert(13, 'Gene_Name', name)
-        df.insert(14, 'Gene_ID', ensg)
-        df.insert(15, 'RS_ID', rs)
-    elif call == 'smcounter':
-        df.insert(15, 'Gene_Name', name)
-        df.insert(16, 'Gene_ID', ensg)
-        df.insert(17, 'RS_ID', rs)
-    df.to_csv(annotated_csv, index=False, sep='\t')
-    df[(False ^ df['FILTER'].isin(['PASS']))].to_csv(annotated_csv_add, index=False, sep='\t')
+    df[(True ^ df['RS'].isin(['-']))].to_csv(annotated_csv_add, index=True, sep='\t')
 
 
 # -annotation main
-def annotationmain(cosmic, clinvar, g1000, 
-                   ref_ens,
+def annotationmain(ref_ens,
                    vcf, sample, snp_filter, indel_filter,
                    output, logger_annotation_process, logger_annotation_errors, calling):
     callings = calling.split('\t')
-    dict_cos, dict_clin, dict_g1000 = read_database(cosmic, clinvar, g1000)
+    # dict_cos, dict_clin, dict_g1000 = read_database(cosmic, clinvar, g1000)
     for call in callings:
         if 'raw_variants_SNP.vcf' in vcf:
             annotated_csv = output + '/' + sample + '.raw_SNP.' + call + '.txt'
@@ -911,8 +855,8 @@ def annotationmain(cosmic, clinvar, g1000,
             # print(vcf + ' does not exist!')
         else:
             # --annotation
-            annotation_v(dict_cos, dict_clin, dict_g1000, vcf, annotated_csv, stats_file, snp_filter,
+            annotation_v(vcf, annotated_csv, stats_file, snp_filter,
                          indel_filter, sample, logger_annotation_process, call)
             # --add the annotation
-            #fill_table(annotated_csv, annotated_csv_add, ref_ens, call)
+            fill_table(annotated_csv, annotated_csv_add, ref_ens, call)
 
