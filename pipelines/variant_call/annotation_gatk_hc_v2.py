@@ -732,9 +732,7 @@ def annotation_v(variant_vcf, annotated_csv,
         # print(keys)
         value = keys[0][0]
         hgvs = define_hgvs(value[1], value[2], value[3], value[4])
-        print(hgvs)
         ann = download_mysql_data(cursor, hgvs)
-        print(ann)
         if ann:
             annsub = []
             for i in ann:
